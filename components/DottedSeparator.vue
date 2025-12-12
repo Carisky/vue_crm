@@ -3,7 +3,7 @@ import { cn } from '~/lib/utils';
 
 const {
     class: className = '',
-    color = '#d4d4d8',
+    color = 'var(--border)',
     height = '2px',
     dotSize = '2px',
     gapSize = '6px',

@@ -42,7 +42,9 @@ const onUploadImage = (e: Event) => {
 
 const removeImage = () => {
     form.resetField('image')
-    fileInputRef.value.value = ''
+    if (fileInputRef.value) {
+        fileInputRef.value.value = ''
+    }
     image.value = ''
 }
 

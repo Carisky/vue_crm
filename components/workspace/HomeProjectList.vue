@@ -8,13 +8,13 @@ const { open: openProjectModal } = useCreateProjectModal()
 
 <template>
     <div class="flex flex-col gap-y-4 col-span-1">
-        <div class="bg-white border rounded-lg p-4">
+        <div class="bg-card border border-border rounded-lg p-4 text-card-foreground">
             <div class="flex items-center justify-between">
                 <p class="text-lg font-semibold">
                     Projects ({{ projects.length }})
                 </p>
                 <Button variant="secondary" size="icon" @click="openProjectModal">
-                    <Icon name="lucide:plus" size="16px" class="size-4 text-neutral-400" />
+                    <Icon name="lucide:plus" size="16px" class="size-4 text-muted-foreground" />
                 </Button>
             </div>
             <DottedSeparator class="h-auto my-4" />
@@ -23,9 +23,13 @@ const { open: openProjectModal } = useCreateProjectModal()
                     <NuxtLink :href="`/workspaces/${project.workspace_id}/projects/${project.$id}`">
                         <Card class="shadow-none rounded-lg transition hover:opacity-75">
                             <CardContent class="flex items-center gap-x-2.5 p-4">
-                                <ProjectAvatar :name="project.name" :image="project.image_url" class="size-12"
-                                    fallback-class="text-lg" />
-                                <p class="text-lg font-medium truncate">{{ project.name }}</p>
+                                <ProjectAvatar
+                                    :name="project.name"
+                                    :image="project.image_url ?? undefined"
+                                    class="size-12"
+                                    fallback-class="text-lg text-card-foreground"
+                                />
+                                <p class="text-lg font-medium truncate text-card-foreground">{{ project.name }}</p>
                             </CardContent>
                         </Card>
                     </NuxtLink>

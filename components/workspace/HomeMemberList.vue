@@ -5,7 +5,7 @@ import MemberAvatar from './member/MemberAvatar.vue';
 const { members } = defineProps<{
     members: {
         $id: string;
-        name: string;
+        name: string | null;
         email: string;
         membership_id: string;
         role: keyof typeof MEMBER_ROLE;
@@ -18,14 +18,14 @@ const route = useRoute()
 
 <template>
     <div class="flex flex-col gap-y-4 col-span-1">
-        <div class="bg-white border rounded-lg p-4">
+        <div class="bg-card border border-border rounded-lg p-4 text-card-foreground">
             <div class="flex items-center justify-between">
                 <p class="text-lg font-semibold">
                     Members ({{ members.length }})
                 </p>
                 <Button variant="secondary" size="icon" :as-child="true">
                     <NuxtLink :href="`/workspaces/${route.params['workspaceId']}/members`">
-                        <Icon name="lucide:settings" size="16px" class="size-4 text-neutral-400" />
+                        <Icon name="lucide:settings" size="16px" class="size-4 text-muted-foreground" />
                     </NuxtLink>
                 </Button>
             </div>
@@ -34,9 +34,9 @@ const route = useRoute()
                 <li v-for="member of members" :key="member.$id">
                     <Card class="shadow-none rounded-lg overflow-hidden">
                         <CardContent class="flex flex-col items-center p-3 gap-x-2">
-                            <MemberAvatar :name="member.name" class="size-12" />
+                            <MemberAvatar :name="member.name ?? member.email" class="size-12" />
                             <div class="flex flex-col items-center overflow-hidden">
-                                <p class="text-lg font-medium line-clamp-1">{{ member.name }}</p>
+                                <p class="text-lg font-medium line-clamp-1">{{ member.name ?? member.email }}</p>
                                 <p class="text-sm text-muted-foreground line-clamp-1">{{ member.email }}</p>
                             </div>
                         </CardContent>

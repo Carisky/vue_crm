@@ -13,10 +13,11 @@ export const buttonVariants = cva(
           "bg-gradient-to-b from-amber-600 to-amber-700 text-primary-foreground hover:from-blue-700 hover:to-blue-600",
         outline:
           "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
-        secondary: "bg-white text-black hover:bg-neutral-100",
+        secondary:
+          "bg-muted text-foreground border border-border hover:bg-muted/80 dark:hover:bg-muted/90",
         ghost:
           "border-transparent shadow-none hover:bg-accent hover:text-accent-foreground",
-        muted: "bg-neutral-200 text-neutral-600 hover:bg-neutral-200/80",
+        muted: "bg-muted text-muted-foreground hover:bg-muted/80",
         teritary:
           "bg-blue-100 text-blue-600 border-transparent shadow-none hover:bg-blue-200",
       },

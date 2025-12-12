@@ -30,9 +30,12 @@ const colorMap: Record<TaskStatus, string> = {
 
 <template>
     <div class="block px-2">
-        <div :class="cn(
-            'p-1.5 text-xs bg-white text-primary border border-l-4 flex flex-col gap-y-1.5 rounded-md cursor-pointer transition hover:opacity-75',
-            colorMap[status as TaskStatus])">
+        <div
+            :class="cn(
+                'p-1.5 text-xs bg-card text-card-foreground border border-border border-l-4 flex flex-col gap-y-1.5 rounded-md cursor-pointer transition hover:opacity-75',
+                colorMap[status as TaskStatus],
+            )"
+        >
             <p>{{ title }}</p>
             <div class="flex items-center gap-x-1">
                 <WorkspaceMemberAvatar :name="assignee?.name ?? ''" />

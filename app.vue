@@ -1,13 +1,31 @@
 <script setup lang="ts">
+import { computed, watch } from "vue";
 import { useDragAndDrop } from "fluid-dnd/vue";
-import 'vue-sonner/style.css'
+import "vue-sonner/style.css";
 
-import useAuthStore from './stores/auth';
+import useAuthStore from "./stores/auth";
+import type { ThemePreference } from "~/lib/types";
 
-const authStore = useAuthStore()
-await authStore.init()
+const authStore = useAuthStore();
+await authStore.init();
 
-provide('useDragAndDrop', useDragAndDrop);
+provide("useDragAndDrop", useDragAndDrop);
+
+const preferredTheme = computed<ThemePreference>(
+  () => authStore.user?.themePreference ?? "light",
+);
+
+if (process.client) {
+  const setThemeClass = (theme: ThemePreference) => {
+    const rootElement = document.documentElement;
+    rootElement.classList.toggle("dark", theme === "dark");
+    rootElement.classList.toggle("japanese", theme === "japanese");
+  };
+
+  watch(preferredTheme, (value) => setThemeClass(value), {
+    immediate: true,
+  });
+}
 </script>
 
 <template>

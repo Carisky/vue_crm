@@ -33,29 +33,56 @@ watch([() => route.params['workspaceId'], data], ([wId, data]) => {
 
 <template>
     <div class="flex flex-col gap-y-2" @click="workspaceSelectOpen = false">
-        <div class="flex items-center justify-between">
-            <p class="text-xs uppercase text-neutral-500">Workspaces</p>
-            <button @click="open" class="flex items-center justify-center">
-                <Icon v-if="isLoading" name="svg-spinners:8-dots-rotate" size="20px" class="size-5 text-neutral-500" />
-                <Icon v-else name="heroicons:plus-circle-20-solid" size="20px"
-                    class="size-5 text-neutral-500 cursor-pointer transition hover:opacity-75" />
+        <div class="flex items-center justify-between text-sidebar-foreground/70">
+            <p class="text-xs uppercase">Workspaces</p>
+            <button @click="open" class="flex items-center justify-center text-sidebar-foreground hover:text-sidebar-primary">
+                <Icon
+                    v-if="isLoading"
+                    name="svg-spinners:8-dots-rotate"
+                    size="20px"
+                    class="size-5 text-sidebar-foreground/70"
+                />
+                <Icon
+                    v-else
+                    name="heroicons:plus-circle-20-solid"
+                    size="20px"
+                    class="size-5 text-sidebar-foreground/70 cursor-pointer transition hover:opacity-75"
+                />
             </button>
         </div>
-        <Select :model-value="selectedWorkspace" :open="workspaceSelectOpen"
-            @update:model-value="workspaceSelectOpen = false" class="relative">
-            <button id="trigger" @click.stop="workspaceSelectOpen = !workspaceSelectOpen" ref="trigger"
-                class="w-full text-left h-12 rounded-md bg-neutral-200 font-medium pl-3 focus-visible:border-transparent focus-visible:ring-transparent">
-                <div v-if="selectedWorkspace" class="flex items-center justify-start gap-3 font-medium">
-                    <WorkspaceAvatar :name="selectedWorkspace.name" :image="selectedWorkspace.image_url" />
+        <Select
+            :model-value="selectedWorkspace"
+            :open="workspaceSelectOpen"
+            @update:model-value="workspaceSelectOpen = false"
+            class="relative"
+        >
+            <button
+                id="trigger"
+                @click.stop="workspaceSelectOpen = !workspaceSelectOpen"
+                ref="trigger"
+                class="w-full text-left h-12 rounded-md bg-card text-card-foreground font-medium pl-3 border border-border focus-visible:border-primary focus-visible:ring-primary/50 focus-visible:ring focus-visible:ring-offset-0"
+            >
+                <div v-if="selectedWorkspace" class="flex items-center justify-start gap-3 font-medium text-card-foreground">
+                    <WorkspaceAvatar
+                        :name="selectedWorkspace.name"
+                        :image="selectedWorkspace.image_url ?? undefined"
+                    />
                     <span class="truncate">{{ selectedWorkspace.name }}</span>
                 </div>
-                <template v-else>No workspace selected</template>
+                <template v-else class="text-muted-foreground">No workspace selected</template>
             </button>
-            <SelectContent v-if="data?.length" :reference="trigger" @pointer-down-outside="workspaceSelectOpen = false">
+            <SelectContent
+                v-if="data?.length"
+                :reference="trigger ?? undefined"
+                @pointer-down-outside="workspaceSelectOpen = false"
+            >
                 <SelectItem v-for="workspace of data" :key="workspace.$id" :value="workspace"
                     @select="navigateTo(`/workspaces/${workspace.$id}`)">
-                    <div class="flex items-center justify-start gap-3 font-medium">
-                        <WorkspaceAvatar :name="workspace.name" :image="workspace.image_url" />
+                    <div class="flex items-center justify-start gap-3 font-medium text-card-foreground">
+                        <WorkspaceAvatar
+                            :name="workspace.name"
+                            :image="workspace.image_url ?? undefined"
+                        />
                         <span class="truncate">{{ workspace.name }}</span>
                     </div>
                 </SelectItem>

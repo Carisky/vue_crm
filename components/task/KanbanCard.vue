@@ -5,7 +5,7 @@ const { task } = defineProps<{ task: FilteredTask }>()
 </script>
 
 <template>
-    <div class="bg-white p-2.5 mb-1.5 rounded shadow-sm space-y-3">
+    <div class="bg-card border border-border p-2.5 mb-1.5 rounded shadow-sm space-y-3 text-card-foreground">
         <div class="flex items-start justify-between gap-x-2">
             <p class="text-sm line-clamp-2">{{ task.name }}</p>
             <TaskActions :task-id="task.$id" :name="task.name" :project-id="task.project_id">

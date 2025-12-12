@@ -17,10 +17,10 @@ onUnmounted(() => {
     <Sheet :open="open" :modal="false" @update:open="(isOpen) => open = isOpen">
         <SheetTrigger :as-child="true">
             <Button variant="secondary" class="lg:hidden">
-                <Icon name="lucide:menu" size="16px" class="size-4 text-neutral-500" />
+                <Icon name="lucide:menu" size="16px" class="size-4 text-card-foreground" />
             </Button>
         </SheetTrigger>
-        <SheetContent side="left" class="p-0">
+        <SheetContent side="left" class="p-0 bg-sidebar text-sidebar-foreground">
             <SideBar />
         </SheetContent>
     </Sheet>

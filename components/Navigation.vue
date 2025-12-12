@@ -30,14 +30,15 @@ const routes = computed(() => [
 </script>
 
 <template>
-    <ul v-if="route.params['workspaceId']"
-        class="flex flex-col [&_.router-link-active]:bg-white [&_.router-link-active]:shadow-sm [&_.router-link-active]:text-primary [&_.router-link-active]:hover:opacity-100">
-        <NuxtLink v-for="r of routes" :href="r.href">
-            <div
-                class="flex items-center gap-2.5 p-2.5 rounded-md font-medium text-neutral-500 transition hover:text-primary">
-                <Icon :name="r.icon" size="20px" class="size-5 text-neutral-500" />
-                {{ r.label }}
-            </div>
+<ul v-if="route.params['workspaceId']" class="flex flex-col gap-1">
+        <NuxtLink
+            v-for="r of routes"
+            :href="r.href"
+            active-class="bg-sidebar-primary/10 text-card-foreground shadow-sm"
+            class="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition hover:text-sidebar-primary hover:bg-sidebar-primary/5"
+        >
+            <Icon :name="r.icon" size="20px" class="size-5 text-sidebar-foreground/60" />
+            {{ r.label }}
         </NuxtLink>
     </ul>
 </template>

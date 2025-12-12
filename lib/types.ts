@@ -8,12 +8,16 @@ export enum TaskStatus {
   Done = "DONE",
 }
 
+export const themePreferences = ["light", "dark", "japanese"] as const;
+export type ThemePreference = (typeof themePreferences)[number];
+
 export type ApiUser = {
   id: string;
   name: string | null;
   email: string;
   avatarUrl: string | null;
   monthlyWorkloadTargetHours: number | null;
+  themePreference: ThemePreference;
 };
 
 export type Workspace = {

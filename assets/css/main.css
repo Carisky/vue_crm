@@ -117,6 +117,42 @@
   --sidebar-ring: oklch(0.439 0 0);
 }
 
+.japanese {
+  --background: #fff5f8;
+  --foreground: #2b120c;
+  --card: #ffeef5;
+  --card-foreground: #2b120c;
+  --popover: #ffe9f3;
+  --popover-foreground: #2b120c;
+  --primary: #f58ebc;
+  --primary-foreground: #2b120c;
+  --secondary: #f0bfd2;
+  --secondary-foreground: #2b120c;
+  --muted: #fde7f3;
+  --muted-foreground: #2b120c;
+  --accent: #3f2014;
+  --accent-foreground: #fff7fb;
+  --destructive: #c03972;
+  --destructive-foreground: #fff7fb;
+  --border: #f3c7d8;
+  --input: #fff7fb;
+  --ring: #f3c7d8;
+  --chart-1: #f7aacb;
+  --chart-2: #7a351e;
+  --chart-3: #c24a81;
+  --chart-4: #d378a5;
+  --chart-5: #5b2915;
+  --radius: 0.625rem;
+  --sidebar: #3f2014;
+  --sidebar-foreground: #fdf1f4;
+  --sidebar-primary: #f6a0cf;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #7c3a1f;
+  --sidebar-accent-foreground: #fff4fb;
+  --sidebar-border: #3a170f;
+  --sidebar-ring: #8c4021;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
