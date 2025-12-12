@@ -1,0 +1,41 @@
+<script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query';
+
+import authenticatedPageProtectMiddleware from '~/middleware/page-protect/authenticatedPage';
+import type { Workspace } from '~/lib/types';
+
+definePageMeta({
+    layout: 'dashboard',
+    middleware: [authenticatedPageProtectMiddleware]
+})
+
+useHead({
+    title: 'DEV crm'
+})
+
+const { data, isFetching, isSuccess, suspense } = useQuery<Workspace[]>
+    ({
+        queryKey: ['workspaces/all'],
+        queryFn: async () => {
+            const res = await fetch('/api/workspaces/all')
+            const data = await res.json()
+            return data?.workspaces ?? null
+        },
+        staleTime: Infinity,
+        experimental_prefetchInRender: true
+    })
+
+onServerPrefetch(async () => {
+    await suspense()
+})
+
+watch([isFetching, isSuccess, data], async ([fetching, success, data]) => {
+    if (!fetching && success && data) {
+        navigateTo(data?.length ? `/workspaces/${data[0].$id}` : '/workspaces/create')
+    }
+}, { immediate: true })
+</script>
+
+<template>
+    <Loader class="h-96 min-h-auto" />
+</template>

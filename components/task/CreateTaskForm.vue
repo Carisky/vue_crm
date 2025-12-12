@@ -1,0 +1,347 @@
+<script setup lang="ts">
+import { useMutation } from '@tanstack/vue-query'
+import { configure, useForm } from 'vee-validate'
+import { toTypedSchema } from "@vee-validate/zod";
+import { toast } from 'vue-sonner';
+
+import { CreateTasksSchema } from '~/lib/schema/createTask';
+import { TaskStatus, type CreateTaskInject, type FilteredTask } from '~/lib/types';
+
+const { projectOptions, memberOptions, onCancel } = defineProps<{
+    projectOptions: { $id: string; name: string; image_url?: string; }[];
+    memberOptions: { $id: string; name: string; }[];
+    onCancel?: () => void
+}>()
+
+const route = useRoute()
+const { value: taskStatus } = useUrlQuery('create_task')
+const UNASSIGNED_VALUE = '__UNASSIGNED__'
+
+type UploadedMediaPreview = {
+    path: string;
+    mime?: string;
+    original_name?: string;
+    name: string;
+}
+
+const uploadedMedia = ref<UploadedMediaPreview[]>([])
+const isUploadingMedia = ref(false)
+const mediaUploadError = ref<string | null>(null)
+const mediaInput = ref<HTMLInputElement | null>(null)
+
+const onCreateTask: CreateTaskInject | undefined = inject('create-task-inject')
+
+configure({
+    validateOnBlur: false
+});
+
+const initialTaskStatus: ComputedRef<TaskStatus | undefined> = computed(() => {
+    const decoded = taskStatus.value ? decodeURIComponent(String(taskStatus.value)) : undefined
+    if (decoded && decoded in TaskStatus) return TaskStatus[decoded as keyof typeof TaskStatus]
+    else return undefined
+})
+
+const form = useForm({
+    validationSchema: toTypedSchema(CreateTasksSchema),
+    initialValues: {
+        workspace_id: String(route.params['workspaceId']),
+        status: initialTaskStatus.value,
+        description: '',
+        estimated_hours: undefined,
+        actual_hours: undefined,
+        started_at: undefined,
+    }
+})
+
+const statuses = Object.entries(TaskStatus)
+
+const handleMediaChange = async (event: Event) => {
+    const target = event.target as HTMLInputElement | null
+    const files = target?.files
+    if (!files?.length) return
+
+    isUploadingMedia.value = true
+    mediaUploadError.value = null
+
+    const formData = new FormData()
+    formData.append('workspace_id', String(route.params['workspaceId']))
+    Array.from(files).forEach((file) => formData.append('files', file))
+
+    try {
+        const res = await $fetch('/api/tasks/media', {
+            method: 'POST',
+            body: formData,
+        })
+        const uploaded = (res as { files?: UploadedMediaPreview[] }).files ?? []
+        uploadedMedia.value.push(
+            ...uploaded.map((file) => ({
+                path: file.path,
+                mime: file.mime,
+                original_name: file.original_name,
+                name: file.original_name ?? file.path.split('/').pop() ?? 'media',
+            })),
+        )
+    } catch (error) {
+        mediaUploadError.value = 'Failed to upload media'
+    } finally {
+        isUploadingMedia.value = false
+        if (target) target.value = ''
+    }
+}
+
+const removeMedia = (index: number) => {
+    uploadedMedia.value.splice(index, 1)
+}
+
+const { isPending, mutate } = useMutation({
+    mutationFn: async (formData: typeof form.values) => {
+        const res =
+            await $fetch('/api/tasks/create', { method: 'POST', body: formData })
+        if (res.task) {
+            onCreateTask?.createTaskSuccessSubsribers.map((onCreate) => onCreate?.(res.task as FilteredTask))
+            // await queryClient.invalidateQueries({ queryKey: ['tasks', formData.workspace_id] })
+
+            // close form
+            onCancel?.()
+            toast.success('Task created')
+        } else toast.error('Failed to create task')
+    },
+    onError: () => toast.error('Failed to create task')
+})
+
+const handleSubmit = form.handleSubmit((values) => {
+    const mediaPayload = uploadedMedia.value.length
+        ? uploadedMedia.value.map(
+              ({ path, mime, original_name }) => ({
+                  path,
+                  mime,
+                  original_name,
+              }),
+          )
+        : undefined
+
+    const payload = {
+        ...values,
+        assignee_id:
+            values.assignee_id === UNASSIGNED_VALUE
+                ? null
+                : values.assignee_id ?? null,
+        due_date: values.due_date ?? null,
+        estimated_hours: values.estimated_hours ?? undefined,
+        actual_hours: values.actual_hours ?? undefined,
+        started_at: values.started_at ?? undefined,
+        media: mediaPayload,
+    }
+
+    mutate(payload as typeof form.values)
+})
+</script>
+
+<template>
+    <Card class="size-full border-none shadow-none gap-0 p-0">
+        <CardHeader class="flex py-7">
+            <CardTitle class="font-bold text-xl">
+                Create a new task
+            </CardTitle>
+        </CardHeader>
+        <div class="px-7">
+            <DottedSeparator />
+        </div>
+        <CardContent class="py-7">
+            <form @submit="handleSubmit">
+                <fieldset :disabled="isPending">
+                    <div class="flex flex-col gap-y-4">
+                        <FormField v-slot="{ componentField }" name="workspace_id">
+                            <Input type="hidden" v-bind="componentField" />
+                        </FormField>
+                        <FormField v-slot="{ componentField }" name="name">
+                            <FormItem>
+                                <FormLabel>Task Name</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Enter task name" v-bind="componentField" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        </FormField>
+                        <FormField v-slot="{ componentField }" name="due_date">
+                            <FormItem>
+                                <FormLabel>Due Date</FormLabel>
+                                <FormControl>
+                                    <DatePicker :value="componentField.modelValue"
+                                        :on-change="componentField.onChange" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        </FormField>
+                        <FormField v-slot="{ componentField }" name="started_at">
+                            <FormItem>
+                                <FormLabel>Task Started</FormLabel>
+                                <FormControl>
+                                    <DatePicker :value="componentField.modelValue"
+                                        :on-change="componentField.onChange" placeholder="Select start date" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        </FormField>
+                        <FormField v-slot="{ componentField }" name="description">
+                            <FormItem>
+                                <FormLabel>Description</FormLabel>
+                                <FormControl>
+                                    <Textarea placeholder="Add task details" v-bind="componentField" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        </FormField>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <FormField v-slot="{ componentField }" name="estimated_hours">
+                                <FormItem>
+                                    <FormLabel>Estimated Hours</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            type="number"
+                                            step="0.25"
+                                            min="0"
+                                            placeholder="0"
+                                            v-bind="componentField"
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            </FormField>
+                            <FormField v-slot="{ componentField }" name="actual_hours">
+                                <FormItem>
+                                    <FormLabel>Actual Hours</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            type="number"
+                                            step="0.25"
+                                            min="0"
+                                            placeholder="0"
+                                            v-bind="componentField"
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            </FormField>
+                        </div>
+                        <div class="space-y-2">
+                            <p class="text-sm font-medium text-muted-foreground">Media</p>
+                            <input
+                                ref="mediaInput"
+                                type="file"
+                                multiple
+                                class="hidden"
+                                @change="handleMediaChange"
+                            />
+                            <div class="flex items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    class="uppercase tracking-wide"
+                                    @click="mediaInput?.click()"
+                                    :disabled="isUploadingMedia"
+                                >
+                                    <Icon
+                                        v-if="isUploadingMedia"
+                                        name="svg-spinners:3-dots-rotating"
+                                        size="16px"
+                                        class="size-4"
+                                    />
+                                    <span v-else>Upload files</span>
+                                </Button>
+                                <p v-if="mediaUploadError" class="text-xs text-destructive">
+                                    {{ mediaUploadError }}
+                                </p>
+                            </div>
+                            <ul v-if="uploadedMedia.length" class="space-y-2">
+                                <li v-for="(file, index) of uploadedMedia" :key="file.path"
+                                    class="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+                                    <span class="truncate">{{ file.name }}</span>
+                                    <Button type="button" variant="ghost" size="icon" @click="removeMedia(index)">
+                                        <Icon name="lucide:trash-2" size="16px" />
+                                    </Button>
+                                </li>
+                            </ul>
+                        </div>
+                        <FormField v-slot="{ componentField }" name="assignee_id">
+                            <FormItem>
+                                <FormLabel>Assignee</FormLabel>
+                                <Select :default-value="componentField.modelValue"
+                                    @update:model-value="componentField.onChange">
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select assignee"></SelectValue>
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <FormMessage />
+                                    <SelectContent>
+                                        <SelectItem :value="UNASSIGNED_VALUE">
+                                            Unassigned
+                                        </SelectItem>
+                                        <SelectSeparator />
+                                        <SelectItem v-for="assignee of memberOptions" :key="assignee.$id"
+                                            :value="assignee.$id">
+                                            <WorkspaceMemberAvatar :name="assignee.name" class="size-6" />
+                                            {{ assignee.name }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </FormItem>
+                        </FormField>
+                        <FormField v-slot="{ componentField }" name="status">
+                            <FormItem>
+                                <FormLabel>Status</FormLabel>
+                                <Select :default-value="componentField.modelValue"
+                                    @update:model-value="componentField.onChange">
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select status"></SelectValue>
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <FormMessage />
+                                    <SelectContent>
+                                        <SelectItem v-for="[label, val] of statuses" :key="val" :value="val">
+                                            {{ label }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </FormItem>
+                        </FormField>
+                        <FormField v-slot="{ componentField }" name="project_id">
+                            <FormItem>
+                                <FormLabel>Project</FormLabel>
+                                <Select :default-value="componentField.modelValue"
+                                    @update:model-value="componentField.onChange">
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select project"></SelectValue>
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <FormMessage />
+                                    <SelectContent>
+                                        <SelectItem v-for="project of projectOptions" :key="project.$id"
+                                            :value="project.$id">
+                                            <ProjectAvatar :name="project.name" :image="project.image_url"
+                                                class="size-6" />
+                                            {{ project.name }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </FormItem>
+                        </FormField>
+                    </div>
+                    <DottedSeparator class="py-7" />
+                    <div class="flex items-center justify-between gap-5">
+                        <Button v-if="!!onCancel" type="button" variant="secondary" size="lg" @click="onCancel"
+                            class="w-24">Cancel</Button>
+                        <Button type="submit" variant="primary" size="lg" class="w-32 ml-auto">
+                            <Icon v-if="isPending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
+                            <span v-else>Create task</span>
+                        </Button>
+                    </div>
+                </fieldset>
+            </form>
+        </CardContent>
+    </Card>
+</template>
