@@ -1,10 +1,5 @@
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
-const { PrismaClient } =
-  require("@prisma/client") as typeof import("@prisma/client");
-const { PrismaMariaDb } =
-  require("@prisma/adapter-mariadb") as typeof import("@prisma/adapter-mariadb");
+import { PrismaClient } from "@prisma/client";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
 type PrismaClientInstance = import("@prisma/client").PrismaClient;
 
