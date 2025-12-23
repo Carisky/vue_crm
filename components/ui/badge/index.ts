@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 
-import { TaskStatus } from "~/lib/types";
+import { TaskPriority, TaskStatus } from "~/lib/types";
 
 export { default as Badge } from "./Badge.vue";
 
@@ -27,6 +27,16 @@ export const badgeVariants = cva(
           "border-transparent bg-emerald-400 text-primary hover:bg-emerald-400/80",
         [TaskStatus.Backlog]:
           "border-transparent bg-pink-400 text-primary hover:bg-pink-400/80",
+        [TaskPriority["Very Low"]]:
+          "border-transparent bg-teal-200 text-teal-900 hover:bg-teal-200/80",
+        [TaskPriority.Low]:
+          "border-transparent bg-emerald-500 text-white hover:bg-emerald-500/90",
+        [TaskPriority.Medium]:
+          "border-transparent bg-yellow-300 text-yellow-950 hover:bg-yellow-300/80",
+        [TaskPriority.High]:
+          "border-transparent bg-pink-600 text-white hover:bg-pink-600/90 priority-pulse-pink",
+        [TaskPriority["Real Time"]]:
+          "border-transparent bg-red-500 text-white hover:bg-red-500/90 priority-blink-alert",
       },
     },
     defaultVariants: {

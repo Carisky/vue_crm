@@ -1,6 +1,6 @@
 import { createError } from "h3";
 import type { H3Event } from "h3";
-import { Prisma, TaskStatus } from "@prisma/client";
+import { Prisma, TaskPriority, TaskStatus } from "@prisma/client";
 
 import { CreateTasksSchema } from "~/lib/schema/createTask";
 import prisma from "./prisma";
@@ -65,6 +65,8 @@ export async function updateTask(
   if (params.data.project_id) updateData.projectId = params.data.project_id;
   if (params.data.status)
     updateData.status = params.data.status as TaskStatus;
+  if (params.data.priority)
+    updateData.priority = params.data.priority as TaskPriority;
   if (Object.prototype.hasOwnProperty.call(params.data, "due_date"))
     updateData.dueDate = params.data.due_date as Date | null;
   if (Object.prototype.hasOwnProperty.call(params.data, "assignee_id"))

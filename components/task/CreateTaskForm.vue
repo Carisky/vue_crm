@@ -5,7 +5,7 @@ import { toTypedSchema } from "@vee-validate/zod";
 import { toast } from 'vue-sonner';
 
 import { CreateTasksSchema } from '~/lib/schema/createTask';
-import { TaskStatus, type CreateTaskInject, type FilteredTask } from '~/lib/types';
+import { TaskPriority, TaskStatus, taskPriorityLabels, type CreateTaskInject, type FilteredTask } from '~/lib/types';
 
 const { projectOptions, memberOptions, onCancel } = defineProps<{
     projectOptions: { $id: string; name: string; image_url?: string; }[];
@@ -46,6 +46,7 @@ const form = useForm({
     initialValues: {
         workspace_id: String(route.params['workspaceId']),
         status: initialTaskStatus.value,
+        priority: TaskPriority.Medium,
         description: '',
         estimated_hours: undefined,
         actual_hours: undefined,
@@ -54,6 +55,7 @@ const form = useForm({
 })
 
 const statuses = Object.entries(TaskStatus)
+const priorities = Object.entries(taskPriorityLabels) as [TaskPriority, string][]
 
 const handleMediaChange = async (event: Event) => {
     const target = event.target as HTMLInputElement | null
@@ -302,6 +304,25 @@ const handleSubmit = form.handleSubmit((values) => {
                                     <FormMessage />
                                     <SelectContent>
                                         <SelectItem v-for="[label, val] of statuses" :key="val" :value="val">
+                                            {{ label }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </FormItem>
+                        </FormField>
+                        <FormField v-slot="{ componentField }" name="priority">
+                            <FormItem>
+                                <FormLabel>Priority</FormLabel>
+                                <Select :default-value="componentField.modelValue"
+                                    @update:model-value="componentField.onChange">
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select priority"></SelectValue>
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <FormMessage />
+                                    <SelectContent>
+                                        <SelectItem v-for="[value, label] of priorities" :key="value" :value="value">
                                             {{ label }}
                                         </SelectItem>
                                     </SelectContent>

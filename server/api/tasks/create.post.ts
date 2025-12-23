@@ -1,4 +1,4 @@
-import { TaskStatus } from "@prisma/client";
+import { TaskPriority, TaskStatus } from "@prisma/client";
 
 import { CreateTasksSchema } from "~/lib/schema/createTask";
 import prisma from "~/server/lib/prisma";
@@ -78,6 +78,7 @@ export default defineEventHandler(async (event) => {
       workspaceId: data.workspace_id,
       projectId: data.project_id,
       status: data.status as TaskStatus,
+      priority: data.priority as TaskPriority,
       dueDate: data.due_date ?? null,
       assigneeId: assigneeId ?? undefined,
       description: data.description,

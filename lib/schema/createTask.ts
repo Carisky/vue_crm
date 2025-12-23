@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-import { TaskStatus } from "../types";
+import { TaskPriority, TaskStatus } from "../types";
 
 const optionalHoursField = z
   .preprocess((value) => {
@@ -22,6 +22,7 @@ export const CreateTasksSchema = z.object({
   workspace_id: z.string().trim().min(1, "Required"),
   project_id: z.string().trim().min(1, "Required"),
   status: z.nativeEnum(TaskStatus, { required_error: "Required" }),
+  priority: z.nativeEnum(TaskPriority, { required_error: "Required" }),
   due_date: z.coerce.date().optional().nullable(),
   assignee_id: z.string().trim().min(1, "Required").optional().nullable(),
   description: z.string().optional(),

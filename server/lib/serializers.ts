@@ -46,6 +46,7 @@ export function serializeTask(
     project_id: task.projectId,
     assignee_id: task.assigneeId,
     status: task.status,
+    priority: task.priority,
     due_date: task.dueDate,
     description: task.description,
     position: task.position,

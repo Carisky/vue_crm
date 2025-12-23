@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TaskStatus, type FilteredTask } from '~/lib/types';
+import { TaskStatus, taskPriorityLabels, type FilteredTask } from '~/lib/types';
 
 const { task } = defineProps<{ task: FilteredTask }>()
 
@@ -45,6 +45,9 @@ const { open: openUpdateTaskModal } = useUpdateTaskModal()
                 </TaskOverviewProperty>
                 <TaskOverviewProperty label="Status">
                     <Badge :variant="task.status">{{ statuses[task.status] }}</Badge>
+                </TaskOverviewProperty>
+                <TaskOverviewProperty label="Priority">
+                    <Badge :variant="task.priority">{{ taskPriorityLabels[task.priority] }}</Badge>
                 </TaskOverviewProperty>
                 <TaskOverviewProperty label="Estimated Time">
                     <p class="text-sm font-medium">{{ formatHours(task.estimated_hours) }}</p>

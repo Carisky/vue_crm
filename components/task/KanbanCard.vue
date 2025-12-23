@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FilteredTask } from '~/lib/types';
+import { taskPriorityLabels, type FilteredTask } from '~/lib/types';
 
 const { task } = defineProps<{ task: FilteredTask }>()
 </script>
@@ -12,6 +12,11 @@ const { task } = defineProps<{ task: FilteredTask }>()
                 <Icon name="lucide:ellipsis" size="18px"
                     class="size-[18px] stroke-1 shrink-0 text-neutral-700 transition hover:opacity-75" />
             </TaskActions>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <Badge :variant="task.priority" class="text-[10px]">
+                {{ taskPriorityLabels[task.priority] }}
+            </Badge>
         </div>
         <DottedSeparator />
         <div class="flex items-center gap-x-1.5">

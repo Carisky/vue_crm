@@ -5,7 +5,7 @@ import { toTypedSchema } from "@vee-validate/zod";
 import { toast } from 'vue-sonner';
 
 import { CreateTasksSchema } from '~/lib/schema/createTask';
-import { TaskStatus, type FilteredTask, type UpdateTaskInject } from '~/lib/types';
+import { TaskPriority, TaskStatus, taskPriorityLabels, type FilteredTask, type UpdateTaskInject } from '~/lib/types';
 
 const {
     initialValues,
@@ -40,6 +40,7 @@ const form = useForm({
 })
 
 const statuses = Object.entries(TaskStatus)
+const priorities = Object.entries(taskPriorityLabels) as [TaskPriority, string][]
 
 const { isPending, mutate } = useMutation({
     mutationFn: async (formData: typeof form.values) => {
@@ -199,6 +200,25 @@ const handleSubmit = form.handleSubmit((values) => {
                                     <FormMessage />
                                     <SelectContent>
                                         <SelectItem v-for="[label, val] of statuses" :key="val" :value="val">
+                                            {{ label }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </FormItem>
+                        </FormField>
+                        <FormField v-slot="{ componentField }" name="priority">
+                            <FormItem>
+                                <FormLabel>Priority</FormLabel>
+                                <Select :default-value="componentField.modelValue"
+                                    @update:model-value="componentField.onChange">
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select priority"></SelectValue>
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <FormMessage />
+                                    <SelectContent>
+                                        <SelectItem v-for="[value, label] of priorities" :key="value" :value="value">
                                             {{ label }}
                                         </SelectItem>
                                     </SelectContent>

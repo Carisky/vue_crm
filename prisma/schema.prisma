@@ -20,6 +20,14 @@ enum TaskStatus {
   DONE
 }
 
+enum TaskPriority {
+  VERY_LOW
+  LOW
+  MEDIUM
+  HIGH
+  REAL_TIME
+}
+
 model User {
   id           String    @id @default(cuid())
   name         String?
@@ -102,6 +110,7 @@ model Task {
   id             String     @id @default(cuid())
   name           String
   status         TaskStatus @default(BACKLOG)
+  priority       TaskPriority @default(MEDIUM)
   dueDate        DateTime?
   startedAt      DateTime?
   estimatedHours Float?

@@ -1,0 +1,3 @@
+-- Remove HIGH_REAL_TIME from Task.priority enum
+ALTER TABLE `Task`
+  MODIFY COLUMN `priority` ENUM('VERY_LOW','LOW','MEDIUM','HIGH','REAL_TIME') NOT NULL DEFAULT 'MEDIUM';

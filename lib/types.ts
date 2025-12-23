@@ -8,6 +8,22 @@ export enum TaskStatus {
   Done = "DONE",
 }
 
+export enum TaskPriority {
+  "Very Low" = "VERY_LOW",
+  Low = "LOW",
+  Medium = "MEDIUM",
+  High = "HIGH",
+  "Real Time" = "REAL_TIME",
+}
+
+export const taskPriorityLabels: Record<TaskPriority, string> = {
+  [TaskPriority["Very Low"]]: "Very low",
+  [TaskPriority.Low]: "Low",
+  [TaskPriority.Medium]: "Medium",
+  [TaskPriority.High]: "High",
+  [TaskPriority["Real Time"]]: "Real time",
+};
+
 export const themePreferences = ["light", "dark", "japanese"] as const;
 export type ThemePreference = (typeof themePreferences)[number];
 
@@ -77,6 +93,7 @@ export type Task = TaskTimeFields & {
   workspace_id: string;
   project_id: string;
   status: TaskStatus;
+  priority: TaskPriority;
   due_date: string | null;
   assignee_id: string | null;
   description?: string | null;

@@ -1,7 +1,7 @@
 import { type ColumnDef } from "@tanstack/vue-table";
 import { ArrowUpDownIcon } from "lucide-vue-next";
 
-import { TaskStatus, type FilteredTask, type Project } from "~/lib/types";
+import { TaskPriority, TaskStatus, taskPriorityLabels, type FilteredTask, type Project } from "~/lib/types";
 import { Badge, Button, Icon, ProjectAvatar, TaskDate } from "#components";
 import MemberAvatar from "../workspace/member/MemberAvatar.vue";
 import Actions from "./Actions.vue";
@@ -13,6 +13,15 @@ const statuses = Object.entries(TaskStatus).reduce(
   },
   {} as Record<string, string>,
 );
+
+const priorityLabels = taskPriorityLabels;
+const priorityOrder: Record<TaskPriority, number> = {
+  [TaskPriority["Very Low"]]: 1,
+  [TaskPriority.Low]: 2,
+  [TaskPriority.Medium]: 3,
+  [TaskPriority.High]: 4,
+  [TaskPriority["Real Time"]]: 5,
+};
 
 export const columns: ColumnDef<FilteredTask>[] = [
   {
@@ -126,6 +135,32 @@ export const columns: ColumnDef<FilteredTask>[] = [
         "div",
         { class: "flex items-center gap-x-2 text-sm font-medium" },
         h(Badge, { variant: status }, () => statuses[status]),
+      );
+    },
+  },
+  {
+    accessorKey: "priority",
+    sortingFn: (rowA, rowB, columnId) => {
+      const a = rowA.getValue(columnId) as TaskPriority;
+      const b = rowB.getValue(columnId) as TaskPriority;
+      return (priorityOrder[a] ?? 0) - (priorityOrder[b] ?? 0);
+    },
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: "ghost",
+          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
+        },
+        () => ["Priority", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+      );
+    },
+    cell: ({ row }) => {
+      const priority = row.getValue("priority") as TaskPriority;
+      return h(
+        "div",
+        { class: "flex items-center gap-x-2 text-sm font-medium" },
+        h(Badge, { variant: priority }, () => priorityLabels[priority]),
       );
     },
   },

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatDistanceToNow } from 'date-fns';
-import type { FilteredTask } from '~/lib/types';
+import { taskPriorityLabels, type FilteredTask } from '~/lib/types';
 
 const { tasks } = defineProps<{ tasks: FilteredTask[] }>()
 
@@ -25,7 +25,12 @@ const { open: openTaskModal } = useCreateTaskModal()
                     <NuxtLink :href="`/workspaces/${task.workspace_id}/tasks/${task.$id}`">
                         <Card class="shadow-none rounded-lg transition hover:opacity-75">
                             <CardContent class="p-4">
-                                <p class="text-lg font-medium truncate">{{ task.name }}</p>
+                                <div class="flex items-center justify-between gap-2">
+                                    <p class="text-lg font-medium truncate">{{ task.name }}</p>
+                                    <Badge :variant="task.priority" class="text-[10px]">
+                                        {{ taskPriorityLabels[task.priority] }}
+                                    </Badge>
+                                </div>
                                 <div class="flex items-center gap-x-2">
                                     <p>{{ task.project?.name ?? '' }}</p>
                                     <div class="size-1 rounded-full bg-neutral-300"></div>
