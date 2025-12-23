@@ -5,6 +5,9 @@ export type CurrentUser = {
   name: string | null;
   email: string;
   avatarUrl: string | null;
+  monthlyWorkloadTargetHours: number | null;
+  themePreference: string;
+  emailNotificationsEnabled: boolean;
 };
 
 declare module "h3" {

@@ -21,6 +21,7 @@ export async function createAuthSession(event: H3Event, userId: string) {
     avatarUrl: session.user.avatarUrl,
     monthlyWorkloadTargetHours: session.user.monthlyWorkloadTargetHours ?? null,
     themePreference: session.user.themePreference,
+    emailNotificationsEnabled: session.user.emailNotificationsEnabled,
   };
 
   return session;

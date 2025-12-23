@@ -31,6 +31,20 @@ watch(
 )
 const isSaving = ref(false)
 const isSavingTheme = ref(false)
+const isSavingEmailNotifications = ref(false)
+
+const emailNotificationsEnabled = ref(
+    authStore.user?.emailNotificationsEnabled ?? true,
+)
+
+watch(
+    () => authStore.user?.emailNotificationsEnabled,
+    (value) => {
+        if (typeof value === 'boolean') {
+            emailNotificationsEnabled.value = value
+        }
+    },
+)
 
 const isValidTarget = computed(() => {
     const value = Number(targetValue.value)
@@ -135,6 +149,40 @@ const handleThemeChange = async (theme: ThemePreference) => {
         isSavingTheme.value = false
     }
 }
+
+const handleEmailNotificationsChange = async (checked: boolean | 'indeterminate') => {
+    if (!authStore.user || isSavingEmailNotifications.value) return
+
+    const nextValue = checked === true
+    if (emailNotificationsEnabled.value === nextValue) return
+
+    const previousValue = emailNotificationsEnabled.value
+    emailNotificationsEnabled.value = nextValue
+    isSavingEmailNotifications.value = true
+
+    try {
+        const res = await $fetch('/api/profile/email-notifications', {
+            method: 'PATCH',
+            body: { email_notifications_enabled: nextValue },
+        })
+
+        const updatedUser = {
+            ...authStore.user,
+            emailNotificationsEnabled: res.emailNotificationsEnabled,
+        }
+
+        authStore.setUser(updatedUser)
+        emailNotificationsEnabled.value = updatedUser.emailNotificationsEnabled
+
+        toast.success('Email notification preference saved')
+    } catch (error) {
+        console.error(error)
+        emailNotificationsEnabled.value = previousValue
+        toast.error('Failed to save email notification preference')
+    } finally {
+        isSavingEmailNotifications.value = false
+    }
+}
 </script>
 
 <template>
@@ -205,6 +253,29 @@ const handleThemeChange = async (theme: ThemePreference) => {
                 <p class="mt-3 text-sm text-muted-foreground">
                     Theme choice is saved to your profile and applied automatically on each login.
                 </p>
+            </CardContent>
+        </Card>
+        <Card class="border">
+            <CardHeader>
+                <CardTitle class="text-lg font-semibold">Email notifications</CardTitle>
+                <CardDescription>Control when the app can send you email updates.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div class="flex items-start gap-3">
+                    <Checkbox
+                        :checked="emailNotificationsEnabled"
+                        :disabled="isSavingEmailNotifications"
+                        @update:checked="handleEmailNotificationsChange"
+                    />
+                    <div class="grid gap-1">
+                        <p class="text-sm font-medium text-foreground">
+                            Receive task updates by email
+                        </p>
+                        <p class="text-xs text-muted-foreground">
+                            You will receive emails for new tasks and priority escalations.
+                        </p>
+                    </div>
+                </div>
             </CardContent>
         </Card>
     </div>

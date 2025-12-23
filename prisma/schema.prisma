@@ -28,24 +28,33 @@ enum TaskPriority {
   REAL_TIME
 }
 
-model User {
-  id           String    @id @default(cuid())
-  name         String?
-  email        String    @unique
-  passwordHash String?
-  githubId     String?   @unique
-  avatarUrl    String?
-  monthlyWorkloadTargetHours Float?
-  themePreference String @default("light")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+enum EmailQueueStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+}
 
-  memberships  Member[]
-  sessions     Session[]
-  ownedWorkspaces Workspace[] @relation("WorkspaceOwner")
-  assignedTasks Task[]     @relation("TaskAssignee")
-  notifications Notification[]
+model User {
+  id                         String   @id @default(cuid())
+  name                       String?
+  email                      String   @unique
+  passwordHash               String?
+  githubId                   String?  @unique
+  avatarUrl                  String?
+  monthlyWorkloadTargetHours Float?
+  themePreference            String   @default("light")
+  emailNotificationsEnabled  Boolean  @default(true)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  memberships       Member[]
+  sessions          Session[]
+  ownedWorkspaces   Workspace[]    @relation("WorkspaceOwner")
+  assignedTasks     Task[]         @relation("TaskAssignee")
+  notifications     Notification[]
   notificationActed Notification[] @relation("NotificationActor")
+  emailQueues       EmailQueue[]
 }
 
 model Session {
@@ -60,18 +69,18 @@ model Session {
 }
 
 model Workspace {
-  id           String    @id @default(cuid())
-  name         String
-  inviteCode   String    @unique
-  imageUrl     String?   @db.Text
-  ownerId      String
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id         String   @id @default(cuid())
+  name       String
+  inviteCode String   @unique
+  imageUrl   String?  @db.Text
+  ownerId    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  owner     User      @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members   Member[]
-  projects  Project[]
-  tasks     Task[]
+  owner         User           @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members       Member[]
+  projects      Project[]
+  tasks         Task[]
   notifications Notification[]
 }
 
@@ -92,41 +101,41 @@ model Member {
 }
 
 model Project {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
-  imageUrl    String?   @db.Text
+  imageUrl    String?  @db.Text
   workspaceId String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  tasks     Task[]
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks         Task[]
   notifications Notification[]
 
   @@index([workspaceId])
 }
 
 model Task {
-  id             String     @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String
-  status         TaskStatus @default(BACKLOG)
+  status         TaskStatus   @default(BACKLOG)
   priority       TaskPriority @default(MEDIUM)
   dueDate        DateTime?
   startedAt      DateTime?
   estimatedHours Float?
   actualHours    Float?
   description    String?
-  position       Int        @default(1000)
+  position       Int          @default(1000)
   workspaceId    String
   projectId      String
   assigneeId     String?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  assignee  User?     @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
-  media     TaskMedia[]
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee      User?          @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
+  media         TaskMedia[]
   notifications Notification[]
 
   @@index([workspaceId])
@@ -136,7 +145,7 @@ model Task {
 }
 
 model Notification {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
   workspaceId String
   taskId      String?
@@ -144,8 +153,8 @@ model Notification {
   actorId     String?
   type        String
   message     String?
-  isRead      Boolean    @default(false)
-  createdAt   DateTime   @default(now())
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -156,6 +165,26 @@ model Notification {
   @@index([userId])
   @@index([workspaceId])
   @@index([isRead])
+}
+
+model EmailQueue {
+  id        String           @id @default(cuid())
+  userId    String?
+  toEmail   String
+  subject   String
+  htmlBody  String           @db.LongText
+  textBody  String           @db.LongText
+  status    EmailQueueStatus @default(PENDING)
+  attempts  Int              @default(0)
+  lastError String?          @db.Text
+  sentAt    DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdAt])
 }
 
 model TaskMedia {

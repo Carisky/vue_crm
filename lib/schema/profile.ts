@@ -16,3 +16,7 @@ export const UpdateMonthlyTargetSchema = z.object({
 export const UpdateThemeSchema = z.object({
   theme: ThemePreferenceSchema,
 });
+
+export const UpdateEmailNotificationsSchema = z.object({
+  email_notifications_enabled: z.boolean(),
+});

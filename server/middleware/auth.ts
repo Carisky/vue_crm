@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
     avatarUrl: session.user.avatarUrl,
     monthlyWorkloadTargetHours: session.user.monthlyWorkloadTargetHours ?? null,
     themePreference: session.user.themePreference,
+    emailNotificationsEnabled: session.user.emailNotificationsEnabled,
   };
   event.context.session = session;
 });

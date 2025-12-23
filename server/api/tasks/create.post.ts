@@ -7,6 +7,7 @@ import {
   requireWorkspaceMembership,
 } from "~/server/lib/permissions";
 import { serializeTask } from "~/server/lib/serializers";
+import { sendTaskNotificationEmails } from "~/server/lib/email";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -113,6 +114,14 @@ export default defineEventHandler(async (event) => {
     },
     select: {
       userId: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          emailNotificationsEnabled: true,
+        },
+      },
     },
   });
 
@@ -130,6 +139,21 @@ export default defineEventHandler(async (event) => {
         type: "TASK_CREATED",
         message: notificationMessage,
       })),
+    });
+
+    await sendTaskNotificationEmails(event, {
+      type: "TASK_CREATED",
+      task: {
+        id: task.id,
+        name: task.name,
+        status: task.status,
+        priority: task.priority,
+        workspaceId: task.workspaceId,
+      },
+      project: project ? { name: project.name } : null,
+      workspace: { name: workspace.name },
+      actor: { name: user.name ?? null, email: user.email },
+      recipients: workspaceMembers.map((member) => member.user),
     });
   }
 

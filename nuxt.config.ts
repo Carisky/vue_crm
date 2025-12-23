@@ -32,6 +32,12 @@ export default defineNuxtConfig({
     sessionSecret: process.env.SESSION_SECRET,
     githubClientId: process.env.GITHUB_CLIENT_ID,
     githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
+    smtpHost: process.env.SMTP_HOST,
+    smtpPort: process.env.SMTP_PORT,
+    smtpSecure: process.env.SMTP_SECURE,
+    smtpUser: process.env.SMTP_USER,
+    smtpPass: process.env.SMTP_PASS,
+    smtpFrom: process.env.SMTP_FROM,
     public: {
       sessionCookieName: process.env.PUBLIC_SESSION_COOKIE_NAME,
       siteUrl: process.env.PUBLIC_SITE_URL,

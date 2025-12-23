@@ -5,6 +5,7 @@ import { Prisma, TaskPriority, TaskStatus } from "@prisma/client";
 import { CreateTasksSchema } from "~/lib/schema/createTask";
 import prisma from "./prisma";
 import { requireWorkspaceMembership } from "./permissions";
+import { getTaskPriorityLabel, sendTaskNotificationEmails } from "./email";
 
 export async function updateTask(
   event: H3Event,
@@ -91,6 +92,73 @@ export async function updateTask(
       media: true,
     },
   });
+
+  const priorityChangedToUrgent =
+    params.data.priority &&
+    [TaskPriority.HIGH, TaskPriority.REAL_TIME].includes(
+      params.data.priority as TaskPriority,
+    ) &&
+    params.data.priority !== task.priority;
+
+  if (priorityChangedToUrgent && updatedTask) {
+    const actor = event.context.user;
+    if (actor) {
+      const [workspace, workspaceMembers] = await Promise.all([
+        prisma.workspace.findUnique({ where: { id: updatedTask.workspaceId } }),
+        prisma.member.findMany({
+          where: {
+            workspaceId: updatedTask.workspaceId,
+            userId: { not: actor.id },
+          },
+          select: {
+            userId: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                emailNotificationsEnabled: true,
+              },
+            },
+          },
+        }),
+      ]);
+
+      if (workspace && workspaceMembers.length) {
+        const priorityLabel = getTaskPriorityLabel(updatedTask.priority);
+        const notificationMessage = `Task "${updatedTask.name}" priority set to ${priorityLabel}`;
+
+        await prisma.notification.createMany({
+          data: workspaceMembers.map((member) => ({
+            userId: member.userId,
+            workspaceId: updatedTask.workspaceId,
+            taskId: updatedTask.id,
+            projectId: updatedTask.projectId,
+            actorId: actor.id,
+            type: "TASK_PRIORITY_ESCALATED",
+            message: notificationMessage,
+          })),
+        });
+
+        await sendTaskNotificationEmails(event, {
+          type: "TASK_PRIORITY_ESCALATED",
+          task: {
+            id: updatedTask.id,
+            name: updatedTask.name,
+            status: updatedTask.status,
+            priority: updatedTask.priority,
+            workspaceId: updatedTask.workspaceId,
+          },
+          project: updatedTask.project
+            ? { name: updatedTask.project.name }
+            : null,
+          workspace: { name: workspace.name },
+          actor: { name: actor.name ?? null, email: actor.email },
+          recipients: workspaceMembers.map((member) => member.user),
+        });
+      }
+    }
+  }
 
   return updatedTask;
 }

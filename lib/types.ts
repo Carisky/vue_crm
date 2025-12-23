@@ -34,6 +34,7 @@ export type ApiUser = {
   avatarUrl: string | null;
   monthlyWorkloadTargetHours: number | null;
   themePreference: ThemePreference;
+  emailNotificationsEnabled: boolean;
 };
 
 export type Workspace = {
