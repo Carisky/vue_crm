@@ -61,7 +61,7 @@ const handleSubmit = async () => {
     const payload = { monthly_target_hours: clampTarget(Number(targetValue.value)) }
 
     try {
-        const res = await $fetch('/api/profile/monthly-target', {
+        const res = await $fetch<{ monthlyWorkloadTargetHours: number | null }>('/api/profile/monthly-target', {
             method: 'PATCH',
             body: payload
         })
@@ -128,7 +128,7 @@ const handleThemeChange = async (theme: ThemePreference) => {
     isSavingTheme.value = true
 
     try {
-        const res = await $fetch('/api/profile/theme', {
+        const res = await $fetch<{ themePreference: ThemePreference }>('/api/profile/theme', {
             method: 'PATCH',
             body: { theme },
         })
@@ -161,7 +161,7 @@ const handleEmailNotificationsChange = async (checked: boolean | 'indeterminate'
     isSavingEmailNotifications.value = true
 
     try {
-        const res = await $fetch('/api/profile/email-notifications', {
+        const res = await $fetch<{ emailNotificationsEnabled: boolean }>('/api/profile/email-notifications', {
             method: 'PATCH',
             body: { email_notifications_enabled: nextValue },
         })
