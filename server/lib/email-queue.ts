@@ -24,7 +24,7 @@ function getSmtpConfig() {
   return {
     host: config.smtpHost as string | undefined,
     port: config.smtpPort ? Number(config.smtpPort) : undefined,
-    secure: config.smtpSecure === true || config.smtpSecure === "true",
+    secure: String(config.smtpSecure ?? "").toLowerCase() === "true",
     user: config.smtpUser as string | undefined,
     pass: config.smtpPass as string | undefined,
     from: config.smtpFrom as string | undefined,
