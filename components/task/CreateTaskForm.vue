@@ -46,8 +46,10 @@ const form = useForm({
     validationSchema: toTypedSchema(CreateTasksSchema),
     initialValues: {
         workspace_id: String(route.params['workspaceId']),
-        status: initialTaskStatus.value,
+        status: initialTaskStatus.value ?? TaskStatus.Todo,
         priority: TaskPriority.Medium,
+        assignee_id: UNASSIGNED_VALUE,
+        project_id: projectOptions[0]?.$id,
         description: '',
         estimated_hours: undefined,
         actual_hours: undefined,
@@ -57,6 +59,17 @@ const form = useForm({
 
 const statuses = Object.entries(TaskStatus)
 const priorities = Object.entries(taskPriorityLabels) as [TaskPriority, string][]
+
+watch(
+    () => projectOptions,
+    (projects) => {
+        const currentProject = form.values.project_id
+        if (!currentProject && projects.length) {
+            form.setFieldValue('project_id', projects[0].$id)
+        }
+    },
+    { immediate: true },
+)
 
 const sanitizeFileName = (value: string) =>
     value.replace(/[^a-zA-Z0-9_.-]/g, '_')
