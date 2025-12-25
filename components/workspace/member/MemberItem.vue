@@ -35,6 +35,7 @@ const authStore = useAuthStore()
 
 const isSelf = computed(() => data.$id === authStore.user?.id)
 const isMember = computed(() => data.role === MEMBER_ROLE.member)
+const displayName = computed(() => data.name ?? 'Unknown member')
 
 const canUpgradeOtherMembers = computed(() =>
     !isSelf.value
@@ -169,9 +170,9 @@ const openRemoveMemberModal = () => {
     <div class="flex flex-1 flex-col gap-3">
         <div class="flex items-start justify-between gap-4">
             <div class="flex items-center gap-4">
-                <WorkspaceMemberAvatar :name="data.name" class="size-10" fallback-class="text-lg" />
+                <WorkspaceMemberAvatar :name="displayName" class="size-10" fallback-class="text-lg" />
                 <div>
-                    <p class="text-sm font-semibold">{{ data.name }}</p>
+                    <p class="text-sm font-semibold">{{ displayName }}</p>
                     <p class="text-xs text-muted-foreground">{{ data.email }}</p>
                 </div>
             </div>
@@ -240,7 +241,7 @@ const openRemoveMemberModal = () => {
                 <DropdownMenuItem v-if="canBeRemoved" @select="openRemoveMemberModal"
                     class="font-medium text-amber-700">
                     <span v-if="isSelf">Leave workspace</span>
-                    <span v-else>Remove {{ data.name }}</span>
+                    <span v-else>Remove {{ displayName }}</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

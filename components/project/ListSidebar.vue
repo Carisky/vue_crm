@@ -53,7 +53,7 @@ const { open } = useCreateProjectModal()
                 active-class="bg-sidebar-primary/10 text-card-foreground shadow-sm"
                 class="flex items-center gap-2.5 p-2.5 rounded-md text-sidebar-foreground transition hover:text-sidebar-primary hover:bg-sidebar-primary/5"
             >
-                <ProjectAvatar :name="project.name" :image="project.image_url" />
+                <ProjectAvatar :name="project.name" :image="project.image_url ?? undefined" />
                 <span class="truncate">{{ project.name }}</span>
             </NuxtLink>
         </template>

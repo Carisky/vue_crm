@@ -33,7 +33,9 @@ const onUploadImage = (e: Event) => {
 
 const removeImage = () => {
     form.resetField('image')
-    fileInputRef.value.value = ''
+    if (fileInputRef.value) {
+        fileInputRef.value.value = ''
+    }
     image.value = ''
 }
 
@@ -52,7 +54,9 @@ const { isPending, mutate } = useMutation({
 
             // reset form
             form.resetForm()
-            fileInputRef.value.value = ''
+            if (fileInputRef.value) {
+                fileInputRef.value.value = ''
+            }
             image.value = ''
 
             // navigate to the newly created project

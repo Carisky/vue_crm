@@ -36,7 +36,7 @@ const showDeleteModal = () => {
 
 <template>
     <div class="flex items-center gap-x-2">
-        <ProjectAvatar :name="project.name" :image="project.image_url" class="size-6 lg:size-8" />
+        <ProjectAvatar :name="project.name" :image="project.image_url ?? undefined" class="size-6 lg:size-8" />
         <NuxtLink :href="`/workspaces/${route.params['workspaceId']}/projects/${project.$id}`">
             <p class="text-sm font-semibold text-muted-foreground transition hover:opacity-75 lg:text-lg">{{
                 project.name }}</p>

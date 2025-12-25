@@ -44,9 +44,13 @@ const { data: members, isLoading: isLoadingMembers } = useQuery<WorkspaceMember[
 const isLoading = computed(() => isLoadingTask.value || isLoadingProjects.value || isLoadingMembers.value)
 
 const projectOptions = computed(() =>
-    projects.value?.map(({ $id, name, image_url }) => ({ $id, name, image_url })) ?? [])
+    projects.value?.map(({ $id, name, image_url }) => ({
+        $id,
+        name: name ?? '',
+        image_url: image_url ?? undefined,
+    })) ?? [])
 const memberOptions = computed(() =>
-    members.value?.map(({ $id, name }) => ({ $id, name })) ?? [])
+    members.value?.map(({ $id, name }) => ({ $id, name: name ?? '' })) ?? [])
 </script>
 
 <template>

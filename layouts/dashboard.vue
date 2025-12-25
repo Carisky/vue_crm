@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FilteredTask, TaskSuccessSubscriber } from '~/lib/types';
+import type { DeleteTaskInject, FilteredTask, TaskSuccessSubscriber } from '~/lib/types';
 import CreateWorkspaceModal from '~/components/workspace/CreateWorkspaceModal.vue';
 import CreateProjectModal from '~/components/project/CreateProjectModal.vue';
 import CreateTaskModal from '~/components/task/CreateTaskModal.vue';
@@ -31,9 +31,9 @@ provide('update-task-inject', {
     subscribeToUpdateTaskSuccess
 })
 
-const deleteTaskSuccessSubsribers: TaskSuccessSubscriber[] = []
+const deleteTaskSuccessSubsribers: DeleteTaskInject['deleteTaskSuccessSubsribers'] = []
 
-const subscribeToDeleteTaskSuccess = (func: (taskId: string) => Promise<void> | void) => {
+const subscribeToDeleteTaskSuccess: DeleteTaskInject['subscribeToDeleteTaskSuccess'] = (func) => {
     const index = deleteTaskSuccessSubsribers.push(func)
     return () => deleteTaskSuccessSubsribers[index] = null
 }

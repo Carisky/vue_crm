@@ -86,7 +86,7 @@ const table = useVueTable({
                         <TableRow v-for="row in table.getRowModel().rows" :key="row.id"
                             :data-state="row.getIsSelected() ? 'selected' : undefined"
                             :class="props.onRowClick ? 'cursor-pointer transition-colors hover:bg-muted/40' : undefined"
-                            @click="(event) => handleRowClick(row.original, event)"
+                            @click="handleRowClick(row.original, $event)"
                         >
                             <TableCell
                                 v-for="cell in row.getVisibleCells()"

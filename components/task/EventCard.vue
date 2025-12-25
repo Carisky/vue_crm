@@ -40,7 +40,7 @@ const colorMap: Record<TaskStatus, string> = {
             <div class="flex items-center gap-x-1">
                 <WorkspaceMemberAvatar :name="assignee?.name ?? ''" />
                 <div class="size-1 rounded-full bg-neutral-300"></div>
-                <ProjectAvatar :name="project?.name ?? ''" :image="project?.image_url" />
+                <ProjectAvatar :name="project?.name ?? ''" :image="project?.image_url ?? undefined" />
             </div>
         </div>
     </div>
