@@ -82,6 +82,15 @@ export async function updateTask(
     updateData.actualHours = params.data.actual_hours ?? null;
   if (Object.prototype.hasOwnProperty.call(params.data, "started_at"))
     updateData.startedAt = params.data.started_at ?? null;
+  if (params.data.media?.length) {
+    updateData.media = {
+      create: params.data.media.map((file) => ({
+        path: file.path,
+        mime: file.mime ?? null,
+        originalName: file.original_name ?? null,
+      })),
+    };
+  }
 
   const updatedTask = await prisma.task.update({
     where: { id: taskId },

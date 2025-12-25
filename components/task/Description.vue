@@ -55,5 +55,5 @@ const { isPending, mutate: save } = useMutation({
         </div>
         
     </div>
-    <TaskMediaGallery :media="task.media" />
+    <TaskMediaGallery :media="task.media" :task-id="task.$id" :workspace-id="task.workspace_id" />
 </template>
