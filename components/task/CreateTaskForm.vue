@@ -26,6 +26,7 @@ type UploadedMediaPreview = {
 
 const uploadedMedia = ref<UploadedMediaPreview[]>([])
 const isUploadingMedia = ref(false)
+const mediaUploadProgress = ref(0)
 const mediaUploadError = ref<string | null>(null)
 const mediaInput = ref<HTMLInputElement | null>(null)
 
@@ -57,42 +58,95 @@ const form = useForm({
 const statuses = Object.entries(TaskStatus)
 const priorities = Object.entries(taskPriorityLabels) as [TaskPriority, string][]
 
+const sanitizeFileName = (value: string) =>
+    value.replace(/[^a-zA-Z0-9_.-]/g, '_')
+
+const uploadMedia = (formData: FormData, onProgress: (value: number) => void) =>
+    new Promise<{ files?: UploadedMediaPreview[] }>((resolve, reject) => {
+        const request = new XMLHttpRequest()
+        request.open('POST', '/api/tasks/media')
+        request.responseType = 'json'
+
+        request.upload.onprogress = (event) => {
+            if (!event.lengthComputable) return
+            const percent = Math.round((event.loaded / event.total) * 100)
+            onProgress(percent)
+        }
+
+        request.onload = () => {
+            if (request.status >= 200 && request.status < 300) {
+                const response =
+                    request.response ??
+                    (request.responseText ? JSON.parse(request.responseText) : {})
+                resolve(response as { files?: UploadedMediaPreview[] })
+                return
+            }
+
+            reject(new Error(`Upload failed (${request.status})`))
+        }
+
+        request.onerror = () => reject(new Error('Upload failed'))
+        request.send(formData)
+    })
+
 const handleMediaChange = async (event: Event) => {
     const target = event.target as HTMLInputElement | null
     const files = target?.files
     if (!files?.length) return
 
     isUploadingMedia.value = true
+    mediaUploadProgress.value = 0
     mediaUploadError.value = null
 
     const formData = new FormData()
     formData.append('workspace_id', String(route.params['workspaceId']))
-    Array.from(files).forEach((file) => formData.append('files', file))
+    const uploadFiles = Array.from(files)
+    const originalNames = uploadFiles.map((file) => file.name)
+    uploadFiles.forEach((file, index) => {
+        const safeName = sanitizeFileName(file.name) || `upload-${index}`
+        formData.append('files', file, safeName)
+    })
 
     try {
-        const res = await $fetch('/api/tasks/media', {
-            method: 'POST',
-            body: formData,
+        const res = await uploadMedia(formData, (value) => {
+            mediaUploadProgress.value = value
         })
         const uploaded = (res as { files?: UploadedMediaPreview[] }).files ?? []
         uploadedMedia.value.push(
-            ...uploaded.map((file) => ({
-                path: file.path,
-                mime: file.mime,
-                original_name: file.original_name,
-                name: file.original_name ?? file.path.split('/').pop() ?? 'media',
-            })),
+            ...uploaded.map((file, index) => {
+                const originalName = originalNames[index] ?? file.original_name
+                return {
+                    path: file.path,
+                    mime: file.mime,
+                    original_name: originalName,
+                    name: originalName ?? file.original_name ?? file.path.split('/').pop() ?? 'media',
+                }
+            }),
         )
     } catch (error) {
         mediaUploadError.value = 'Failed to upload media'
     } finally {
+        mediaUploadProgress.value = 0
         isUploadingMedia.value = false
         if (target) target.value = ''
     }
 }
 
-const removeMedia = (index: number) => {
-    uploadedMedia.value.splice(index, 1)
+const removeMedia = async (index: number) => {
+    const removed = uploadedMedia.value.splice(index, 1)[0]
+    if (!removed) return
+
+    try {
+        await $fetch('/api/tasks/media', {
+            method: 'DELETE',
+            body: {
+                path: removed.path,
+                workspace_id: String(route.params['workspaceId']),
+            },
+        })
+    } catch (error) {
+        toast.error('Failed to delete media file')
+    }
 }
 
 const { isPending, mutate } = useMutation({
@@ -254,6 +308,17 @@ const handleSubmit = form.handleSubmit((values) => {
                                 </Button>
                                 <p v-if="mediaUploadError" class="text-xs text-destructive">
                                     {{ mediaUploadError }}
+                                </p>
+                            </div>
+                            <div v-if="isUploadingMedia" class="space-y-1">
+                                <div class="h-1 w-full overflow-hidden rounded bg-muted">
+                                    <div
+                                        class="h-full bg-primary transition-[width] duration-150"
+                                        :style="{ width: `${mediaUploadProgress}%` }"
+                                    ></div>
+                                </div>
+                                <p class="text-[11px] font-medium text-muted-foreground">
+                                    Uploading... {{ mediaUploadProgress }}%
                                 </p>
                             </div>
                             <ul v-if="uploadedMedia.length" class="space-y-2">

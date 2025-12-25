@@ -5,6 +5,7 @@ import {
   requireUser,
   requireWorkspaceMembership,
 } from "~/server/lib/permissions";
+import { deleteTaskMediaFile } from "~/server/lib/task-media";
 
 export default defineEventHandler(async (event) => {
   requireUser(event);
@@ -14,7 +15,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ status: 400, statusText: "Task ID required" });
   }
 
-  const task = await prisma.task.findUnique({ where: { id: taskId } });
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: { media: true },
+  });
   if (!task) {
     throw createError({ status: 404, statusText: "Task not found" });
   }
@@ -22,6 +26,12 @@ export default defineEventHandler(async (event) => {
   await requireWorkspaceMembership(event, task.workspaceId, [
     MemberRole.ADMIN,
   ]);
+
+  if (task.media?.length) {
+    await Promise.all(
+      task.media.map((media) => deleteTaskMediaFile(media.path)),
+    );
+  }
 
   await prisma.task.delete({ where: { id: taskId } });
 
