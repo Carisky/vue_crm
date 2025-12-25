@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { ArrowUpDownIcon } from "lucide-vue-next";
 
 import { TaskPriority, TaskStatus, taskPriorityLabels, type FilteredTask, type Project } from "~/lib/types";
-import { Badge, Button, Icon, ProjectAvatar, TaskDate } from "#components";
+import { Badge, Button, Icon, ProjectAvatar } from "#components";
 import MemberAvatar from "../workspace/member/MemberAvatar.vue";
 import Actions from "./Actions.vue";
 
@@ -46,6 +46,10 @@ export const columns: ColumnDef<FilteredTask>[] = [
   },
   {
     accessorKey: "project",
+    meta: {
+      headerClass: "w-[200px]",
+      cellClass: "max-w-[200px]",
+    },
     header: ({ column }) => {
       return h(
         Button,
@@ -62,18 +66,22 @@ export const columns: ColumnDef<FilteredTask>[] = [
         "div",
         { class: "flex items-center gap-x-2 text-sm font-medium" },
         [
-      h(ProjectAvatar, {
-        name: project?.name ?? "No project",
-        class: "size-6",
-        image: project?.image_url ?? undefined,
-      }),
-      h("p", { class: "line-clamp-1" }, project?.name ?? "No project"),
+          h(ProjectAvatar, {
+            name: project?.name ?? "No project",
+            class: "size-6",
+            image: (project?.image_url ?? undefined) as string | undefined,
+          }),
+          h("p", { class: "line-clamp-1" }, project?.name ?? "No project"),
         ],
       );
     },
   },
   {
     accessorKey: "assignee",
+    meta: {
+      headerClass: "w-[170px]",
+      cellClass: "max-w-[170px]",
+    },
     header: ({ column }) => {
       return h(
         Button,
@@ -93,7 +101,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
         { class: "flex items-center gap-x-2 text-sm font-medium" },
         [
           h(MemberAvatar, {
-            name: assignee?.name,
+            name: assignee?.name ?? undefined,
             class: "size-6",
             fallbackClass: "text-xs",
           }),
@@ -103,28 +111,11 @@ export const columns: ColumnDef<FilteredTask>[] = [
     },
   },
   {
-    accessorKey: "due_date",
-    header: ({ column }) => {
-      return h(
-        Button,
-        {
-          variant: "ghost",
-          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
-        },
-        () => ["Due Date", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
-      );
-    },
-    cell: ({ row }) => {
-      const dueDate = row.getValue("due_date") as string;
-      return h(
-        "div",
-        { class: "flex items-center gap-x-2 text-sm font-medium" },
-        h(TaskDate, { value: dueDate }),
-      );
-    },
-  },
-  {
     accessorKey: "started_at",
+    meta: {
+      headerClass: "w-[120px]",
+      cellClass: "whitespace-nowrap",
+    },
     header: ({ column }) => {
       return h(
         Button,
@@ -149,12 +140,16 @@ export const columns: ColumnDef<FilteredTask>[] = [
       return h(
         "span",
         { class: "text-sm font-medium" },
-        format(parsedDate, "PPp"),
+        format(parsedDate, "MMM d"),
       );
     },
   },
   {
     accessorKey: "status",
+    meta: {
+      headerClass: "w-[140px]",
+      cellClass: "whitespace-nowrap",
+    },
     header: ({ column }) => {
       return h(
         Button,
@@ -181,6 +176,10 @@ export const columns: ColumnDef<FilteredTask>[] = [
       const b = rowB.getValue(columnId) as TaskPriority;
       return (priorityOrder[a] ?? 0) - (priorityOrder[b] ?? 0);
     },
+    meta: {
+      headerClass: "w-[120px]",
+      cellClass: "whitespace-nowrap",
+    },
     header: ({ column }) => {
       return h(
         Button,
@@ -203,11 +202,15 @@ export const columns: ColumnDef<FilteredTask>[] = [
   {
     id: "actions",
     accessorKey: "task_id",
+    meta: {
+      headerClass: "w-[64px]",
+      cellClass: "text-right",
+    },
     header: () => null,
     cell: ({ row }) => {
       const id = row.original.$id;
       const name = row.original.name;
-      const projectId = row.original.project.$id;
+      const projectId = row.original.project_id;
 
       return h(Actions, { taskId: id, name, projectId }, () =>
         h(Button, { variant: "ghost", class: "size-8 p-0" }, () =>
