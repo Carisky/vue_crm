@@ -337,7 +337,7 @@ const handleSubmit = form.handleSubmit((values) => {
                                 <Select :default-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger class="w-full">
                                             <SelectValue placeholder="Select assignee"></SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
@@ -362,7 +362,7 @@ const handleSubmit = form.handleSubmit((values) => {
                                 <Select :default-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger class="w-full">
                                             <SelectValue placeholder="Select status"></SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
@@ -381,7 +381,7 @@ const handleSubmit = form.handleSubmit((values) => {
                                 <Select :default-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger class="w-full">
                                             <SelectValue placeholder="Select priority"></SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
@@ -400,7 +400,7 @@ const handleSubmit = form.handleSubmit((values) => {
                                 <Select :default-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger class="w-full">
                                             <SelectValue placeholder="Select project"></SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
@@ -418,10 +418,11 @@ const handleSubmit = form.handleSubmit((values) => {
                         </FormField>
                     </div>
                     <DottedSeparator class="py-7" />
-                    <div class="flex items-center justify-between gap-5">
-                        <Button v-if="!!onCancel" type="button" variant="secondary" size="lg" @click="onCancel"
-                            class="w-24">Cancel</Button>
-                        <Button type="submit" variant="primary" size="lg" class="w-32 ml-auto">
+                    <div class="flex items-center justify-between gap-4">
+                        <Button v-if="!!onCancel" type="button" variant="secondary" size="lg" @click="onCancel">
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="primary" size="lg" class="ml-auto">
                             <Icon v-if="isPending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
                             <span v-else>Create task</span>
                         </Button>

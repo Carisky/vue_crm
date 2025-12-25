@@ -301,7 +301,7 @@ const handleSubmit = form.handleSubmit((values) => {
                                 <Select :default-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger class="w-full">
                                             <SelectValue placeholder="Select assignee"></SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
@@ -326,7 +326,7 @@ const handleSubmit = form.handleSubmit((values) => {
                                 <Select :default-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger class="w-full">
                                             <SelectValue placeholder="Select status"></SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
@@ -340,34 +340,36 @@ const handleSubmit = form.handleSubmit((values) => {
                             </FormItem>
                         </FormField>
                         <div class="space-y-2">
-                            <p class="text-sm font-medium text-muted-foreground">Media</p>
-                            <input
-                                ref="mediaInput"
-                                type="file"
-                                multiple
-                                class="hidden"
-                                @change="handleMediaChange"
-                            />
-                            <div class="flex items-center gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    class="uppercase tracking-wide"
-                                    @click="mediaInput?.click()"
-                                    :disabled="isUploadingMedia"
-                                >
-                                    <Icon
-                                        v-if="isUploadingMedia"
-                                        name="svg-spinners:3-dots-rotating"
-                                        size="16px"
-                                        class="size-4"
+                            <div class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
+                                <p class="text-sm font-medium text-muted-foreground">Media</p>
+                                <div class="flex items-center gap-2 justify-start sm:justify-end">
+                                    <input
+                                        ref="mediaInput"
+                                        type="file"
+                                        multiple
+                                        class="hidden"
+                                        @change="handleMediaChange"
                                     />
-                                    <span v-else>Upload files</span>
-                                </Button>
-                                <p v-if="mediaUploadError" class="text-xs text-destructive">
-                                    {{ mediaUploadError }}
-                                </p>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        class="uppercase tracking-wide"
+                                        @click="mediaInput?.click()"
+                                        :disabled="isUploadingMedia"
+                                    >
+                                        <Icon
+                                            v-if="isUploadingMedia"
+                                            name="svg-spinners:3-dots-rotating"
+                                            size="16px"
+                                            class="size-4"
+                                        />
+                                        <span v-else>Upload files</span>
+                                    </Button>
+                                </div>
+                            </div>
+                            <div v-if="mediaUploadError" class="text-xs text-destructive">
+                                {{ mediaUploadError }}
                             </div>
                             <div v-if="isUploadingMedia" class="space-y-1">
                                 <div class="h-1 w-full overflow-hidden rounded bg-muted">
@@ -380,11 +382,11 @@ const handleSubmit = form.handleSubmit((values) => {
                                     Uploading... {{ mediaUploadProgress }}%
                                 </p>
                             </div>
-                            <ul v-if="existingMedia.length" class="space-y-2">
+                            <ul v-if="existingMedia.length" class="grid gap-2 sm:grid-cols-2">
                                 <li
                                     v-for="(file, index) of existingMedia"
                                     :key="file.id"
-                                    class="flex items-center justify-between gap-3 text-sm text-muted-foreground"
+                                    class="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm text-muted-foreground"
                                 >
                                     <span class="truncate">{{ file.original_name ?? file.path.split('/').pop() }}</span>
                                     <Button type="button" variant="ghost" size="icon" @click="removeExistingMedia(index)">
@@ -392,11 +394,11 @@ const handleSubmit = form.handleSubmit((values) => {
                                     </Button>
                                 </li>
                             </ul>
-                            <ul v-if="uploadedMedia.length" class="space-y-2">
+                            <ul v-if="uploadedMedia.length" class="grid gap-2 sm:grid-cols-2">
                                 <li
                                     v-for="(file, index) of uploadedMedia"
                                     :key="file.path"
-                                    class="flex items-center justify-between gap-3 text-sm text-muted-foreground"
+                                    class="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm text-muted-foreground"
                                 >
                                     <span class="truncate">{{ file.name }}</span>
                                     <Button type="button" variant="ghost" size="icon" @click="removeUploadedMedia(index)">
@@ -411,7 +413,7 @@ const handleSubmit = form.handleSubmit((values) => {
                                 <Select :default-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger class="w-full">
                                             <SelectValue placeholder="Select priority"></SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
@@ -430,7 +432,7 @@ const handleSubmit = form.handleSubmit((values) => {
                                 <Select :default-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger class="w-full">
                                             <SelectValue placeholder="Select project"></SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
@@ -448,10 +450,11 @@ const handleSubmit = form.handleSubmit((values) => {
                         </FormField>
                     </div>
                     <DottedSeparator class="py-7" />
-                    <div class="flex items-center justify-between gap-5">
-                        <Button v-if="!!onCancel" type="button" variant="secondary" size="lg" @click="onCancel"
-                            class="w-24">Cancel</Button>
-                        <Button type="submit" variant="primary" size="lg" class="w-24 ml-auto">
+                    <div class="flex items-center justify-between gap-4">
+                        <Button v-if="!!onCancel" type="button" variant="secondary" size="lg" @click="onCancel">
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="primary" size="lg" class="ml-auto">
                             <Icon v-if="isPending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
                             <span v-else>Save</span>
                         </Button>
