@@ -106,7 +106,7 @@ const handleNotificationClick = async (notification: Notification) => {
         </span>
       </Button>
     </SheetTrigger>
-    <SheetContent side="right" class="w-[260px] sm:w-[340px]">
+    <SheetContent side="right" class="w-[260px] sm:w-[340px] flex flex-col">
       <SheetHeader class="gap-2">
         <div class="flex items-center gap-2">
           <SheetTitle>Notifications</SheetTitle>
@@ -123,7 +123,7 @@ const handleNotificationClick = async (notification: Notification) => {
         <SheetDescription>Stay in sync with workspace activity</SheetDescription>
       </SheetHeader>
 
-      <div class="mt-4 space-y-3">
+      <div class="mt-4 flex-1 overflow-y-auto pr-1 space-y-3">
         <Loader v-if="isFetching" class="h-24" />
         <div v-else-if="!notifications.length" class="text-sm text-muted-foreground">
           No new notifications yet.
