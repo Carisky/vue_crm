@@ -22,9 +22,8 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  const currentUserContext = event.context.user ?? {};
   event.context.user = {
-    ...currentUserContext,
+    ...user,
     themePreference: updatedUser.themePreference,
   };
 

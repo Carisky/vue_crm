@@ -5,15 +5,16 @@ import prisma from "~/server/lib/prisma";
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
   const { workspace_id } = getQuery(event);
+  const workspaceId = typeof workspace_id === "string" ? workspace_id : undefined;
 
-  if (workspace_id) {
-    await ensureWorkspaceAccess(event, workspace_id);
+  if (workspaceId) {
+    await ensureWorkspaceAccess(event, workspaceId);
   }
 
   const notifications = await prisma.notification.findMany({
     where: {
       userId: user.id,
-      workspaceId: workspace_id ?? undefined,
+      workspaceId: workspaceId,
     },
     include: {
       task: {

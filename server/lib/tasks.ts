@@ -104,9 +104,8 @@ export async function updateTask(
 
   const priorityChangedToUrgent =
     params.data.priority &&
-    [TaskPriority.HIGH, TaskPriority.REAL_TIME].includes(
-      params.data.priority as TaskPriority,
-    ) &&
+    (params.data.priority === TaskPriority.HIGH ||
+      params.data.priority === TaskPriority.REAL_TIME) &&
     params.data.priority !== task.priority;
 
   if (priorityChangedToUrgent && updatedTask) {
