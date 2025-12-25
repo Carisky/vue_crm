@@ -1,4 +1,5 @@
 import { type ColumnDef } from "@tanstack/vue-table";
+import { format } from "date-fns";
 import { ArrowUpDownIcon } from "lucide-vue-next";
 
 import { TaskPriority, TaskStatus, taskPriorityLabels, type FilteredTask, type Project } from "~/lib/types";
@@ -26,6 +27,10 @@ const priorityOrder: Record<TaskPriority, number> = {
 export const columns: ColumnDef<FilteredTask>[] = [
   {
     accessorKey: "name",
+    meta: {
+      headerClass: "w-[380px]",
+      cellClass: "max-w-[380px]",
+    },
     header: ({ column }) => {
       return h(
         Button,
@@ -36,7 +41,8 @@ export const columns: ColumnDef<FilteredTask>[] = [
         () => ["Task name", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
       );
     },
-    cell: ({ row }) => h("p", { class: "line-clamp-1" }, row.getValue("name")),
+    cell: ({ row }) =>
+      h("p", { class: "truncate" }, row.getValue("name")),
   },
   {
     accessorKey: "project",
@@ -114,6 +120,36 @@ export const columns: ColumnDef<FilteredTask>[] = [
         "div",
         { class: "flex items-center gap-x-2 text-sm font-medium" },
         h(TaskDate, { value: dueDate }),
+      );
+    },
+  },
+  {
+    accessorKey: "started_at",
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: "ghost",
+          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
+        },
+        () => ["Started At", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+      );
+    },
+    cell: ({ row }) => {
+      const startedAt = row.getValue("started_at") as string | null;
+      if (!startedAt) {
+        return h("span", { class: "text-sm text-muted-foreground" }, "Not started");
+      }
+
+      const parsedDate = new Date(startedAt);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return h("span", { class: "text-sm text-muted-foreground" }, "Invalid date");
+      }
+
+      return h(
+        "span",
+        { class: "text-sm font-medium" },
+        format(parsedDate, "PPp"),
       );
     },
   },

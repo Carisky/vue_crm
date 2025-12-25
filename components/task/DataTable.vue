@@ -27,10 +27,22 @@ import { valueUpdater } from '~/lib/utils';
 const props = defineProps<{
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
+    onRowClick?: (row: TData) => void
 }>()
 
 const sorting = ref<SortingState>([])
 const columnFilters = ref<ColumnFiltersState>([])
+
+const shouldIgnoreRowClick = (event: MouseEvent) => {
+    const target = event.target as HTMLElement | null
+    if (!target) return false
+    return Boolean(target.closest('button, a, [role="button"], [data-row-click="ignore"]'))
+}
+
+const handleRowClick = (row: TData, event: MouseEvent) => {
+    if (!props.onRowClick || shouldIgnoreRowClick(event)) return
+    props.onRowClick(row)
+}
 
 const table = useVueTable({
     get data() { return props.data },
@@ -41,6 +53,11 @@ const table = useVueTable({
     onSortingChange: updaterOrValue => valueUpdater(updaterOrValue, sorting),
     onColumnFiltersChange: updaterOrValue => valueUpdater(updaterOrValue, columnFilters),
     getFilteredRowModel: getFilteredRowModel(),
+    initialState: {
+        pagination: {
+            pageSize: 30,
+        },
+    },
     state: {
         get sorting() { return sorting.value },
         get columnFilters() { return columnFilters.value },
@@ -51,10 +68,14 @@ const table = useVueTable({
 <template>
     <div>
         <div class="border rounded-md">
-            <Table>
+            <Table class="table-fixed w-full">
                 <TableHeader>
                     <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
-                        <TableHead v-for="header in headerGroup.headers" :key="header.id">
+                        <TableHead
+                            v-for="header in headerGroup.headers"
+                            :key="header.id"
+                            :class="(header.column.columnDef.meta as { headerClass?: string } | undefined)?.headerClass"
+                        >
                             <FlexRender v-if="!header.isPlaceholder" :render="header.column.columnDef.header"
                                 :props="header.getContext()" />
                         </TableHead>
@@ -63,8 +84,15 @@ const table = useVueTable({
                 <TableBody>
                     <template v-if="table.getRowModel().rows?.length">
                         <TableRow v-for="row in table.getRowModel().rows" :key="row.id"
-                            :data-state="row.getIsSelected() ? 'selected' : undefined">
-                            <TableCell v-for="cell in row.getVisibleCells()" :key="cell.id">
+                            :data-state="row.getIsSelected() ? 'selected' : undefined"
+                            :class="props.onRowClick ? 'cursor-pointer transition-colors hover:bg-muted/40' : undefined"
+                            @click="(event) => handleRowClick(row.original, event)"
+                        >
+                            <TableCell
+                                v-for="cell in row.getVisibleCells()"
+                                :key="cell.id"
+                                :class="(cell.column.columnDef.meta as { cellClass?: string } | undefined)?.cellClass"
+                            >
                                 <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
                             </TableCell>
                         </TableRow>

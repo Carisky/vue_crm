@@ -89,6 +89,10 @@ const upsertTaskInState = (task: FilteredTask) => {
     tasks.value = [task, ...withoutCurrent]
 }
 
+const handleRowClick = (task: FilteredTask) => {
+    navigateTo(`/workspaces/${task.workspace_id}/tasks/${task.$id}`)
+}
+
 // Refetch tasks on these url params' changes
 watch(([
     () => projectId ? false : filterValues.value['project_id'],
@@ -161,7 +165,8 @@ onUnmounted(() => {
                 <Icon name="svg-spinners:8-dots-rotate" size="20px" class="size-5 text-muted-foreground" />
             </div>
             <TabsContent value="table" class="mt-0">
-                <TaskDataTable v-if="tasks && !isLoadingTasks" :columns="columns" :data="tasks" />
+                <TaskDataTable v-if="tasks && !isLoadingTasks" :columns="columns" :data="tasks"
+                    :on-row-click="handleRowClick" />
             </TabsContent>
             <TabsContent value="kanban" class="mt-0">
                 <TaskDataKanban v-if="tasks && !isLoadingTasks" :data="tasks" />
