@@ -16,38 +16,49 @@ function sanitizeFileName(value: string) {
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
-  const fields = await readMultipartFormData(event);
-  const workspaceField = fields?.find(({ name }) => name === "workspace_id");
-  const files = fields?.filter((field) => field.filename);
+  const formData = await readFormData(event);
+  const workspaceValue = formData?.get("workspace_id");
+  const files = formData?.getAll("files") ?? [];
 
-  const workspaceId = workspaceField?.data.toString();
+  const workspaceId =
+    typeof workspaceValue === "string"
+      ? workspaceValue
+      : workspaceValue instanceof Blob
+        ? await workspaceValue.text()
+        : undefined;
   if (!workspaceId) {
     throw createError({ status: 400, statusText: "Workspace ID required" });
   }
 
   await requireWorkspaceMembership(event, workspaceId);
 
-  if (!files?.length) {
+  const uploadFiles = files.filter(
+    (value): value is File =>
+      typeof value === "object" &&
+      value !== null &&
+      "arrayBuffer" in value &&
+      "name" in value
+  );
+
+  if (!uploadFiles.length) {
     throw createError({ status: 400, statusText: "At least one file required" });
   }
 
   await fs.mkdir(UPLOAD_DIR, { recursive: true });
 
   const savedFiles = [];
-  for (const file of files) {
-    const name = file.filename ? sanitizeFileName(file.filename) : "upload";
+  for (const file of uploadFiles) {
+    const name = file.name ? sanitizeFileName(file.name) : "upload";
     const targetName = `${Date.now()}-${randomUUID()}-${name}`;
     const targetPath = join(UPLOAD_DIR, targetName);
 
-    const buffer = Buffer.isBuffer(file.data)
-      ? file.data
-      : Buffer.from(file.data);
+    const buffer = Buffer.from(await file.arrayBuffer());
     await fs.writeFile(targetPath, buffer);
 
     savedFiles.push({
       path: `/uploads/tasks/media/${targetName}`,
       mime: file.type ?? null,
-      original_name: file.filename ?? null,
+      original_name: file.name ?? null,
     });
   }
 
