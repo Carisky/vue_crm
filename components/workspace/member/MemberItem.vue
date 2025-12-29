@@ -70,10 +70,13 @@ type MemberChartEntry = {
     month: string;
     label: string;
     hours: number;
+    doneHours: number;
+    reviewHours: number;
     percentage: number;
     isOverTarget: boolean;
     barHeight: number;
-    barClass: string;
+    doneHeight: number;
+    reviewHeight: number;
     isZero: boolean;
 }
 
@@ -87,7 +90,10 @@ const normalizedTargetHours = computed(() =>
 const chartSeries = computed<MemberChartEntry[]>(() => {
     const source = data.monthly_hours ?? []
     return source.map((entry) => {
-        const hours = Number(entry.hours ?? 0)
+        const doneHours = Number(entry.done_hours ?? 0)
+        const reviewHours = Number(entry.review_hours ?? 0)
+        const fallbackHours = Number(entry.hours ?? 0)
+        const hours = doneHours || reviewHours ? doneHours + reviewHours : fallbackHours
         const fraction = normalizedTargetHours.value
             ? hours / normalizedTargetHours.value
             : 0
@@ -97,20 +103,23 @@ const chartSeries = computed<MemberChartEntry[]>(() => {
             ? 100
             : Math.min(Math.max(cappedFraction * 100, 4), 100)
         const isOverTarget = hours > normalizedTargetHours.value
-        const barClass = isZero
-            ? 'bg-muted/40 opacity-60'
-            : isOverTarget
-                ? 'bg-rose-500'
-                : 'bg-gradient-to-t from-primary to-primary/60'
+        const hasBreakdown = doneHours > 0 || reviewHours > 0
+        const donePortion = hasBreakdown ? doneHours : hours
+        const reviewPortion = hasBreakdown ? reviewHours : 0
+        const doneHeight = hours > 0 ? (barHeight * (donePortion / hours)) : 0
+        const reviewHeight = hours > 0 ? (barHeight * (reviewPortion / hours)) : 0
 
         return {
             month: entry.month,
             label: entry.label,
             hours,
+            doneHours: donePortion,
+            reviewHours: reviewPortion,
             percentage: cappedFraction,
             isOverTarget,
             barHeight,
-            barClass,
+            doneHeight,
+            reviewHeight,
             isZero,
         }
     })
@@ -129,7 +138,7 @@ const handleChartDialogUpdate = (value: boolean) => {
     chartDialogOpen.value = value
 }
 const formatBarTitle = (entry: MemberChartEntry) =>
-    `${entry.label}: ${entry.hours.toFixed(1)}h`
+    `${entry.label}: ${entry.hours.toFixed(1)}h total (${entry.doneHours.toFixed(1)}h done, ${entry.reviewHours.toFixed(1)}h review)`
 
 // Update member role
 
@@ -199,12 +208,26 @@ const openRemoveMemberModal = () => {
                     <span class="text-[11px] font-semibold text-muted-foreground">
                         {{ entry.hours.toFixed(1) }}h
                     </span>
-                    <div class="relative h-24 w-10 overflow-hidden rounded-2xl border border-border/50 bg-muted/20">
+                    <div
+                        class="relative h-24 w-10 overflow-hidden rounded-2xl border border-border/50 bg-muted/20"
+                        :class="entry.isOverTarget ? 'ring-2 ring-rose-500/40' : ''"
+                    >
                         <span
-                            class="absolute inset-x-0 bottom-0 rounded-2xl transition-all"
-                            :class="entry.barClass"
+                            v-if="entry.isZero"
+                            class="absolute inset-x-0 bottom-0 rounded-2xl bg-muted/40 opacity-60"
                             :style="{ height: `${entry.barHeight}%` }"
                         />
+                        <template v-else>
+                            <span
+                                class="absolute inset-x-0 bottom-0 rounded-2xl bg-slate-400/70 transition-all"
+                                :style="{ height: `${entry.doneHeight}%` }"
+                            />
+                            <span
+                                v-if="entry.reviewHeight > 0"
+                                class="absolute inset-x-0 rounded-2xl bg-sky-400 transition-all"
+                                :style="{ height: `${entry.reviewHeight}%`, bottom: `${entry.doneHeight}%` }"
+                            />
+                        </template>
                     </div>
                     <span class="text-[10px]">{{ entry.label }}</span>
                 </button>
@@ -213,6 +236,16 @@ const openRemoveMemberModal = () => {
         <p class="text-[10px] text-muted-foreground">
             Click a column to open the detailed chart.
         </p>
+        <div class="flex items-center gap-3 text-[10px] text-muted-foreground">
+            <span class="flex items-center gap-1">
+                <span class="size-2 rounded-full bg-slate-400/80" />
+                Done
+            </span>
+            <span class="flex items-center gap-1">
+                <span class="size-2 rounded-full bg-sky-400" />
+                In review
+            </span>
+        </div>
         <div class="flex items-center gap-1 opacity-55 capitalize">
             <Badge v-if="data.role === MEMBER_ROLE.admin" class="text-[10px]">
                 {{ data.role }}
@@ -267,18 +300,42 @@ const openRemoveMemberModal = () => {
                             <span class="text-xs font-semibold text-muted-foreground">
                                 {{ entry.hours.toFixed(1) }}h
                             </span>
-                            <div class="relative h-40 w-full overflow-hidden rounded-xl border border-border/50 bg-muted/30">
+                            <div
+                                class="relative h-40 w-full overflow-hidden rounded-xl border border-border/50 bg-muted/30"
+                                :class="entry.isOverTarget ? 'ring-2 ring-rose-500/40' : ''"
+                            >
                                 <span
-                                    class="absolute inset-x-0 bottom-0 rounded-xl transition-colors"
-                                    :class="entry.barClass"
+                                    v-if="entry.isZero"
+                                    class="absolute inset-x-0 bottom-0 rounded-xl bg-muted/40 opacity-60"
                                     :style="{ height: `${entry.barHeight}%` }"
                                 />
+                                <template v-else>
+                                    <span
+                                        class="absolute inset-x-0 bottom-0 rounded-xl bg-slate-400/70 transition-all"
+                                        :style="{ height: `${entry.doneHeight}%` }"
+                                    />
+                                    <span
+                                        v-if="entry.reviewHeight > 0"
+                                        class="absolute inset-x-0 rounded-xl bg-sky-400 transition-all"
+                                        :style="{ height: `${entry.reviewHeight}%`, bottom: `${entry.doneHeight}%` }"
+                                    />
+                                </template>
                             </div>
                             <span class="text-[11px] text-muted-foreground">{{ entry.label }}</span>
                         </div>
                     </div>
                     <div class="mt-6 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                         <span>Target: {{ targetLabel }}</span>
+                        <div class="flex items-center gap-3">
+                            <span class="flex items-center gap-1">
+                                <span class="size-2 rounded-full bg-slate-400/80" />
+                                Done
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <span class="size-2 rounded-full bg-sky-400" />
+                                In review
+                            </span>
+                        </div>
                     </div>
                 </div>
             </DialogContent>

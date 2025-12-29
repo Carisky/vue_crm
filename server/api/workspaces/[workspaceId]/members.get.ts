@@ -1,3 +1,4 @@
+import { TaskStatus } from "@prisma/client";
 import {
   endOfMonth,
   format,
@@ -36,12 +37,13 @@ export default defineEventHandler(async (event) => {
   const actualHoursTotals =
     assigneeIds.length > 0
       ? await prisma.task.groupBy({
-          by: ["assigneeId"],
+          by: ["assigneeId", "status"],
           where: {
             workspaceId,
             assigneeId: { in: assigneeIds },
             startedAt: { gte: periodStart },
             actualHours: { not: null },
+            status: { in: [TaskStatus.DONE, TaskStatus.IN_REVIEW] },
           },
           _sum: {
             actualHours: true,
@@ -52,7 +54,8 @@ export default defineEventHandler(async (event) => {
   const actualHoursMap = actualHoursTotals.reduce<Record<string, number>>(
     (acc, entry) => {
       if (entry.assigneeId) {
-        acc[entry.assigneeId] = entry._sum.actualHours ?? 0;
+        acc[entry.assigneeId] =
+          (acc[entry.assigneeId] ?? 0) + (entry._sum.actualHours ?? 0);
       }
       return acc;
     },
@@ -74,12 +77,13 @@ export default defineEventHandler(async (event) => {
   const monthlyTotals = await Promise.all(
     monthRanges.map((range) =>
       prisma.task.groupBy({
-        by: ["assigneeId"],
+        by: ["assigneeId", "status"],
         where: {
           workspaceId,
           assigneeId: { not: null },
           startedAt: { gte: range.start, lte: range.end },
           actualHours: { not: null },
+          status: { in: [TaskStatus.DONE, TaskStatus.IN_REVIEW] },
         },
         _sum: {
           actualHours: true,
@@ -89,12 +93,21 @@ export default defineEventHandler(async (event) => {
   );
 
   const monthlyTotalsMap = monthlyTotals.map((totals) =>
-    totals.reduce<Record<string, number>>((acc, entry) => {
-      if (entry.assigneeId) {
-        acc[entry.assigneeId] = entry._sum.actualHours ?? 0;
-      }
-      return acc;
-    }, {}),
+    totals.reduce<Record<string, { done: number; review: number }>>(
+      (acc, entry) => {
+        if (entry.assigneeId) {
+          const current = acc[entry.assigneeId] ?? { done: 0, review: 0 };
+          if (entry.status === TaskStatus.DONE) {
+            current.done = entry._sum.actualHours ?? 0;
+          } else if (entry.status === TaskStatus.IN_REVIEW) {
+            current.review = entry._sum.actualHours ?? 0;
+          }
+          acc[entry.assigneeId] = current;
+        }
+        return acc;
+      },
+      {},
+    ),
   );
 
   const members = memberships.map((membership) => ({
@@ -103,11 +116,19 @@ export default defineEventHandler(async (event) => {
       workspace.ownerId,
       actualHoursMap[membership.userId] ?? 0,
     ),
-    monthly_hours: monthRanges.map((range, index) => ({
-      month: range.key,
-      label: range.label,
-      hours: monthlyTotalsMap[index][membership.userId] ?? 0,
-    })),
+    monthly_hours: monthRanges.map((range, index) => {
+      const totals = monthlyTotalsMap[index][membership.userId] ?? {
+        done: 0,
+        review: 0,
+      };
+      return {
+        month: range.key,
+        label: range.label,
+        hours: totals.done + totals.review,
+        done_hours: totals.done,
+        review_hours: totals.review,
+      };
+    }),
   }));
 
   return {

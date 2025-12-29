@@ -63,6 +63,8 @@ export type WorkspaceMember = {
     month: string;
     label: string;
     hours: number;
+    done_hours: number;
+    review_hours: number;
   }[];
 };
 
