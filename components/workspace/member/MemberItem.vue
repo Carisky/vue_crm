@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQueryClient } from '@tanstack/vue-query';
+import type { $Fetch } from 'ofetch';
 import { toast } from 'vue-sonner';
 
 import { MEMBER_ROLE } from '~/lib/constant';
@@ -32,6 +33,7 @@ const {
 
 const queryClient = useQueryClient()
 const authStore = useAuthStore()
+const $fetch = useNuxtApp().$fetch as $Fetch
 
 const isSelf = computed(() => data.$id === authStore.user?.id)
 const isMember = computed(() => data.role === MEMBER_ROLE.member)
@@ -87,8 +89,10 @@ const normalizedTargetHours = computed(() =>
     Math.max(1, monthlyTargetHours.value),
 )
 
+type MonthlyHoursEntry = NonNullable<WorkspaceMember['monthly_hours']>[number]
+
 const chartSeries = computed<MemberChartEntry[]>(() => {
-    const source = data.monthly_hours ?? []
+    const source: MonthlyHoursEntry[] = data.monthly_hours ?? []
     return source.map((entry) => {
         const doneHours = Number(entry.done_hours ?? 0)
         const reviewHours = Number(entry.review_hours ?? 0)
@@ -139,6 +143,29 @@ const handleChartDialogUpdate = (value: boolean) => {
 }
 const formatBarTitle = (entry: MemberChartEntry) =>
     `${entry.label}: ${entry.hours.toFixed(1)}h total (${entry.doneHours.toFixed(1)}h done, ${entry.reviewHours.toFixed(1)}h review)`
+
+const DONE_COLOR = 'rgba(148, 163, 184, 0.7)'
+const REVIEW_COLOR = 'rgb(56 189 248)'
+const BLEND_WIDTH = 6
+
+const getBarFillStyle = (entry: MemberChartEntry) => {
+    const height = `${entry.barHeight}%`
+    if (entry.reviewHeight <= 0) {
+        return { height, backgroundColor: DONE_COLOR }
+    }
+    if (entry.doneHeight <= 0) {
+        return { height, backgroundColor: REVIEW_COLOR }
+    }
+    const donePercent = (entry.doneHeight / entry.barHeight) * 100
+    const blend = Math.min(BLEND_WIDTH, donePercent, 100 - donePercent)
+    const start = Math.max(0, donePercent - blend)
+    const end = Math.min(100, donePercent + blend)
+
+    return {
+        height,
+        backgroundImage: `linear-gradient(to top, ${DONE_COLOR} 0%, ${DONE_COLOR} ${start}%, ${REVIEW_COLOR} ${end}%, ${REVIEW_COLOR} 100%)`,
+    }
+}
 
 // Update member role
 
@@ -219,13 +246,8 @@ const openRemoveMemberModal = () => {
                         />
                         <template v-else>
                             <span
-                                class="absolute inset-x-0 bottom-0 rounded-2xl bg-slate-400/70 transition-all"
-                                :style="{ height: `${entry.doneHeight}%` }"
-                            />
-                            <span
-                                v-if="entry.reviewHeight > 0"
-                                class="absolute inset-x-0 rounded-2xl bg-sky-400 transition-all"
-                                :style="{ height: `${entry.reviewHeight}%`, bottom: `${entry.doneHeight}%` }"
+                                class="absolute inset-x-0 bottom-0 rounded-2xl transition-all"
+                                :style="getBarFillStyle(entry)"
                             />
                         </template>
                     </div>
@@ -311,13 +333,8 @@ const openRemoveMemberModal = () => {
                                 />
                                 <template v-else>
                                     <span
-                                        class="absolute inset-x-0 bottom-0 rounded-xl bg-slate-400/70 transition-all"
-                                        :style="{ height: `${entry.doneHeight}%` }"
-                                    />
-                                    <span
-                                        v-if="entry.reviewHeight > 0"
-                                        class="absolute inset-x-0 rounded-xl bg-sky-400 transition-all"
-                                        :style="{ height: `${entry.reviewHeight}%`, bottom: `${entry.doneHeight}%` }"
+                                        class="absolute inset-x-0 bottom-0 rounded-xl transition-all"
+                                        :style="getBarFillStyle(entry)"
                                     />
                                 </template>
                             </div>
