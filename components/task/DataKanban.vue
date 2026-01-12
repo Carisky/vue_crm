@@ -5,8 +5,6 @@ import { toast } from 'vue-sonner';
 
 import {
     TaskStatus,
-    type CreateTaskInject,
-    type DeleteTaskInject,
     type FilteredTask,
     type UpdateTaskInject
 } from '~/lib/types';
@@ -21,7 +19,7 @@ interface UpdateTaskData {
     status?: string;
 }
 
-const { data = [] } = defineProps<{
+const props = defineProps<{
     data?: FilteredTask[]
 }>()
 
@@ -37,12 +35,6 @@ const todoList: Ref<DragItem[]> = ref([])
 const inProgressList: Ref<DragItem[]> = ref([])
 const inReviewList: Ref<DragItem[]> = ref([])
 const doneList: Ref<DragItem[]> = ref([])
-
-let backlogs: Ref<HTMLElement | undefined>
-let todos: Ref<HTMLElement | undefined>
-let inProgresses: Ref<HTMLElement | undefined>
-let inReviews: Ref<HTMLElement | undefined>
-let dones: Ref<HTMLElement | undefined>
 
 const onUpdateTask: UpdateTaskInject | undefined = inject('update-task-inject')
 
@@ -165,155 +157,84 @@ const handleDragEndDone = (e: DragEndEvent) => {
     handleUpdateTaskOnDrop(e, TaskStatus.Done, doneList)
 }
 
-const handleDeleteTask: Record<TaskStatus, ((taskId: string) => void) | undefined> = {
-    [TaskStatus.Backlog]: undefined,
-    [TaskStatus.Todo]: undefined,
-    [TaskStatus['In Progress']]: undefined,
-    [TaskStatus['In Review']]: undefined,
-    [TaskStatus.Done]: undefined
-}
+const backlogsDnD = useDragAndDrop(backlogList, {
+    droppableGroup: "tasks",
+    onDragEnd: handleDragEndBacklog
+})
+const backlogs = backlogsDnD[0]
 
-const handleCreateTask: Record<TaskStatus, ((task: FilteredTask) => void) | undefined> = {
-    [TaskStatus.Backlog]: undefined,
-    [TaskStatus.Todo]: undefined,
-    [TaskStatus['In Progress']]: undefined,
-    [TaskStatus['In Review']]: undefined,
-    [TaskStatus.Done]: undefined
-}
+const todosDnD = useDragAndDrop(todoList, {
+    droppableGroup: "tasks",
+    onDragEnd: handleDragEndTodo
+})
+const todos = todosDnD[0]
+
+const inProgressesDnD = useDragAndDrop(inProgressList, {
+    droppableGroup: "tasks",
+    onDragEnd: handleDragEndinProgress
+})
+const inProgresses = inProgressesDnD[0]
+
+const inReviewsDnD = useDragAndDrop(inReviewList, {
+    droppableGroup: "tasks",
+    onDragEnd: handleDragEndInReview
+})
+const inReviews = inReviewsDnD[0]
+
+const donesDnD = useDragAndDrop(doneList, {
+    droppableGroup: "tasks",
+    onDragEnd: handleDragEndDone
+})
+const dones = donesDnD[0]
 
 // Sort tasks for displaying, pushing to micro-task queue for not blocking the main thread
 const preparing = ref(true)
-const prepareTaskList = (list: FilteredTask[]) => {
+const syncFromTasks = (list: FilteredTask[]) => {
     preparing.value = true
-    new Promise((resolve) => {
-        const listBL = []
-        const listTD = []
-        const listIP = []
-        const listIR = []
-        const listDO = []
 
-        for (const task of list) {
-            tasks.value[task.$id] = task
-            const item = {
-                id: task.$id,
-                position: task.position,
-                workspaceId: task.workspace_id
-            }
+    const nextTasks: Record<string, FilteredTask | null> = {}
+    const listBL: DragItem[] = []
+    const listTD: DragItem[] = []
+    const listIP: DragItem[] = []
+    const listIR: DragItem[] = []
+    const listDO: DragItem[] = []
 
-            if (task.status === TaskStatus.Backlog) listBL.push(item)
-            else if (task.status === TaskStatus.Todo) listTD.push(item)
-            else if (task.status === TaskStatus['In Progress']) listIP.push(item)
-            else if (task.status === TaskStatus['In Review']) listIR.push(item)
-            else listDO.push(item)
+    for (const task of list) {
+        nextTasks[task.$id] = task
+        const item: DragItem = {
+            id: task.$id,
+            position: task.position,
+            workspaceId: task.workspace_id
         }
 
-        listBL.sort((a, b) => b.position - a.position)
-        listTD.sort((a, b) => b.position - a.position)
-        listIP.sort((a, b) => b.position - a.position)
-        listIR.sort((a, b) => b.position - a.position)
-        listDO.sort((a, b) => b.position - a.position)
+        if (task.status === TaskStatus.Backlog) listBL.push(item)
+        else if (task.status === TaskStatus.Todo) listTD.push(item)
+        else if (task.status === TaskStatus['In Progress']) listIP.push(item)
+        else if (task.status === TaskStatus['In Review']) listIR.push(item)
+        else listDO.push(item)
+    }
 
-        backlogList.value = listBL
-        todoList.value = listTD
-        inProgressList.value = listIP
-        inReviewList.value = listIR
-        doneList.value = listDO
+    listBL.sort((a, b) => b.position - a.position)
+    listTD.sort((a, b) => b.position - a.position)
+    listIP.sort((a, b) => b.position - a.position)
+    listIR.sort((a, b) => b.position - a.position)
+    listDO.sort((a, b) => b.position - a.position)
 
-        const backlogsDnD = useDragAndDrop(backlogList, {
-            droppableGroup: "tasks",
-            onDragEnd: handleDragEndBacklog
-        })
-        backlogs = backlogsDnD[0]
-        handleCreateTask.BACKLOG = (task: FilteredTask) => {
-            tasks.value[task.$id] = task
-            backlogsDnD[1](0, {
-                id: task.$id,
-                position: task.position,
-                workspaceId: task.workspace_id
-            })
-        }
-        handleDeleteTask.BACKLOG = (taskId: string) => {
-            const index = backlogList.value.findIndex(t => t.id === taskId)
-            backlogsDnD[2](index)
-        }
+    tasks.value = nextTasks
+    backlogList.value = listBL
+    todoList.value = listTD
+    inProgressList.value = listIP
+    inReviewList.value = listIR
+    doneList.value = listDO
 
-        const todosDnD = useDragAndDrop(todoList, {
-            droppableGroup: "tasks",
-            onDragEnd: handleDragEndTodo
-        })
-        todos = todosDnD[0]
-        handleCreateTask.TODO = (task: FilteredTask) => {
-            tasks.value[task.$id] = task
-            todosDnD[1](0, {
-                id: task.$id,
-                position: task.position,
-                workspaceId: task.workspace_id
-            })
-        }
-        handleDeleteTask.TODO = (taskId: string) => {
-            const index = todoList.value.findIndex(t => t.id === taskId)
-            todosDnD[2](index)
-        }
-
-        const inProgressesDnD = useDragAndDrop(inProgressList, {
-            droppableGroup: "tasks",
-            onDragEnd: handleDragEndinProgress
-        })
-        inProgresses = inProgressesDnD[0]
-        handleCreateTask.IN_PROGRESS = (task: FilteredTask) => {
-            tasks.value[task.$id] = task
-            inProgressesDnD[1](0, {
-                id: task.$id,
-                position: task.position,
-                workspaceId: task.workspace_id
-            })
-        }
-        handleDeleteTask.IN_PROGRESS = (taskId: string) => {
-            const index = inProgressList.value.findIndex(t => t.id === taskId)
-            inProgressesDnD[2](index)
-        }
-
-        const inReviewsDnD = useDragAndDrop(inReviewList, {
-            droppableGroup: "tasks",
-            onDragEnd: handleDragEndInReview
-        })
-        inReviews = inReviewsDnD[0]
-        handleCreateTask.IN_REVIEW = (task: FilteredTask) => {
-            tasks.value[task.$id] = task
-            inReviewsDnD[1](0, {
-                id: task.$id,
-                position: task.position,
-                workspaceId: task.workspace_id
-            })
-        }
-        handleDeleteTask.IN_REVIEW = (taskId: string) => {
-            const index = inReviewList.value.findIndex(t => t.id === taskId)
-            inReviewsDnD[2](index)
-        }
-
-        const donesDnD = useDragAndDrop(doneList, {
-            droppableGroup: "tasks",
-            onDragEnd: handleDragEndDone
-        })
-        dones = donesDnD[0]
-        handleCreateTask.DONE = (task: FilteredTask) => {
-            tasks.value[task.$id] = task
-            donesDnD[1](0, {
-                id: task.$id,
-                position: task.position,
-                workspaceId: task.workspace_id
-            })
-        }
-        handleDeleteTask.DONE = (taskId: string) => {
-            const index = doneList.value.findIndex(t => t.id === taskId)
-            donesDnD[2](index)
-        }
-
-        resolve(true)
-    })
-        .then(() => preparing.value = false)
+    preparing.value = false
 }
-prepareTaskList(data)
+
+watch(
+    () => props.data,
+    (next) => syncFromTasks(next ?? []),
+    { immediate: true }
+)
 
 // Apply changes to local tasks in this kanban tab
 const applyTaskUpdates = (updatedTasks: UpdateTaskData[]) => {
@@ -326,38 +247,6 @@ const applyTaskUpdates = (updatedTasks: UpdateTaskData[]) => {
         queryClient.resetQueries({ queryKey: ['task', id] })
     }
 }
-
-// Listen to event of creating task via create-task modal
-const onCreateTask: CreateTaskInject | undefined = inject('create-task-inject')
-
-const unsubscribeCreateSuccess = onCreateTask?.subscribeToCreateTaskSuccess((task: FilteredTask) => {
-    handleCreateTask[task.status]?.(task)
-})
-
-// Listen to event of updating task via update-task modal
-const unsubscribeUpdateSuccess = onUpdateTask?.subscribeToUpdateTaskSuccess((task) => {
-    tasks.value[task.$id] = task as FilteredTask
-
-    queryClient.invalidateQueries({ queryKey: ['tasks', route.params['workspaceId']] })
-    queryClient.invalidateQueries({ queryKey: ['task', task.$id] })
-})
-
-// Listen to deleting task event
-const onDeleteTask: DeleteTaskInject | undefined = inject('delete-task-inject')
-
-const unsubscribeDeleteSuccess = onDeleteTask?.subscribeToDeleteTaskSuccess((taskId) => {
-    const status = tasks.value[taskId]?.status
-    if (status) {
-        handleDeleteTask[status]?.(taskId)
-        tasks.value[taskId] = null;
-    }
-})
-
-onUnmounted(() => {
-    unsubscribeCreateSuccess?.()
-    unsubscribeUpdateSuccess?.()
-    unsubscribeDeleteSuccess?.()
-})
 </script>
 
 <template>

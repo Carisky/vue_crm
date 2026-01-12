@@ -104,8 +104,12 @@ if (import.meta.client) {
                 }
                 queryClient.invalidateQueries({ queryKey: ['workspace-analytics'] })
                 queryClient.invalidateQueries({ queryKey: ['project-analytics'] })
+                queryClient.invalidateQueries({ queryKey: ['notifications'] })
 
                 queryClient.refetchQueries({ queryKey: ['tasks'] })
+                queryClient.refetchQueries({ queryKey: ['workspace-analytics'] })
+                queryClient.refetchQueries({ queryKey: ['project-analytics'] })
+                queryClient.refetchQueries({ queryKey: ['notifications'] })
             } catch {
                 // ignore malformed events
             }

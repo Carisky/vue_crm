@@ -26,6 +26,7 @@ const initialView = computed(() => {
 
 const isLoadingTasks = ref(false)
 const tasks: Ref<FilteredTask[] | undefined> = ref(undefined)
+let refetchTimer: ReturnType<typeof setTimeout> | null = null
 
 const fetchTasks = async () => {
     isLoadingTasks.value = true
@@ -50,6 +51,11 @@ const fetchTasks = async () => {
     $fetch(`/api/tasks/filter?${searchParams.toString()}`)
         .then(res => tasks.value = res.tasks as FilteredTask[])
         .finally(() => isLoadingTasks.value = false)
+}
+
+const scheduleFetchTasks = () => {
+    if (refetchTimer) clearTimeout(refetchTimer)
+    refetchTimer = setTimeout(() => fetchTasks(), 50)
 }
 
 const matchesActiveFilters = (task: FilteredTask) => {
@@ -127,20 +133,27 @@ const unsubscribeCreateSuccess = createTaskInject?.subscribeToCreateTaskSuccess(
 // Listen to event of updating task via update-task modal
 const updateTaskInject: UpdateTaskInject | undefined = inject('update-task-inject')
 const unsubscribeUpdateSuccess = updateTaskInject?.subscribeToUpdateTaskSuccess((task: FilteredTask) => {
-    tasks.value = tasks.value?.map((t) => t.$id === task.$id ? task : t)
+    if (!matchesActiveFilters(task)) {
+        tasks.value = tasks.value?.filter((t) => t.$id !== task.$id)
+    } else {
+        tasks.value = tasks.value?.map((t) => t.$id === task.$id ? task : t)
+    }
     queryClient.invalidateQueries({ queryKey: ['task', task.$id] })
+    scheduleFetchTasks()
 })
 
 // Listen to deleting task event
 const deleteTaskInject: DeleteTaskInject | undefined = inject('delete-task-inject')
 const unsubscribeDeleteSuccess = deleteTaskInject?.subscribeToDeleteTaskSuccess((taskId: string) => {
     tasks.value = tasks.value?.filter((task) => task.$id !== taskId)
+    scheduleFetchTasks()
 })
 
 onUnmounted(() => {
     unsubscribeCreateSuccess?.()
     unsubscribeUpdateSuccess?.()
     unsubscribeDeleteSuccess?.()
+    if (refetchTimer) clearTimeout(refetchTimer)
 })
 </script>
 
