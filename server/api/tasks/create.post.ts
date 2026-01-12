@@ -8,6 +8,7 @@ import {
 } from "~/server/lib/permissions";
 import { serializeTask } from "~/server/lib/serializers";
 import { sendTaskNotificationEmails } from "~/server/lib/email";
+import { broadcastTaskEvent } from "~/server/lib/task-events";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -155,6 +156,16 @@ export default defineEventHandler(async (event) => {
       actor: { name: user.name ?? null, email: user.email },
       recipients: workspaceMembers.map((member) => member.user),
     });
+  }
+
+  try {
+    broadcastTaskEvent(task.workspaceId, {
+      type: "TASK_CREATED",
+      workspaceId: task.workspaceId,
+      task: serializeTask(task),
+    });
+  } catch {
+    // ignore realtime errors
   }
 
   return {

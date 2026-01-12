@@ -6,6 +6,8 @@ import { CreateTasksSchema } from "~/lib/schema/createTask";
 import prisma from "./prisma";
 import { requireWorkspaceMembership } from "./permissions";
 import { getTaskPriorityLabel, sendTaskNotificationEmails } from "./email";
+import { serializeTask } from "./serializers";
+import { broadcastTaskEvent } from "./task-events";
 
 export async function updateTask(
   event: H3Event,
@@ -166,6 +168,18 @@ export async function updateTask(
         });
       }
     }
+  }
+
+  try {
+    if (updatedTask) {
+      broadcastTaskEvent(updatedTask.workspaceId, {
+        type: "TASK_UPDATED",
+        workspaceId: updatedTask.workspaceId,
+        task: serializeTask(updatedTask),
+      });
+    }
+  } catch {
+    // ignore realtime errors
   }
 
   return updatedTask;

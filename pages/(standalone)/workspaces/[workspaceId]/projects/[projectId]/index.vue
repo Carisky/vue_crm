@@ -11,6 +11,7 @@ definePageMeta({
 
 const route = useRoute()
 const queryClient = useQueryClient()
+const projectId = computed(() => String(route.params['projectId'] ?? ''))
 
 const { data, isPending, isRefetching, suspense } = useQuery<{
     project: Project;
@@ -30,9 +31,9 @@ const { data, isPending, isRefetching, suspense } = useQuery<{
     },
 }>
     ({
-        queryKey: ['project-analytics', () => route.params['projectId']],
+        queryKey: computed(() => ['project-analytics', projectId.value]),
         queryFn: async () => {
-            const res = await fetch(`/api/projects/${route.params['projectId']}/analytics`)
+            const res = await fetch(`/api/projects/${projectId.value}/analytics`)
             const data = await res.json()
             return data
         },
@@ -52,8 +53,6 @@ onServerPrefetch(async () => {
 const invalidateProjectAnalytics = () => {
     queryClient.invalidateQueries({ queryKey: ['project-analytics'] })
 }
-
-const projectId = computed(() => String(route.params['projectId'] ?? ''))
 
 const createTaskInject: CreateTaskInject | undefined = inject('create-task-inject')
 const unsubscribeCreateSuccess = createTaskInject?.subscribeToCreateTaskSuccess((task) => {

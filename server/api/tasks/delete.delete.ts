@@ -6,6 +6,7 @@ import {
   requireWorkspaceMembership,
 } from "~/server/lib/permissions";
 import { deleteTaskMediaFile } from "~/server/lib/task-media";
+import { broadcastTaskEvent } from "~/server/lib/task-events";
 
 export default defineEventHandler(async (event) => {
   requireUser(event);
@@ -34,6 +35,16 @@ export default defineEventHandler(async (event) => {
   }
 
   await prisma.task.delete({ where: { id: taskId } });
+
+  try {
+    broadcastTaskEvent(task.workspaceId, {
+      type: "TASK_DELETED",
+      workspaceId: task.workspaceId,
+      taskId,
+    });
+  } catch {
+    // ignore realtime errors
+  }
 
   return { ok: true };
 });

@@ -12,6 +12,7 @@ definePageMeta({
 
 const route = useRoute()
 const queryClient = useQueryClient()
+const workspaceId = computed(() => String(route.params['workspaceId'] ?? ''))
 
 const { data: analytics, isPending: isLoadingAnalytics, suspense: loadAnalytics } = useQuery<{
     workspace: Workspace;
@@ -31,9 +32,9 @@ const { data: analytics, isPending: isLoadingAnalytics, suspense: loadAnalytics 
     },
 }>
     ({
-        queryKey: ['workspace-analytics', () => route.params['workspaceId']],
+        queryKey: computed(() => ['workspace-analytics', workspaceId.value]),
         queryFn: async () => {
-            const res = await fetch(`/api/workspaces/${route.params['workspaceId']}/analytics`)
+            const res = await fetch(`/api/workspaces/${workspaceId.value}/analytics`)
             const data = await res.json()
             return data
         },
@@ -42,9 +43,9 @@ const { data: analytics, isPending: isLoadingAnalytics, suspense: loadAnalytics 
     })
 const { data: projects, isPending: isLoadingProjects, suspense: loadProjects } = useQuery<Project[]>
     ({
-        queryKey: ['projects', () => route.params['workspaceId']],
+        queryKey: computed(() => ['projects', workspaceId.value]),
         queryFn: async () => {
-            const res = await fetch(`/api/workspaces/${route.params['workspaceId']}/projects`)
+            const res = await fetch(`/api/workspaces/${workspaceId.value}/projects`)
             const data = await res.json()
             return data?.projects ?? []
         },
@@ -53,9 +54,9 @@ const { data: projects, isPending: isLoadingProjects, suspense: loadProjects } =
     })
 const { data: members, isPending: isLoadingMembers, suspense: loadMembers } = useQuery<WorkspaceMember[]>
     ({
-        queryKey: ['members', () => route.params['workspaceId']],
+        queryKey: computed(() => ['members', workspaceId.value]),
         queryFn: async () => {
-            const res = await fetch(`/api/workspaces/${route.params['workspaceId']}/members`)
+            const res = await fetch(`/api/workspaces/${workspaceId.value}/members`)
             const data = await res.json()
             return data?.members ?? []
         },
@@ -64,9 +65,9 @@ const { data: members, isPending: isLoadingMembers, suspense: loadMembers } = us
     })
 const { data: tasks, isPending: isLoadingTasks, suspense: loadTasks } = useQuery<FilteredTask[]>
     ({
-        queryKey: ['tasks', () => route.params['workspaceId']],
+        queryKey: computed(() => ['tasks', workspaceId.value]),
         queryFn: async () => {
-            const res = await fetch(`/api/tasks/filter?workspace_id=${route.params['workspaceId']}`)
+            const res = await fetch(`/api/tasks/filter?workspace_id=${workspaceId.value}`)
             const data = await res.json()
             return data?.tasks ?? []
         },
@@ -98,7 +99,7 @@ const isLoading = computed(() =>
 const onCreateTask: CreateTaskInject | undefined = inject('create-task-inject')
 
 const unsubscribeCreateSuccess = onCreateTask?.subscribeToCreateTaskSuccess(() => {
-    queryClient.invalidateQueries({ queryKey: ['tasks', route.params['workspaceId']] })
+    queryClient.invalidateQueries({ queryKey: ['tasks', workspaceId.value] })
 })
 
 onUnmounted(() => {

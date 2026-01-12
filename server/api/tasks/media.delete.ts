@@ -1,6 +1,8 @@
 import prisma from "~/server/lib/prisma";
 import { requireUser, requireWorkspaceMembership } from "~/server/lib/permissions";
 import { deleteTaskMediaFile } from "~/server/lib/task-media";
+import { broadcastTaskEvent } from "~/server/lib/task-events";
+import { serializeTask } from "~/server/lib/serializers";
 
 export default defineEventHandler(async (event) => {
   requireUser(event);
@@ -30,6 +32,23 @@ export default defineEventHandler(async (event) => {
     await requireWorkspaceMembership(event, media.task.workspaceId);
     await deleteTaskMediaFile(media.path);
     await prisma.taskMedia.delete({ where: { id: media_id } });
+
+    const updatedTask = await prisma.task.findUnique({
+      where: { id: media.task.id },
+      include: { project: true, assignee: true, media: true },
+    });
+
+    if (updatedTask) {
+      try {
+        broadcastTaskEvent(updatedTask.workspaceId, {
+          type: "TASK_UPDATED",
+          workspaceId: updatedTask.workspaceId,
+          task: serializeTask(updatedTask),
+        });
+      } catch {
+        // ignore realtime errors
+      }
+    }
   } else {
     if (!workspace_id) {
       throw createError({ status: 400, statusText: "Workspace ID required" });
