@@ -83,7 +83,7 @@ type MemberChartEntry = {
 }
 
 const monthlyTargetHours = computed(
-    () => authStore.user?.monthlyWorkloadTargetHours ?? 160,
+    () => data.monthly_workload_target_hours ?? 160,
 )
 const normalizedTargetHours = computed(() =>
     Math.max(1, monthlyTargetHours.value),

@@ -79,6 +79,8 @@ export function serializeMember(
     membership_id: membership.id,
     role: membership.role === "ADMIN" ? "admin" : "member",
     is_owner: membership.userId === ownerId,
+    monthly_workload_target_hours:
+      membership.user.monthlyWorkloadTargetHours ?? null,
     actual_hours: actualHours ?? null,
   };
 }

@@ -28,8 +28,8 @@ export const columns: ColumnDef<FilteredTask>[] = [
   {
     accessorKey: "name",
     meta: {
-      headerClass: "w-[380px]",
-      cellClass: "max-w-[380px]",
+      headerClass: "w-[240px]",
+      cellClass: "max-w-[240px]",
     },
     header: ({ column }) => {
       return h(
@@ -42,7 +42,12 @@ export const columns: ColumnDef<FilteredTask>[] = [
       );
     },
     cell: ({ row }) =>
-      h("p", { class: "truncate" }, row.getValue("name")),
+      (() => {
+        const name = String(row.getValue("name") ?? "");
+        const max = 15;
+        const clipped = name.length > max ? `${name.slice(0, max)}...` : name;
+        return h("p", { class: "truncate", title: name }, clipped);
+      })(),
   },
   {
     accessorKey: "project",
@@ -142,6 +147,76 @@ export const columns: ColumnDef<FilteredTask>[] = [
         { class: "text-sm font-medium" },
         format(parsedDate, "MMM d"),
       );
+    },
+  },
+  {
+    accessorKey: "estimated_hours",
+    sortingFn: (rowA, rowB, columnId) => {
+      const a = Number(rowA.getValue(columnId) ?? 0);
+      const b = Number(rowB.getValue(columnId) ?? 0);
+      return a - b;
+    },
+    meta: {
+      headerClass: "w-[120px]",
+      cellClass: "whitespace-nowrap",
+    },
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: "ghost",
+          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
+        },
+        () => ["Expected", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+      );
+    },
+    cell: ({ row }) => {
+      const value = row.getValue("estimated_hours") as number | null | undefined;
+      if (value === null || value === undefined) {
+        return h("span", { class: "text-sm text-muted-foreground" }, "—");
+      }
+
+      const hours = Number(value);
+      if (!Number.isFinite(hours)) {
+        return h("span", { class: "text-sm text-muted-foreground" }, "—");
+      }
+
+      return h("span", { class: "text-sm font-medium" }, `${hours.toFixed(1)}h`);
+    },
+  },
+  {
+    accessorKey: "actual_hours",
+    sortingFn: (rowA, rowB, columnId) => {
+      const a = Number(rowA.getValue(columnId) ?? 0);
+      const b = Number(rowB.getValue(columnId) ?? 0);
+      return a - b;
+    },
+    meta: {
+      headerClass: "w-[120px]",
+      cellClass: "whitespace-nowrap",
+    },
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: "ghost",
+          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
+        },
+        () => ["Actual", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+      );
+    },
+    cell: ({ row }) => {
+      const value = row.getValue("actual_hours") as number | null | undefined;
+      if (value === null || value === undefined) {
+        return h("span", { class: "text-sm text-muted-foreground" }, "—");
+      }
+
+      const hours = Number(value);
+      if (!Number.isFinite(hours)) {
+        return h("span", { class: "text-sm text-muted-foreground" }, "—");
+      }
+
+      return h("span", { class: "text-sm font-medium" }, `${hours.toFixed(1)}h`);
     },
   },
   {

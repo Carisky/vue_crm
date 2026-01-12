@@ -153,7 +153,9 @@ const handleThemeChange = async (theme: ThemePreference) => {
 const handleEmailNotificationsChange = async (checked: boolean | 'indeterminate') => {
     if (!authStore.user || isSavingEmailNotifications.value) return
 
-    const nextValue = checked === true
+    const nextValue = checked === 'indeterminate'
+        ? !emailNotificationsEnabled.value
+        : checked === true
     if (emailNotificationsEnabled.value === nextValue) return
 
     const previousValue = emailNotificationsEnabled.value

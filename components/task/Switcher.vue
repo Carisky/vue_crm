@@ -16,8 +16,13 @@ const {
 } = useUrlQuery("tab")
 const { value: filterValues } = useTaskFilterQueries()
 
+const allowedViews = new Set(['table', 'kanban'])
+
 // Default tab value is "table"
-const initialView = view.value ? String(view.value) : 'table'
+const initialView = computed(() => {
+    const candidate = view.value ? String(view.value) : 'table'
+    return allowedViews.has(candidate) ? candidate : 'table'
+})
 
 const isLoadingTasks = ref(false)
 const tasks: Ref<FilteredTask[] | undefined> = ref(undefined)
@@ -104,13 +109,14 @@ watch(([
 ]), () => fetchTasks(), { immediate: true })
 
 // Switch tab
-const handleSetView = (view: any) => {
-    setView(String(view))
+const handleSetView = (nextView: unknown) => {
+    const candidate = String(nextView)
+    setView(allowedViews.has(candidate) ? candidate : 'table')
 }
 
 // Listen to event of creating task via create-task modal
 // These listers mainly for "DataTable" tab
-// "Kanban" & "Calendar" tabs have their own listeners
+// "Kanban" tab has its own listeners
 const createTaskInject: CreateTaskInject | undefined = inject('create-task-inject')
 const unsubscribeCreateSuccess = createTaskInject?.subscribeToCreateTaskSuccess((task: FilteredTask) => {
     if (!matchesActiveFilters(task)) return
@@ -149,9 +155,6 @@ onUnmounted(() => {
                     <TabsTrigger value="kanban" class="h-8 w-full lg:w-auto">
                         Kanban
                     </TabsTrigger>
-                    <TabsTrigger value="calendar" class="h-8 w-full lg:w-auto">
-                        Calendar
-                    </TabsTrigger>
                 </TabsList>
                 <Button size="sm" @click="open()" class="w-full lg:w-auto">
                     <Icon name="lucide:plus" size="16px" class="size-4" />
@@ -170,9 +173,6 @@ onUnmounted(() => {
             </TabsContent>
             <TabsContent value="kanban" class="mt-0">
                 <TaskDataKanban v-if="tasks && !isLoadingTasks" :data="tasks" />
-            </TabsContent>
-            <TabsContent value="calendar" class="mt-0">
-                <TaskDataCalendar v-if="tasks && !isLoadingTasks" :data="tasks" />
             </TabsContent>
         </div>
     </Tabs>
