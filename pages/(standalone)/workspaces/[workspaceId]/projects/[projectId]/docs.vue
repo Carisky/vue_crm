@@ -557,7 +557,7 @@ watch(importMode, (mode) => {
 
         <div v-if="isLocked" class="rounded-lg border bg-muted/20 p-4 space-y-3">
           <p class="text-base font-semibold">{{ draftTitle }}</p>
-          <div class="text-sm whitespace-pre-wrap leading-relaxed">
+          <div class="text-sm whitespace-pre-wrap break-words leading-relaxed">
             <template v-for="(seg, idx) in linkifiedBody" :key="idx">
               <span v-if="seg.type === 'text'">{{ seg.value }}</span>
               <a
@@ -565,7 +565,7 @@ watch(importMode, (mode) => {
                 :href="seg.href"
                 target="_blank"
                 rel="noreferrer"
-                class="text-primary underline underline-offset-2 hover:opacity-80"
+                class="text-primary underline underline-offset-2 hover:opacity-80 break-all"
               >
                 {{ seg.label }}
               </a>
@@ -575,7 +575,7 @@ watch(importMode, (mode) => {
 
         <template v-else>
           <Input v-model="draftTitle" :disabled="isSavingDoc" placeholder="Title" />
-          <Textarea v-model="draftBody" :disabled="isSavingDoc" rows="12" placeholder="Info..." />
+          <Textarea v-model="draftBody" :disabled="isSavingDoc" rows="12" placeholder="Info..." class="break-words" />
         </template>
 
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
