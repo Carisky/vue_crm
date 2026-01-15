@@ -85,6 +85,11 @@ const canUseColumnVisibilityPreference = computed(() =>
     Boolean(props.columnVisibilityKey && props.columnVisibilityWorkspaceId)
 )
 
+const isColumnVisible = (columnId: string) => {
+    const value = columnVisibility.value[columnId]
+    return value === undefined ? true : value
+}
+
 const fetchColumnVisibilityFromServer = async () => {
     if (!canUseColumnVisibilityPreference.value) return
 
@@ -159,8 +164,9 @@ const handleToggleColumnVisibility = (columnId: string) => {
                     <DropdownMenuCheckboxItem
                         v-for="column in toggleableColumns"
                         :key="column.id"
-                        :checked="column.getIsVisible()"
+                        :model-value="isColumnVisible(column.id)"
                         :disabled="isLoadingColumnVisibility && canUseColumnVisibilityPreference"
+                        class="cursor-pointer hover:bg-accent hover:text-accent-foreground"
                         @select="(event) => { event.preventDefault(); handleToggleColumnVisibility(column.id) }"
                     >
                         {{ getColumnLabel(column) }}
