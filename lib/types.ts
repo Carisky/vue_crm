@@ -51,6 +51,21 @@ export type Project = {
   workspace_id: string;
 };
 
+export type ProjectDocSummary = {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  sectionId: string | null;
+};
+
+export type ProjectDoc = ProjectDocSummary & {
+  projectId: string;
+  workspaceId: string;
+  body: string;
+  author: { id: string; name: string | null; email: string };
+};
+
 export type WorkspaceMember = {
   $id: string;
   name: string | null;

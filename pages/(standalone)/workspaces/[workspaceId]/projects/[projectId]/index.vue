@@ -89,13 +89,22 @@ onUnmounted(() => {
                 <p class="text-lg font-semibold">{{ data.project.name }}</p>
             </div>
             <div>
-                <Button variant="secondary" size="sm" :as-child="true">
-                    <NuxtLink
-                        :href="`/workspaces/${route.params['workspaceId']}/projects/${route.params['projectId']}/settings`">
-                        <Icon name="lucide:pencil" size="16px" class="size-4 mr-1" />
-                        Edit Project
-                    </NuxtLink>
-                </Button>
+                <div class="flex items-center gap-2">
+                    <Button variant="secondary" size="sm" :as-child="true">
+                        <NuxtLink
+                            :href="`/workspaces/${route.params['workspaceId']}/projects/${route.params['projectId']}/docs`">
+                            <Icon name="lucide:book-open" size="16px" class="size-4 mr-1" />
+                            Project docs
+                        </NuxtLink>
+                    </Button>
+                    <Button variant="secondary" size="sm" :as-child="true">
+                        <NuxtLink
+                            :href="`/workspaces/${route.params['workspaceId']}/projects/${route.params['projectId']}/settings`">
+                            <Icon name="lucide:pencil" size="16px" class="size-4 mr-1" />
+                            Edit Project
+                        </NuxtLink>
+                    </Button>
+                </div>
             </div>
         </div>
 

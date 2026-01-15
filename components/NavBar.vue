@@ -16,15 +16,48 @@ const pathnameMap = {
         title: 'My project',
         description: 'View tasks of your project here'
     },
+    docs: {
+        title: 'Docs',
+        description: 'Documentation for this project'
+    },
     messages: {
         title: 'Messages',
         description: 'Chat with your teammates here'
-    }
+    },
+    chat: {
+        title: 'Chat',
+        description: 'Conversation'
+    },
+    members: {
+        title: 'Members',
+        description: 'Workspace members'
+    },
+    settings: {
+        title: 'Settings',
+        description: 'Workspace settings'
+    },
 }
 
 const titleDescription = computed(() => {
-    const pathnameParts = route.path.split('/')
-    const pathnameKey = pathnameParts[3] as keyof typeof pathnameMap
+    const segments = route.path.split('/').filter(Boolean)
+    // /workspaces/:workspaceId/(...)
+    const rootKey = segments[2] ?? 'default'
+
+    let pathnameKey: keyof typeof pathnameMap = 'default'
+
+    if (rootKey === 'projects') {
+        // /workspaces/:workspaceId/projects/:projectId/docs
+        const projectSub = segments[4]
+        pathnameKey = (projectSub === 'docs' ? 'docs' : 'projects')
+    } else if (rootKey === 'messages') {
+        pathnameKey = segments.length >= 4 ? 'chat' : 'messages'
+    } else if (rootKey === 'tasks') {
+        pathnameKey = 'tasks'
+    } else if (rootKey === 'members') {
+        pathnameKey = 'members'
+    } else if (rootKey === 'settings') {
+        pathnameKey = 'settings'
+    }
 
     return pathnameMap[pathnameKey] ?? pathnameMap.default
 })

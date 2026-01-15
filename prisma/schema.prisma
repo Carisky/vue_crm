@@ -29,6 +29,8 @@ model User {
   taskCommentMentions        TaskCommentMention[]
   conversationParticipants   ConversationParticipant[]
   conversationMessages       ConversationMessage[] @relation("ConversationMessageSender")
+  projectDocs                ProjectDoc[]
+  projectDocSections         ProjectDocSection[]
   ownedWorkspaces            Workspace[]    @relation("WorkspaceOwner")
 }
 
@@ -58,6 +60,8 @@ model Workspace {
   tasks         Task[]
   taskComments  TaskComment[]
   conversations Conversation[]
+  projectDocs   ProjectDoc[]
+  projectDocSections ProjectDocSection[]
   owner         User           @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([ownerId], map: "Workspace_ownerId_fkey")
@@ -86,6 +90,8 @@ model Project {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   notifications Notification[]
+  docs          ProjectDoc[]
+  docSections   ProjectDocSection[]
   workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   tasks         Task[]
 
@@ -119,6 +125,50 @@ model Task {
   @@index([projectId])
   @@index([assigneeId])
   @@index([status])
+}
+
+model ProjectDoc {
+  id          String   @id @default(cuid())
+  workspaceId String
+  projectId   String
+  authorId    String
+  sectionId   String?
+  title       String
+  body        String   @db.LongText
+  isLocked    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  section   ProjectDocSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([authorId])
+  @@index([sectionId])
+  @@index([updatedAt])
+}
+
+model ProjectDocSection {
+  id          String   @id @default(cuid())
+  workspaceId String
+  projectId   String
+  authorId    String
+  title       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  docs      ProjectDoc[]
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([authorId])
+  @@index([updatedAt])
 }
 
 model TaskComment {
