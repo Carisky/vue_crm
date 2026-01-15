@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 import NotificationCenter from '~/components/NotificationCenter.vue'
+import MessageCenter from '~/components/MessageCenter.vue'
 
 const pathnameMap = {
     default: {
@@ -14,6 +15,10 @@ const pathnameMap = {
     projects: {
         title: 'My project',
         description: 'View tasks of your project here'
+    },
+    messages: {
+        title: 'Messages',
+        description: 'Chat with your teammates here'
     }
 }
 
@@ -34,6 +39,7 @@ const titleDescription = computed(() => {
         <SideBarMobile />
         <ClientOnly>
             <div class="flex items-center gap-2">
+                <MessageCenter />
                 <NotificationCenter />
                 <AuthUserButton />
             </div>

@@ -7,6 +7,21 @@ export default defineEventHandler(async (event) => {
   const { workspace_id } = getQuery(event);
   const workspaceId = typeof workspace_id === "string" ? workspace_id : undefined;
 
+  const { exclude_types } = getQuery(event);
+  const excludeTypes = (() => {
+    if (!exclude_types) return [];
+    if (Array.isArray(exclude_types)) {
+      return exclude_types
+        .flatMap((entry) => String(entry).split(","))
+        .map((value) => value.trim())
+        .filter(Boolean);
+    }
+    return String(exclude_types)
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+  })();
+
   if (workspaceId) {
     await ensureWorkspaceAccess(event, workspaceId);
   }
@@ -15,6 +30,7 @@ export default defineEventHandler(async (event) => {
     where: {
       userId: user.id,
       workspaceId: workspaceId,
+      ...(excludeTypes.length ? { type: { notIn: excludeTypes } } : {}),
     },
     include: {
       task: {

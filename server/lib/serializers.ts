@@ -1,4 +1,15 @@
-import type { Member, Project, Task, TaskMedia, User, Workspace } from "@prisma/client";
+import type {
+  ConversationMessage,
+  ConversationParticipant,
+  Member,
+  Project,
+  Task,
+  TaskComment,
+  TaskCommentMention,
+  TaskMedia,
+  User,
+  Workspace,
+} from "@prisma/client";
 
 export function serializeWorkspace(workspace: Workspace) {
   return {
@@ -82,5 +93,57 @@ export function serializeMember(
     monthly_workload_target_hours:
       membership.user.monthlyWorkloadTargetHours ?? null,
     actual_hours: actualHours ?? null,
+  };
+}
+
+export function serializeWorkspaceUser(user: User) {
+  return {
+    $id: user.id,
+    name: user.name,
+    email: user.email,
+    avatar_url: user.avatarUrl,
+  };
+}
+
+export function serializeTaskComment(
+  comment: TaskComment & {
+    author: User;
+    mentions?: (TaskCommentMention & { user: User })[] | null;
+  },
+) {
+  return {
+    $id: comment.id,
+    task_id: comment.taskId,
+    workspace_id: comment.workspaceId,
+    body: comment.body,
+    author: serializeWorkspaceUser(comment.author),
+    mentions: (comment.mentions ?? []).map((mention) =>
+      serializeWorkspaceUser(mention.user),
+    ),
+    createdAt: comment.createdAt.toISOString(),
+    updatedAt: comment.updatedAt.toISOString(),
+  };
+}
+
+export function serializeConversationParticipant(
+  participant: ConversationParticipant & { user: User },
+) {
+  return {
+    user: serializeWorkspaceUser(participant.user),
+    lastReadAt: participant.lastReadAt
+      ? participant.lastReadAt.toISOString()
+      : null,
+  };
+}
+
+export function serializeConversationMessage(
+  message: ConversationMessage & { sender: User },
+) {
+  return {
+    id: message.id,
+    conversation_id: message.conversationId,
+    sender: serializeWorkspaceUser(message.sender),
+    body: message.body,
+    createdAt: message.createdAt.toISOString(),
   };
 }

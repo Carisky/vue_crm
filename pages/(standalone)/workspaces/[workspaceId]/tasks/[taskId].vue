@@ -59,5 +59,8 @@ onUnmounted(() => {
             <TaskOverview :task="task" />
             <TaskDescription :task="task" />
         </div>
+        <div class="mt-4">
+            <TaskComments :task="task" />
+        </div>
     </div>
 </template>

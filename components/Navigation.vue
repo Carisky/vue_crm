@@ -15,6 +15,12 @@ const routes = computed(() => [
         iconActive: 'heroicons:check-circle-solid'
     },
     {
+        label: 'Messages',
+        href: `/workspaces/${route.params['workspaceId']}/messages`,
+        icon: 'heroicons:chat-bubble-left-right',
+        iconActive: 'heroicons:chat-bubble-left-right-solid'
+    },
+    {
         label: 'Settings',
         href: `/workspaces/${route.params['workspaceId']}/settings`,
         icon: 'heroicons:cog-6-tooth',

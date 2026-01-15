@@ -32,7 +32,7 @@ const { data, isFetching } = useQuery({
     const response = await $fetch<{
       notifications: Notification[];
       unreadCount: number;
-    }>(`/api/notifications?workspace_id=${workspaceId.value}`);
+    }>(`/api/notifications?workspace_id=${workspaceId.value}&exclude_types=TASK_COMMENT_MENTION`);
     return response;
   },
   enabled: computed(() => !!workspaceId.value),
@@ -45,13 +45,6 @@ const formatTimestamp = (value: string) =>
     dateStyle: 'medium',
     timeStyle: 'short',
   });
-const formatEstimatedTime = (value?: number | null) => {
-  if (value == null) return 'No estimate';
-  const hours = Number(value);
-  if (!Number.isFinite(hours)) return 'No estimate';
-  const formatted = Number.isInteger(hours) ? hours.toString() : hours.toFixed(1);
-  return `${formatted}h`;
-};
 
 const markAllRead = async () => {
   if (!workspaceId.value || !unreadCount.value) return;
@@ -79,6 +72,7 @@ const markNotificationRead = async (notification: Notification) => {
 const handleNotificationClick = async (notification: Notification) => {
   if (!workspaceId.value) return;
   sheetOpen.value = false;
+  if (!notification.isRead) await markNotificationRead(notification);
 
   const queryParams: Record<string, string> = {};
   if (notification.projectId) queryParams.projectId = notification.projectId;
@@ -132,46 +126,37 @@ const handleNotificationClick = async (notification: Notification) => {
           <article
             v-for="notification in notifications"
             :key="notification.id"
-            class="flex items-start gap-3 rounded-2xl border border-border/70 bg-background/90 px-3 py-2 text-left transition hover:border-primary/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary cursor-pointer"
+            class="flex items-start gap-3 rounded-xl border border-border/70 bg-background/90 px-3 py-2 text-left transition hover:border-primary/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary cursor-pointer"
             role="button"
             tabindex="0"
             @click="handleNotificationClick(notification)"
             @keydown.enter.stop.prevent="handleNotificationClick(notification)"
             @keydown.space.stop.prevent="handleNotificationClick(notification)"
           >
-            <span class="mt-1">
-              <Icon
-                :name="notification.isRead ? 'heroicons:check-circle' : 'heroicons:circle'"
-                size="18px"
-                :class="notification.isRead ? 'text-muted-foreground' : 'text-primary'"
-              />
-            </span>
-            <div class="flex-1 space-y-0.5">
-              <div class="flex items-center justify-between gap-2">
-                <p class="text-sm font-semibold text-foreground leading-tight">
+            <span
+              class="mt-1.5 h-2 w-2 rounded-full"
+              :class="notification.isRead ? 'bg-muted' : 'bg-primary'"
+            ></span>
+            <div class="flex-1 space-y-0.5 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <p class="text-sm font-semibold text-foreground leading-tight truncate">
                   {{ notification.message ?? 'New update' }}
                 </p>
-                <div class="flex items-center gap-2">
-                  <span class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                    {{ notification.isRead ? 'Read' : 'Unread' }}
-                  </span>
-                  <button
-                    v-if="!notification.isRead"
-                    type="button"
-                    class="rounded-full border border-primary/70 px-3 py-0.5 text-[10px] font-semibold text-primary transition hover:bg-primary/10"
-                    @click.stop="markNotificationRead(notification)"
-                  >
-                    Mark read
-                  </button>
-                </div>
+                <Button
+                  v-if="!notification.isRead"
+                  variant="ghost"
+                  size="icon"
+                  class="h-7 w-7"
+                  title="Mark read"
+                  @click.stop="markNotificationRead(notification)"
+                >
+                  <Icon name="heroicons:check" size="16px" class="size-4 text-muted-foreground" />
+                </Button>
               </div>
-              <p class="text-xs text-muted-foreground">
-                {{ notification.projectName ?? 'Workspace' }} / {{ notification.taskName ?? 'Task' }}
+              <p class="text-xs text-muted-foreground truncate">
+                {{ notification.projectName ?? 'Workspace' }}<span v-if="notification.taskName"> / {{ notification.taskName }}</span>
               </p>
-              <p class="text-xs text-muted-foreground">
-                Estimated {{ formatEstimatedTime(notification.taskEstimatedHours) }}
-              </p>
-              <p class="text-[10px] text-muted-foreground">
+              <p class="text-[11px] text-muted-foreground">
                 {{ notification.actorName ?? 'System' }} · {{ formatTimestamp(notification.createdAt) }}
               </p>
             </div>
