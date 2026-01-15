@@ -1,6 +1,8 @@
 import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
 import { ensureWorkspaceAccess } from "~/server/lib/workspace";
+import { broadcastConversationEvent } from "~/server/lib/conversation-events";
+import { broadcastInboxEvent } from "~/server/lib/inbox-events";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -22,6 +24,7 @@ export default defineEventHandler(async (event) => {
 
   await ensureWorkspaceAccess(event, participant.conversation.workspaceId);
 
+  const now = new Date();
   await prisma.conversationParticipant.update({
     where: {
       conversationId_userId: {
@@ -30,10 +33,30 @@ export default defineEventHandler(async (event) => {
       },
     },
     data: {
-      lastReadAt: new Date(),
+      lastReadAt: now,
     },
   });
 
+  try {
+    broadcastConversationEvent(conversationId, {
+      type: "READ_UPDATED",
+      conversationId,
+      userId: user.id,
+      lastReadAt: now.toISOString(),
+    });
+  } catch {
+    // ignore realtime errors
+  }
+
+  try {
+    const workspaceId = participant.conversation.workspaceId;
+    broadcastInboxEvent(workspaceId, {
+      type: "INBOX_UPDATED",
+      workspaceId,
+    });
+  } catch {
+    // ignore realtime errors
+  }
+
   return { ok: true };
 });
-

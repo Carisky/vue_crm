@@ -3,6 +3,7 @@ import { z } from "zod";
 import prisma from "~/server/lib/prisma";
 import { requireUser, requireWorkspaceMembership } from "~/server/lib/permissions";
 import { serializeTaskComment } from "~/server/lib/serializers";
+import { broadcastInboxEvent } from "~/server/lib/inbox-events";
 
 const CreateTaskCommentSchema = z.object({
   body: z.string().trim().min(1).max(10_000),
@@ -91,6 +92,17 @@ export default defineEventHandler(async (event) => {
         message: `You were mentioned in "${task.name}"`,
       })),
     });
+
+    try {
+      broadcastInboxEvent(task.workspaceId, {
+        type: "MENTION_CREATED",
+        workspaceId: task.workspaceId,
+        taskId: task.id,
+        actorId: user.id,
+      });
+    } catch {
+      // ignore realtime errors
+    }
   }
 
   return { comment: serializeTaskComment(created) };

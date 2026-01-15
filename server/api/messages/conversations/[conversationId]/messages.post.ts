@@ -4,6 +4,8 @@ import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
 import { ensureWorkspaceAccess } from "~/server/lib/workspace";
 import { serializeConversationMessage } from "~/server/lib/serializers";
+import { broadcastConversationEvent } from "~/server/lib/conversation-events";
+import { broadcastInboxEvent } from "~/server/lib/inbox-events";
 
 const SendMessageSchema = z.object({
   body: z.string().trim().min(1).max(10_000),
@@ -50,6 +52,8 @@ export default defineEventHandler(async (event) => {
     },
   });
 
+  const workspaceId = participant.conversation.workspaceId;
+
   await prisma.conversationParticipant.update({
     where: {
       conversationId_userId: {
@@ -67,6 +71,26 @@ export default defineEventHandler(async (event) => {
     data: { updatedAt: now },
   });
 
+  try {
+    broadcastConversationEvent(conversationId, {
+      type: "MESSAGE_CREATED",
+      conversationId,
+      message: serializeConversationMessage(message),
+    });
+  } catch {
+    // ignore realtime errors
+  }
+
+  try {
+    broadcastInboxEvent(workspaceId, {
+      type: "MESSAGE_CREATED",
+      workspaceId,
+      conversationId,
+      senderId: user.id,
+    });
+  } catch {
+    // ignore realtime errors
+  }
+
   return { message: serializeConversationMessage(message) };
 });
-

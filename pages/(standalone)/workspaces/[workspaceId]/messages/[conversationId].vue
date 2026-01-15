@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import { toast } from 'vue-sonner';
 
@@ -68,6 +68,11 @@ const displayName = (person: Person) => person.name ?? person.email ?? 'Unknown'
 const otherParticipant = computed(() => {
   const myId = auth.user?.id;
   return participants.value.find((p) => p.user.$id !== myId)?.user ?? null;
+});
+
+const otherLastReadAt = computed(() => {
+  const myId = auth.user?.id;
+  return participants.value.find((p) => p.user.$id !== myId)?.lastReadAt ?? null;
 });
 
 const formatTimestamp = (value: string) =>
@@ -144,6 +149,95 @@ const handleKeydown = async (evt: KeyboardEvent) => {
 };
 
 const isMine = (msg: ConversationMessage) => msg.sender.$id === auth.user?.id;
+
+const deliveryStatus = (msg: ConversationMessage) => {
+  if (!isMine(msg)) return null;
+  const otherRead = otherLastReadAt.value;
+  if (!otherRead) return 'Sended';
+  return new Date(otherRead).getTime() >= new Date(msg.createdAt).getTime()
+    ? 'Read'
+    : 'Sended';
+};
+
+if (import.meta.client) {
+  let source: EventSource | null = null;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let reconnectAttempt = 0;
+
+  const close = () => {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    source?.close();
+    source = null;
+  };
+
+  const connect = (id: string) => {
+    close();
+    if (!id) return;
+
+    source = new EventSource(`/api/realtime/conversations?conversation_id=${encodeURIComponent(id)}`);
+
+    source.onopen = () => {
+      reconnectAttempt = 0;
+    };
+
+    source.addEventListener('conversation', async (evt) => {
+      try {
+        const parsed = JSON.parse((evt as MessageEvent).data) as
+          | { type: 'MESSAGE_CREATED'; conversationId: string; message: ConversationMessage }
+          | { type: 'READ_UPDATED'; conversationId: string; userId: string; lastReadAt: string };
+
+        if (parsed.type === 'MESSAGE_CREATED') {
+          queryClient.setQueryData<ConversationResponse>(queryKey.value, (current) => {
+            if (!current) return current;
+            if (current.messages.some((m) => m.id === parsed.message.id)) return current;
+            return {
+              ...current,
+              messages: [...current.messages, parsed.message],
+              conversation: {
+                ...current.conversation,
+                updatedAt: new Date().toISOString(),
+              },
+            };
+          });
+
+          queryClient.invalidateQueries({ queryKey: ['inbox', workspaceId.value] });
+          if (parsed.message.sender.$id !== auth.user?.id) {
+            await markRead();
+          }
+        } else if (parsed.type === 'READ_UPDATED') {
+          queryClient.setQueryData<ConversationResponse>(queryKey.value, (current) => {
+            if (!current) return current;
+            return {
+              ...current,
+              conversation: {
+                ...current.conversation,
+                participants: current.conversation.participants.map((p) =>
+                  p.user.$id === parsed.userId ? { ...p, lastReadAt: parsed.lastReadAt } : p,
+                ),
+              },
+            };
+          });
+        }
+      } catch {
+        // ignore malformed events
+      }
+    });
+
+    source.onerror = () => {
+      close();
+      const delay = Math.min(30_000, 500 * (2 ** reconnectAttempt));
+      reconnectAttempt += 1;
+      reconnectTimer = setTimeout(() => connect(id), delay);
+    };
+  };
+
+  onMounted(() => connect(conversationId.value));
+  watch(conversationId, (id) => connect(String(id ?? '')));
+  onUnmounted(close);
+}
 </script>
 
 <template>
@@ -201,6 +295,7 @@ const isMine = (msg: ConversationMessage) => msg.sender.$id === auth.user?.id;
                     :class="isMine(msg) ? 'text-primary-foreground/80' : 'text-muted-foreground'"
                   >
                     {{ formatTimestamp(msg.createdAt) }}
+                    <template v-if="isMine(msg)"> · {{ deliveryStatus(msg) }}</template>
                   </p>
                 </div>
               </div>

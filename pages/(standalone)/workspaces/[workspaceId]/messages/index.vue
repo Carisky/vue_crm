@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import { toast } from 'vue-sonner';
 
@@ -117,6 +117,47 @@ const startChat = async (person: Person) => {
   queryClient.invalidateQueries({ queryKey: ['inbox', workspaceId.value] });
   await navigateTo(`/workspaces/${workspaceId.value}/messages/${res.conversation_id}`);
 };
+
+if (import.meta.client) {
+  let source: EventSource | null = null;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let reconnectAttempt = 0;
+
+  const close = () => {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    source?.close();
+    source = null;
+  };
+
+  const connect = (id: string) => {
+    close();
+    if (!id) return;
+
+    source = new EventSource(`/api/realtime/inbox?workspace_id=${encodeURIComponent(id)}`);
+
+    source.onopen = () => {
+      reconnectAttempt = 0;
+    };
+
+    source.addEventListener('inbox', () => {
+      queryClient.invalidateQueries({ queryKey: ['inbox', id] });
+    });
+
+    source.onerror = () => {
+      close();
+      const delay = Math.min(30_000, 500 * (2 ** reconnectAttempt));
+      reconnectAttempt += 1;
+      reconnectTimer = setTimeout(() => connect(id), delay);
+    };
+  };
+
+  onMounted(() => connect(workspaceId.value));
+  watch(workspaceId, (id) => connect(String(id ?? '')));
+  onUnmounted(close);
+}
 </script>
 
 <template>
@@ -204,4 +245,3 @@ const startChat = async (person: Person) => {
     </Card>
   </div>
 </template>
-
