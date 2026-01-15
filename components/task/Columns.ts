@@ -28,6 +28,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
   {
     accessorKey: "name",
     meta: {
+      label: "Task name",
       headerClass: "w-[240px]",
       cellClass: "max-w-[240px]",
     },
@@ -52,6 +53,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
   {
     accessorKey: "project",
     meta: {
+      label: "Project",
       headerClass: "w-[200px]",
       cellClass: "max-w-[200px]",
     },
@@ -84,6 +86,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
   {
     accessorKey: "assignee",
     meta: {
+      label: "Assignee",
       headerClass: "w-[170px]",
       cellClass: "max-w-[170px]",
     },
@@ -118,6 +121,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
   {
     accessorKey: "started_at",
     meta: {
+      label: "Started At",
       headerClass: "w-[120px]",
       cellClass: "whitespace-nowrap",
     },
@@ -157,6 +161,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
       return a - b;
     },
     meta: {
+      label: "Expected",
       headerClass: "w-[120px]",
       cellClass: "whitespace-nowrap",
     },
@@ -192,6 +197,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
       return a - b;
     },
     meta: {
+      label: "Actual",
       headerClass: "w-[120px]",
       cellClass: "whitespace-nowrap",
     },
@@ -222,6 +228,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
   {
     accessorKey: "status",
     meta: {
+      label: "Status",
       headerClass: "w-[140px]",
       cellClass: "whitespace-nowrap",
     },
@@ -252,6 +259,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
       return (priorityOrder[a] ?? 0) - (priorityOrder[b] ?? 0);
     },
     meta: {
+      label: "Priority",
       headerClass: "w-[120px]",
       cellClass: "whitespace-nowrap",
     },
@@ -276,6 +284,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
   },
   {
     id: "actions",
+    enableHiding: false,
     accessorKey: "task_id",
     meta: {
       headerClass: "w-[64px]",

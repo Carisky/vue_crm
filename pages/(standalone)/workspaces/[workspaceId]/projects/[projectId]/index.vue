@@ -83,21 +83,21 @@ onUnmounted(() => {
 <template>
     <Loader v-if="isPending && !isRefetching" class="min-h-auto h-96" />
     <div v-else-if="data" class="flex flex-col gap-y-4">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-x-2">
+        <div class="flex flex-col gap-y-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-x-2 min-w-0">
                 <ProjectAvatar :name="data.project.name" :image="data.project.image_url" class="size-8" />
-                <p class="text-lg font-semibold">{{ data.project.name }}</p>
+                <p class="text-lg font-semibold truncate">{{ data.project.name }}</p>
             </div>
-            <div>
-                <div class="flex items-center gap-2">
-                    <Button variant="secondary" size="sm" :as-child="true">
+            <div class="w-full sm:w-auto">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <Button variant="secondary" size="sm" :as-child="true" class="w-full sm:w-auto">
                         <NuxtLink
                             :href="`/workspaces/${route.params['workspaceId']}/projects/${route.params['projectId']}/docs`">
                             <Icon name="lucide:book-open" size="16px" class="size-4 mr-1" />
                             Project docs
                         </NuxtLink>
                     </Button>
-                    <Button variant="secondary" size="sm" :as-child="true">
+                    <Button variant="secondary" size="sm" :as-child="true" class="w-full sm:w-auto">
                         <NuxtLink
                             :href="`/workspaces/${route.params['workspaceId']}/projects/${route.params['projectId']}/settings`">
                             <Icon name="lucide:pencil" size="16px" class="size-4 mr-1" />

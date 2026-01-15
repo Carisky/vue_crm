@@ -18,6 +18,14 @@ const { value: filterValues } = useTaskFilterQueries()
 
 const allowedViews = new Set(['table', 'kanban'])
 
+const columnVisibilityKey = computed(() => {
+    const workspaceId = String(route.params['workspaceId'] ?? '')
+    const projectScope = projectId ? `project:${projectId}` : 'tasks'
+    return `task-table-columns:${workspaceId}:${projectScope}`
+})
+
+const workspaceId = computed(() => String(route.params['workspaceId'] ?? ''))
+
 // Default tab value is "table"
 const initialView = computed(() => {
     const candidate = view.value ? String(view.value) : 'table'
@@ -182,7 +190,8 @@ onUnmounted(() => {
             </div>
             <TabsContent value="table" class="mt-0">
                 <TaskDataTable v-if="tasks && !isLoadingTasks" :columns="columns" :data="tasks"
-                    :on-row-click="handleRowClick" />
+                    :on-row-click="handleRowClick" :column-visibility-key="columnVisibilityKey"
+                    :column-visibility-workspace-id="workspaceId" />
             </TabsContent>
             <TabsContent value="kanban" class="mt-0">
                 <TaskDataKanban v-if="tasks && !isLoadingTasks" :data="tasks" />
