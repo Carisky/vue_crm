@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   if (media_id) {
     const media = await prisma.taskMedia.findUnique({
       where: { id: media_id },
-      include: { task: true },
+      include: { task: true, variants: true },
     });
     if (!media || !media.task) {
       throw createError({ status: 404, statusText: "Media not found" });
@@ -31,11 +31,20 @@ export default defineEventHandler(async (event) => {
 
     await requireWorkspaceMembership(event, media.task.workspaceId);
     await deleteTaskMediaFile(media.path);
+    await Promise.all(
+      (media.variants ?? []).map((variant) =>
+        deleteTaskMediaFile(variant.path),
+      ),
+    );
     await prisma.taskMedia.delete({ where: { id: media_id } });
 
     const updatedTask = await prisma.task.findUnique({
       where: { id: media.task.id },
-      include: { project: true, assignee: true, media: true },
+      include: {
+        project: true,
+        assignee: true,
+        media: { include: { variants: true } },
+      },
     });
 
     if (updatedTask) {

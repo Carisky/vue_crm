@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
     include: {
       project: true,
       assignee: true,
-      media: true,
+      media: { include: { variants: true } },
     },
   });
 

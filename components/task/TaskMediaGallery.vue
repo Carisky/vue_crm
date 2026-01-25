@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useQueryClient } from '@tanstack/vue-query';
 import { toast } from 'vue-sonner';
 import {
@@ -23,6 +23,7 @@ const mediaInput = ref<HTMLInputElement | null>(null);
 const isUploadingMedia = ref(false);
 const mediaUploadProgress = ref(0);
 const mediaUploadError = ref<string | null>(null);
+const selectedVariantId = ref<string | null>(null);
 
 const queryClient = useQueryClient();
 
@@ -37,9 +38,67 @@ const resolveUrl = (path: string) => {
   return path.startsWith('/') ? path : `/${path}`;
 };
 
-const previewUrl = computed(() =>
-  previewMedia.value ? resolveUrl(previewMedia.value.path) : '',
-);
+type VideoSource = {
+  id: string;
+  path: string;
+  mime: string | null;
+  resolution: number | null;
+  label: string;
+  isOriginal: boolean;
+};
+
+const videoSources = computed<VideoSource[]>(() => {
+  const media = previewMedia.value;
+  if (!media || !isVideo(media)) return [];
+
+  const baseResolution = media.resolution ?? null;
+  const baseLabel = baseResolution
+    ? `${baseResolution}p (original)`
+    : 'Original';
+
+  const baseSource: VideoSource = {
+    id: media.id,
+    path: media.path,
+    mime: media.mime,
+    resolution: baseResolution,
+    label: baseLabel,
+    isOriginal: true,
+  };
+
+  const variantSources = (media.variants ?? []).map((variant) => ({
+    id: variant.id,
+    path: variant.path,
+    mime: variant.mime,
+    resolution: variant.resolution ?? null,
+    label: variant.resolution ? `${variant.resolution}p` : 'Variant',
+    isOriginal: false,
+  }));
+
+  return [baseSource, ...variantSources].sort(
+    (a, b) => (b.resolution ?? 0) - (a.resolution ?? 0),
+  );
+});
+
+const activeVideoSource = computed<VideoSource | null>(() => {
+  const sources = videoSources.value;
+  if (!sources.length) return null;
+  const selected = selectedVariantId.value
+    ? sources.find((source) => source.id === selectedVariantId.value)
+    : null;
+  return selected ?? sources[0];
+});
+
+const previewUrl = computed(() => {
+  if (!previewMedia.value) return '';
+  if (isVideo(previewMedia.value) && activeVideoSource.value) {
+    return resolveUrl(activeVideoSource.value.path);
+  }
+  return resolveUrl(previewMedia.value.path);
+});
+
+watch(() => previewMedia.value?.id, () => {
+  selectedVariantId.value = null;
+});
 
 const mediaFileName = (item: TaskMedia) =>
   item.original_name ?? item.path.split('/').pop() ?? 'attachment';
@@ -286,13 +345,36 @@ const removeMedia = async (mediaId: string) => {
             class="w-full rounded-lg border bg-black/5 object-contain"
           />
         </div>
-        <div v-else-if="isVideo(previewMedia)">
+        <div v-else-if="isVideo(previewMedia)" class="flex flex-col gap-3">
+          <div
+            v-if="videoSources.length > 1"
+            class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground"
+          >
+            <span class="font-semibold uppercase tracking-wide">Quality:</span>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="source in videoSources"
+                :key="source.id"
+                type="button"
+                class="rounded-full border px-3 py-1 text-[11px] uppercase transition hover:border-primary hover:text-primary"
+                :class="source.id === activeVideoSource?.id
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border text-muted-foreground'"
+                @click="selectedVariantId = source.id"
+              >
+                {{ source.label }}
+              </button>
+            </div>
+          </div>
           <video
             controls
             playsinline
             class="w-full rounded-lg border bg-black"
           >
-            <source :src="previewUrl" :type="previewMedia?.mime ?? undefined" />
+            <source
+              :src="resolveUrl(activeVideoSource?.path ?? previewMedia?.path ?? '')"
+              :type="activeVideoSource?.mime ?? previewMedia?.mime ?? undefined"
+            />
             {{ mediaFileName(previewMedia) }}
           </video>
         </div>

@@ -9,6 +9,7 @@ import {
 import { serializeTask } from "~/server/lib/serializers";
 import { sendTaskNotificationEmails } from "~/server/lib/email";
 import { broadcastTaskEvent } from "~/server/lib/task-events";
+import { attachMediaToTask } from "~/server/lib/task-media-service";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -85,15 +86,6 @@ export default defineEventHandler(async (event) => {
       assigneeId: assigneeId ?? undefined,
       description: data.description,
       position,
-      media: data.media?.length
-        ? {
-            create: data.media.map((file) => ({
-              path: file.path,
-              mime: file.mime ?? null,
-              originalName: file.original_name ?? null,
-            })),
-          }
-        : undefined,
       estimatedHours:
         data.estimated_hours === undefined ? undefined : data.estimated_hours,
       actualHours:
@@ -104,9 +96,24 @@ export default defineEventHandler(async (event) => {
     include: {
       project: true,
       assignee: true,
-      media: true,
     },
   });
+
+  const mediaPayload = data.media?.length ? data.media : undefined;
+  if (mediaPayload?.length) {
+    await attachMediaToTask(task.id, mediaPayload);
+  }
+
+  const taskWithMedia = await prisma.task.findUnique({
+    where: { id: task.id },
+    include: {
+      project: true,
+      assignee: true,
+      media: { include: { variants: true } },
+    },
+  });
+
+  const finalTask = taskWithMedia ?? task;
 
   const workspaceMembers = await prisma.member.findMany({
     where: {
@@ -159,16 +166,16 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    broadcastTaskEvent(task.workspaceId, {
+    broadcastTaskEvent(finalTask.workspaceId, {
       type: "TASK_CREATED",
-      workspaceId: task.workspaceId,
-      task: serializeTask(task),
+      workspaceId: finalTask.workspaceId,
+      task: serializeTask(finalTask),
     });
   } catch {
     // ignore realtime errors
   }
 
   return {
-    task: serializeTask(task),
+    task: serializeTask(finalTask),
   };
 });

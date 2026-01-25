@@ -64,7 +64,11 @@ export default defineEventHandler(async (event) => {
   const tasks = await prisma.task.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    include: { project: true, assignee: true, media: true },
+    include: {
+      project: true,
+      assignee: true,
+      media: { include: { variants: true } },
+    },
   });
 
   const serializedTasks = tasks.map((task) => serializeTask(task));

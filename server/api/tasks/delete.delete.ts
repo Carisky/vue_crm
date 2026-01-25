@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
 
   const task = await prisma.task.findUnique({
     where: { id: taskId },
-    include: { media: true },
+    include: { media: { include: { variants: true } } },
   });
   if (!task) {
     throw createError({ status: 404, statusText: "Task not found" });
@@ -30,7 +30,12 @@ export default defineEventHandler(async (event) => {
 
   if (task.media?.length) {
     await Promise.all(
-      task.media.map((media) => deleteTaskMediaFile(media.path)),
+      task.media.flatMap((media) => [
+        deleteTaskMediaFile(media.path),
+        ...(media.variants ?? []).map((variant) =>
+          deleteTaskMediaFile(variant.path),
+        ),
+      ]),
     );
   }
 

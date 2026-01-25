@@ -119,11 +119,20 @@ export type Task = TaskTimeFields & {
   position: number;
 };
 
+export type TaskMediaVariant = {
+  id: string;
+  path: string;
+  mime: string | null;
+  resolution: number | null;
+};
+
 export type TaskMedia = {
   id: string;
   path: string;
   mime: string | null;
   original_name: string | null;
+  resolution: number | null;
+  variants: TaskMediaVariant[];
 };
 
 export type FilteredTask = Task & {

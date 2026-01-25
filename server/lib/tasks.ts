@@ -8,6 +8,7 @@ import { requireWorkspaceMembership } from "./permissions";
 import { getTaskPriorityLabel, sendTaskNotificationEmails } from "./email";
 import { serializeTask } from "./serializers";
 import { broadcastTaskEvent } from "./task-events";
+import { attachMediaToTask } from "./task-media-service";
 
 export async function updateTask(
   event: H3Event,
@@ -84,25 +85,29 @@ export async function updateTask(
     updateData.actualHours = params.data.actual_hours ?? null;
   if (Object.prototype.hasOwnProperty.call(params.data, "started_at"))
     updateData.startedAt = params.data.started_at ?? null;
-  if (params.data.media?.length) {
-    updateData.media = {
-      create: params.data.media.map((file) => ({
-        path: file.path,
-        mime: file.mime ?? null,
-        originalName: file.original_name ?? null,
-      })),
-    };
-  }
-
   const updatedTask = await prisma.task.update({
     where: { id: taskId },
     data: updateData,
     include: {
       project: true,
       assignee: true,
-      media: true,
     },
   });
+
+  const mediaPayload = params.data.media?.length ? params.data.media : undefined;
+  if (mediaPayload?.length) {
+    await attachMediaToTask(taskId, mediaPayload);
+  }
+
+  const updatedTaskWithMedia = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: {
+      project: true,
+      assignee: true,
+      media: { include: { variants: true } },
+    },
+  });
+  const finalUpdatedTask = updatedTaskWithMedia ?? updatedTask;
 
   const priorityChangedToUrgent =
     params.data.priority &&
@@ -171,16 +176,16 @@ export async function updateTask(
   }
 
   try {
-    if (updatedTask) {
-      broadcastTaskEvent(updatedTask.workspaceId, {
-        type: "TASK_UPDATED",
-        workspaceId: updatedTask.workspaceId,
-        task: serializeTask(updatedTask),
-      });
-    }
+      if (finalUpdatedTask) {
+        broadcastTaskEvent(finalUpdatedTask.workspaceId, {
+          type: "TASK_UPDATED",
+          workspaceId: finalUpdatedTask.workspaceId,
+          task: serializeTask(finalUpdatedTask),
+        });
+      }
   } catch {
     // ignore realtime errors
   }
 
-  return updatedTask;
+  return finalUpdatedTask;
 }

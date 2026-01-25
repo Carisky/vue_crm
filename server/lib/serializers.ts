@@ -7,6 +7,7 @@ import type {
   TaskComment,
   TaskCommentMention,
   TaskMedia,
+  TaskMediaVariant,
   User,
   Workspace,
 } from "@prisma/client";
@@ -34,12 +35,23 @@ export function serializeProject(project: Project) {
   };
 }
 
-function serializeTaskMedia(media: TaskMedia) {
+function serializeTaskMediaVariant(variant: TaskMediaVariant) {
+  return {
+    id: variant.id,
+    path: variant.path,
+    mime: variant.mime,
+    resolution: variant.resolution,
+  };
+}
+
+function serializeTaskMedia(media: TaskMedia & { variants?: TaskMediaVariant[] }) {
   return {
     id: media.id,
     path: media.path,
     mime: media.mime,
     original_name: media.originalName,
+    resolution: media.resolution,
+    variants: (media.variants ?? []).map(serializeTaskMediaVariant),
   };
 }
 

@@ -313,15 +313,30 @@ model EmailQueue {
 }
 
 model TaskMedia {
-  id           String   @id @default(cuid())
+  id           String               @id @default(cuid())
   taskId       String?
   path         String
   mime         String?
   originalName String?
-  createdAt    DateTime @default(now())
-  task         Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  resolution   Int?
+  createdAt    DateTime             @default(now())
+  task         Task?                @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  variants     TaskMediaVariant[]
 
   @@index([taskId])
+}
+
+model TaskMediaVariant {
+  id          String     @id @default(cuid())
+  taskMediaId String
+  path        String
+  mime        String?
+  resolution  Int?
+  createdAt   DateTime   @default(now())
+
+  taskMedia TaskMedia @relation(fields: [taskMediaId], references: [id], onDelete: Cascade)
+
+  @@index([taskMediaId])
 }
 
 enum MemberRole {
