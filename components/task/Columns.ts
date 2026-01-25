@@ -27,10 +27,12 @@ const priorityOrder: Record<TaskPriority, number> = {
 export const columns: ColumnDef<FilteredTask>[] = [
   {
     accessorKey: "name",
+    size: 240,
+    minSize: 180,
     meta: {
       label: "Task name",
       headerClass: "w-[240px]",
-      cellClass: "max-w-[240px]",
+      cellClass: "whitespace-normal",
     },
     header: ({ column }) => {
       return h(
@@ -45,17 +47,17 @@ export const columns: ColumnDef<FilteredTask>[] = [
     cell: ({ row }) =>
       (() => {
         const name = String(row.getValue("name") ?? "");
-        const max = 15;
-        const clipped = name.length > max ? `${name.slice(0, max)}...` : name;
-        return h("p", { class: "truncate", title: name }, clipped);
+        return h("p", { class: "line-clamp-2 break-words", title: name }, name);
       })(),
   },
   {
     accessorKey: "project",
+    size: 200,
+    minSize: 160,
     meta: {
       label: "Project",
       headerClass: "w-[200px]",
-      cellClass: "max-w-[200px]",
+      cellClass: "whitespace-nowrap",
     },
     header: ({ column }) => {
       return h(
@@ -85,10 +87,12 @@ export const columns: ColumnDef<FilteredTask>[] = [
   },
   {
     accessorKey: "assignee",
+    size: 170,
+    minSize: 140,
     meta: {
       label: "Assignee",
       headerClass: "w-[170px]",
-      cellClass: "max-w-[170px]",
+      cellClass: "whitespace-nowrap",
     },
     header: ({ column }) => {
       return h(
@@ -120,6 +124,8 @@ export const columns: ColumnDef<FilteredTask>[] = [
   },
   {
     accessorKey: "started_at",
+    size: 120,
+    minSize: 110,
     meta: {
       label: "Started At",
       headerClass: "w-[120px]",
@@ -155,6 +161,8 @@ export const columns: ColumnDef<FilteredTask>[] = [
   },
   {
     accessorKey: "estimated_hours",
+    size: 120,
+    minSize: 110,
     sortingFn: (rowA, rowB, columnId) => {
       const a = Number(rowA.getValue(columnId) ?? 0);
       const b = Number(rowB.getValue(columnId) ?? 0);
@@ -191,6 +199,8 @@ export const columns: ColumnDef<FilteredTask>[] = [
   },
   {
     accessorKey: "actual_hours",
+    size: 120,
+    minSize: 110,
     sortingFn: (rowA, rowB, columnId) => {
       const a = Number(rowA.getValue(columnId) ?? 0);
       const b = Number(rowB.getValue(columnId) ?? 0);
@@ -227,6 +237,8 @@ export const columns: ColumnDef<FilteredTask>[] = [
   },
   {
     accessorKey: "status",
+    size: 140,
+    minSize: 120,
     meta: {
       label: "Status",
       headerClass: "w-[140px]",
@@ -253,6 +265,8 @@ export const columns: ColumnDef<FilteredTask>[] = [
   },
   {
     accessorKey: "priority",
+    size: 120,
+    minSize: 110,
     sortingFn: (rowA, rowB, columnId) => {
       const a = rowA.getValue(columnId) as TaskPriority;
       const b = rowB.getValue(columnId) as TaskPriority;
@@ -285,6 +299,8 @@ export const columns: ColumnDef<FilteredTask>[] = [
   {
     id: "actions",
     enableHiding: false,
+    enableResizing: false,
+    size: 64,
     accessorKey: "task_id",
     meta: {
       headerClass: "w-[64px]",

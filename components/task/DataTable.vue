@@ -2,6 +2,7 @@
 import type {
     ColumnDef,
     ColumnFiltersState,
+    ColumnSizingState,
     SortingState
 } from '@tanstack/vue-table'
 import {
@@ -30,14 +31,20 @@ const props = defineProps<{
     onRowClick?: (row: TData) => void
     columnVisibilityKey?: string
     columnVisibilityWorkspaceId?: string
+    columnSizingKey?: string
+    columnSizingWorkspaceId?: string
 }>()
 
 const sorting = ref<SortingState>([])
 const columnFilters = ref<ColumnFiltersState>([])
 const columnVisibility = ref<VisibilityState>({})
+const columnSizing = ref<ColumnSizingState>({})
 const isLoadingColumnVisibility = ref(false)
+const isLoadingColumnSizing = ref(false)
 let didLoadColumnVisibilityFromServer = false
+let didLoadColumnSizingFromServer = false
 let saveColumnVisibilityTimer: ReturnType<typeof setTimeout> | null = null
+let saveColumnSizingTimer: ReturnType<typeof setTimeout> | null = null
 
 const shouldIgnoreRowClick = (event: MouseEvent) => {
     const target = event.target as HTMLElement | null
@@ -53,12 +60,15 @@ const handleRowClick = (row: TData, event: MouseEvent) => {
 const table = useVueTable({
     get data() { return props.data },
     get columns() { return props.columns },
+    enableColumnResizing: true,
+    columnResizeMode: 'onChange',
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: updaterOrValue => valueUpdater(updaterOrValue, sorting),
     onColumnFiltersChange: updaterOrValue => valueUpdater(updaterOrValue, columnFilters),
     onColumnVisibilityChange: updaterOrValue => valueUpdater(updaterOrValue, columnVisibility),
+    onColumnSizingChange: updaterOrValue => valueUpdater(updaterOrValue, columnSizing),
     getFilteredRowModel: getFilteredRowModel(),
     initialState: {
         pagination: {
@@ -69,6 +79,7 @@ const table = useVueTable({
         get sorting() { return sorting.value },
         get columnFilters() { return columnFilters.value },
         get columnVisibility() { return columnVisibility.value },
+        get columnSizing() { return columnSizing.value },
     },
 })
 
@@ -83,6 +94,10 @@ const toggleableColumns = computed(() =>
 
 const canUseColumnVisibilityPreference = computed(() =>
     Boolean(props.columnVisibilityKey && props.columnVisibilityWorkspaceId)
+)
+
+const canUseColumnSizingPreference = computed(() =>
+    Boolean(props.columnSizingKey && props.columnSizingWorkspaceId)
 )
 
 const isColumnVisible = (columnId: string) => {
@@ -108,6 +123,24 @@ const fetchColumnVisibilityFromServer = async () => {
     }
 }
 
+const fetchColumnSizingFromServer = async () => {
+    if (!canUseColumnSizingPreference.value) return
+
+    isLoadingColumnSizing.value = true
+    try {
+        const res = await $fetch<{ value: ColumnSizingState | null }>('/api/ui/preferences', {
+            query: {
+                workspace_id: props.columnSizingWorkspaceId,
+                key: props.columnSizingKey,
+            },
+        })
+        columnSizing.value = res.value ?? {}
+        didLoadColumnSizingFromServer = true
+    } finally {
+        isLoadingColumnSizing.value = false
+    }
+}
+
 const scheduleSaveColumnVisibilityToServer = (nextValue: VisibilityState) => {
     if (!canUseColumnVisibilityPreference.value) return
     if (!didLoadColumnVisibilityFromServer) return
@@ -125,9 +158,32 @@ const scheduleSaveColumnVisibilityToServer = (nextValue: VisibilityState) => {
     }, 250)
 }
 
+const scheduleSaveColumnSizingToServer = (nextValue: ColumnSizingState) => {
+    if (!canUseColumnSizingPreference.value) return
+    if (!didLoadColumnSizingFromServer) return
+
+    if (saveColumnSizingTimer) clearTimeout(saveColumnSizingTimer)
+    saveColumnSizingTimer = setTimeout(async () => {
+        await $fetch('/api/ui/preferences', {
+            method: 'PATCH',
+            body: {
+                workspace_id: props.columnSizingWorkspaceId,
+                key: props.columnSizingKey,
+                value: nextValue,
+            },
+        }).catch(() => undefined)
+    }, 600)
+}
+
 watch(
     () => [props.columnVisibilityWorkspaceId, props.columnVisibilityKey],
     () => fetchColumnVisibilityFromServer(),
+    { immediate: true },
+)
+
+watch(
+    () => [props.columnSizingWorkspaceId, props.columnSizingKey],
+    () => fetchColumnSizingFromServer(),
     { immediate: true },
 )
 
@@ -137,8 +193,15 @@ watch(
     { deep: true },
 )
 
+watch(
+    columnSizing,
+    (next) => scheduleSaveColumnSizingToServer(next),
+    { deep: true },
+)
+
 onUnmounted(() => {
     if (saveColumnVisibilityTimer) clearTimeout(saveColumnVisibilityTimer)
+    if (saveColumnSizingTimer) clearTimeout(saveColumnSizingTimer)
 })
 
 const handleToggleColumnVisibility = (columnId: string) => {
@@ -181,10 +244,19 @@ const handleToggleColumnVisibility = (columnId: string) => {
                         <TableHead
                             v-for="header in headerGroup.headers"
                             :key="header.id"
-                            :class="(header.column.columnDef.meta as { headerClass?: string } | undefined)?.headerClass"
+                            :class="['relative', (header.column.columnDef.meta as { headerClass?: string } | undefined)?.headerClass]"
+                            :style="{ width: `${header.getSize()}px` }"
                         >
                             <FlexRender v-if="!header.isPlaceholder" :render="header.column.columnDef.header"
                                 :props="header.getContext()" />
+                            <div
+                                v-if="header.column.getCanResize()"
+                                class="absolute right-0 top-0 h-full w-3 cursor-col-resize select-none touch-none bg-transparent after:absolute after:right-0 after:top-0 after:h-full after:w-px after:bg-border/70 after:content-[''] hover:bg-primary/10 hover:after:bg-border"
+                                :class="header.column.getIsResizing() ? 'bg-primary/20 after:bg-primary/50' : undefined"
+                                title="Resize column"
+                                @mousedown="header.getResizeHandler()($event)"
+                                @touchstart.prevent="header.getResizeHandler()($event)"
+                            />
                         </TableHead>
                     </TableRow>
                 </TableHeader>
@@ -199,6 +271,7 @@ const handleToggleColumnVisibility = (columnId: string) => {
                                 v-for="cell in row.getVisibleCells()"
                                 :key="cell.id"
                                 :class="(cell.column.columnDef.meta as { cellClass?: string } | undefined)?.cellClass"
+                                :style="{ width: `${cell.column.getSize()}px` }"
                             >
                                 <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
                             </TableCell>

@@ -6,7 +6,7 @@ import { requireUser, requireWorkspaceMembership } from "~/server/lib/permission
 const BodySchema = z.object({
   workspace_id: z.string().min(1),
   key: z.string().min(1).max(191),
-  value: z.record(z.boolean()),
+  value: z.record(z.union([z.boolean(), z.number()])),
 });
 
 export default defineEventHandler(async (event) => {
@@ -41,4 +41,3 @@ export default defineEventHandler(async (event) => {
 
   return { ok: true };
 });
-

@@ -24,6 +24,12 @@ const columnVisibilityKey = computed(() => {
     return `task-table-columns:${workspaceId}:${projectScope}`
 })
 
+const columnSizingKey = computed(() => {
+    const workspaceId = String(route.params['workspaceId'] ?? '')
+    const projectScope = projectId ? `project:${projectId}` : 'tasks'
+    return `task-table-column-sizes:${workspaceId}:${projectScope}`
+})
+
 const workspaceId = computed(() => String(route.params['workspaceId'] ?? ''))
 
 // Default tab value is "table"
@@ -191,7 +197,8 @@ onUnmounted(() => {
             <TabsContent value="table" class="mt-0">
                 <TaskDataTable v-if="tasks && !isLoadingTasks" :columns="columns" :data="tasks"
                     :on-row-click="handleRowClick" :column-visibility-key="columnVisibilityKey"
-                    :column-visibility-workspace-id="workspaceId" />
+                    :column-visibility-workspace-id="workspaceId" :column-sizing-key="columnSizingKey"
+                    :column-sizing-workspace-id="workspaceId" />
             </TabsContent>
             <TabsContent value="kanban" class="mt-0">
                 <TaskDataKanban v-if="tasks && !isLoadingTasks" :data="tasks" />

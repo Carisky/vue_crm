@@ -24,6 +24,8 @@ const isUploadingMedia = ref(false);
 const mediaUploadProgress = ref(0);
 const mediaUploadError = ref<string | null>(null);
 const selectedVariantId = ref<string | null>(null);
+const confirmDeleteMedia = ref<TaskMedia | null>(null);
+const isDeletingMedia = ref(false);
 
 const queryClient = useQueryClient();
 
@@ -113,8 +115,16 @@ const openPreview = (item: TaskMedia) => {
   previewMedia.value = item;
 };
 
+const openConfirmDelete = (item: TaskMedia) => {
+  confirmDeleteMedia.value = item;
+};
+
 const handleDialogUpdate = (value: boolean) => {
   if (!value) previewMedia.value = null;
+};
+
+const handleConfirmDeleteDialogUpdate = (value: boolean) => {
+  if (!value) confirmDeleteMedia.value = null;
 };
 
 const sanitizeFileName = (value: string) =>
@@ -207,6 +217,7 @@ const handleMediaChange = async (event: Event) => {
 };
 
 const removeMedia = async (mediaId: string) => {
+  isDeletingMedia.value = true;
   try {
     await $fetch('/api/tasks/media', {
       method: 'DELETE',
@@ -216,7 +227,16 @@ const removeMedia = async (mediaId: string) => {
     toast.success('Media deleted');
   } catch (error) {
     toast.error('Failed to delete media file');
+  } finally {
+    isDeletingMedia.value = false;
   }
+};
+
+const handleConfirmDelete = async () => {
+  const media = confirmDeleteMedia.value;
+  if (!media) return;
+  await removeMedia(media.id);
+  confirmDeleteMedia.value = null;
 };
 </script>
 
@@ -271,7 +291,7 @@ const removeMedia = async (mediaId: string) => {
       No media files attached to this task yet.
     </div>
 
-    <div v-else class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-else class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3">
       <button
         v-for="item in props.media"
         :key="item.id"
@@ -284,13 +304,14 @@ const removeMedia = async (mediaId: string) => {
           type="button"
           variant="secondary"
           size="icon"
-          class="absolute right-2 top-2 h-7 w-7 opacity-0 transition group-hover:opacity-100"
-          @click.stop="removeMedia(item.id)"
+          class="absolute right-2 top-2 z-10 h-7 w-7 bg-background/90 opacity-90 shadow ring-1 ring-border/60 transition hover:opacity-100"
+          @click.stop="openConfirmDelete(item)"
           data-row-click="ignore"
+          aria-label="Delete media"
         >
           <Icon name="lucide:trash-2" size="14px" class="size-3.5" />
         </Button>
-        <div class="relative mb-3 aspect-video overflow-hidden rounded-md bg-muted">
+        <div class="relative z-0 mb-3 aspect-video overflow-hidden rounded-md bg-muted">
           <img
             v-if="isImage(item)"
             :src="resolveUrl(item.path)"
@@ -392,6 +413,38 @@ const removeMedia = async (mediaId: string) => {
             {{ previewUrl }}
             <Icon name="lucide:external-link" size="14px" class="size-4" />
           </a>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+
+  <Dialog :open="!!confirmDeleteMedia" @update:open="handleConfirmDeleteDialogUpdate">
+    <DialogContent v-if="confirmDeleteMedia" class="sm:max-w-[420px]">
+      <DialogTitle>Delete media?</DialogTitle>
+      <DialogDescription class="text-xs text-muted-foreground">
+        This action cannot be undone.
+      </DialogDescription>
+      <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+        <p class="min-w-0 flex-1 text-sm font-medium">
+          <span class="block max-w-full ">{{ mediaFileName(confirmDeleteMedia) }}</span>
+        </p>
+        <div class="flex shrink-0 items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            :disabled="isDeletingMedia"
+            @click="confirmDeleteMedia = null"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            :disabled="isDeletingMedia"
+            @click="handleConfirmDelete"
+          >
+            Delete
+          </Button>
         </div>
       </div>
     </DialogContent>
