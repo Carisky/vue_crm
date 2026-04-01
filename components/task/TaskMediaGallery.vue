@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useQueryClient } from '@tanstack/vue-query';
 import { toast } from 'vue-sonner';
 import {
@@ -26,6 +26,8 @@ const mediaUploadError = ref<string | null>(null);
 const selectedVariantId = ref<string | null>(null);
 const confirmDeleteMedia = ref<TaskMedia | null>(null);
 const isDeletingMedia = ref(false);
+const previewVideoEl = ref<HTMLVideoElement | null>(null);
+const previewVideoSwitchToken = ref(0);
 
 const queryClient = useQueryClient();
 
@@ -101,6 +103,48 @@ const previewUrl = computed(() => {
 watch(() => previewMedia.value?.id, () => {
   selectedVariantId.value = null;
 });
+
+watch(
+  () => previewUrl.value,
+  async (nextUrl, prevUrl) => {
+    if (!nextUrl || nextUrl === prevUrl) return;
+
+    const media = previewMedia.value;
+    if (!media || !isVideo(media)) return;
+
+    const el = previewVideoEl.value;
+    if (!el) return;
+
+    const token = ++previewVideoSwitchToken.value;
+    const currentTime = el.currentTime;
+    const shouldResume = !el.paused;
+
+    await nextTick();
+    if (previewVideoSwitchToken.value !== token) return;
+
+    const restorePlayback = () => {
+      if (previewVideoSwitchToken.value !== token) return;
+      if (Number.isFinite(currentTime) && currentTime > 0) {
+        try {
+          const duration = el.duration;
+          const maxTime =
+            Number.isFinite(duration) && duration > 0
+              ? Math.max(0, duration - 0.25)
+              : currentTime;
+          el.currentTime = Math.min(currentTime, maxTime);
+        } catch {}
+      }
+
+      if (shouldResume) {
+        void el.play().catch(() => undefined);
+      }
+    };
+
+    el.addEventListener('loadedmetadata', restorePlayback, { once: true });
+    el.load();
+  },
+  { flush: 'post' },
+);
 
 const mediaFileName = (item: TaskMedia) =>
   item.original_name ?? item.path.split('/').pop() ?? 'attachment';
@@ -388,12 +432,15 @@ const handleConfirmDelete = async () => {
             </div>
           </div>
           <video
+            ref="previewVideoEl"
             controls
             playsinline
+            preload="metadata"
             class="w-full rounded-lg border bg-black"
           >
             <source
-              :src="resolveUrl(activeVideoSource?.path ?? previewMedia?.path ?? '')"
+              :key="activeVideoSource?.id ?? previewMedia.id"
+              :src="previewUrl"
               :type="activeVideoSource?.mime ?? previewMedia?.mime ?? undefined"
             />
             {{ mediaFileName(previewMedia) }}
