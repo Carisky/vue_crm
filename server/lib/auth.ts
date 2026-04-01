@@ -1,15 +1,22 @@
-import { deleteCookie, getCookie, H3Event, setCookie } from "h3";
+import {
+  deleteCookie,
+  getCookie,
+  getRequestProtocol,
+  H3Event,
+  setCookie,
+} from "h3";
 
 import { createSession, deleteSessionByToken } from "./session";
 
 export async function createAuthSession(event: H3Event, userId: string) {
   const config = useRuntimeConfig(event);
   const { token, session } = await createSession(userId);
+  const secure = getRequestProtocol(event, { xForwardedProto: true }) === "https";
 
   setCookie(event, config.public.sessionCookieName, token, {
     httpOnly: true,
     sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
+    secure,
     path: "/",
     expires: session.expiresAt,
   });

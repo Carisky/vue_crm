@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { setCookie } from "h3";
+import { getRequestProtocol, setCookie } from "h3";
 
 import { GITHUB_STATE_COOKIE } from "~/server/lib/constants";
 
@@ -14,10 +14,12 @@ export default defineEventHandler(async (event) => {
   }
 
   const state = randomBytes(16).toString("hex");
+  const secure = getRequestProtocol(event, { xForwardedProto: true }) === "https";
+
   setCookie(event, GITHUB_STATE_COOKIE, state, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure,
     maxAge: 10 * 60,
     path: "/",
   });
