@@ -26,8 +26,8 @@ if [[ -z "$domain" ]]; then
 fi
 
 if ! command -v certbot >/dev/null 2>&1; then
-  echo "certbot is not installed. Install certbot and python3-certbot-nginx first."
+  echo "certbot is not installed. Install certbot and python3-certbot-apache first."
   exit 1
 fi
 
-sudo certbot --nginx -d "$domain" --redirect
+sudo certbot --apache -d "$domain" --redirect
