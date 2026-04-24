@@ -12,7 +12,8 @@
     "server:stop": "bash scripts/server.sh stop",
     "server:restart": "bash scripts/server.sh restart",
     "server:rebuild": "bash scripts/server.sh rebuild",
-    "server:status": "bash scripts/server.sh status"
+    "server:status": "bash scripts/server.sh status",
+    "ssl:get": "bash scripts/ssl-get.sh"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.18",
