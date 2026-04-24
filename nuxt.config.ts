@@ -30,8 +30,6 @@ export default defineNuxtConfig({
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL,
     sessionSecret: process.env.SESSION_SECRET,
-    githubClientId: process.env.GITHUB_CLIENT_ID,
-    githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
     smtpHost: process.env.SMTP_HOST,
     smtpPort: process.env.SMTP_PORT,
     smtpSecure: process.env.SMTP_SECURE,
@@ -41,8 +39,6 @@ export default defineNuxtConfig({
     public: {
       sessionCookieName: process.env.PUBLIC_SESSION_COOKIE_NAME,
       siteUrl: process.env.PUBLIC_SITE_URL,
-      oauthGitHubCallbackUrl: process.env.PUBLIC_OAUTH_CALLBACK_URL_GITHUB,
-      githubClientId: process.env.GITHUB_CLIENT_ID,
     },
   },
 

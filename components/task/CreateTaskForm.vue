@@ -51,8 +51,6 @@ const form = useForm({
         assignee_id: UNASSIGNED_VALUE,
         project_id: projectOptions[0]?.$id,
         description: '',
-        estimated_hours: undefined,
-        actual_hours: undefined,
         started_at: undefined,
     }
 })
@@ -196,8 +194,6 @@ const handleSubmit = form.handleSubmit((values) => {
                 ? null
                 : values.assignee_id ?? null,
         due_date: values.due_date ?? null,
-        estimated_hours: values.estimated_hours ?? undefined,
-        actual_hours: values.actual_hours ?? undefined,
         started_at: values.started_at ?? undefined,
         media: mediaPayload,
     }
@@ -261,38 +257,6 @@ const handleSubmit = form.handleSubmit((values) => {
                                 <FormMessage />
                             </FormItem>
                         </FormField>
-                        <div class="grid gap-3 sm:grid-cols-2">
-                            <FormField v-slot="{ componentField }" name="estimated_hours">
-                                <FormItem>
-                                    <FormLabel>Estimated Hours</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="number"
-                                            step="0.25"
-                                            min="0"
-                                            placeholder="0"
-                                            v-bind="componentField"
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
-                            <FormField v-slot="{ componentField }" name="actual_hours">
-                                <FormItem>
-                                    <FormLabel>Actual Hours</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="number"
-                                            step="0.25"
-                                            min="0"
-                                            placeholder="0"
-                                            v-bind="componentField"
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
-                        </div>
                         <div class="space-y-2">
                             <p class="text-sm font-medium text-muted-foreground">Media</p>
                             <input

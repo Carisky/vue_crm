@@ -4,10 +4,9 @@ import type { WorkspaceMember } from '~/lib/types';
 import useAuthStore from '~/stores/auth';
 import MemberItem from './MemberItem.vue';
 
-const { data, workspaceId, periodDays } = defineProps<{
+const { data, workspaceId } = defineProps<{
     data: WorkspaceMember[];
     workspaceId: string;
-    periodDays: number;
 }>()
 
 const route = useRoute()
@@ -36,8 +35,6 @@ const currentUserIsAdmin = !currentUserIsOwner && currentUserMembership!.role ==
                         :data="member"
                         :workspace-id="workspaceId"
                         :total-members="data.length"
-                        :period-days="periodDays"
-                        :current-user-membership-role="currentUserMembership!.role"
                         :current-user-is-owner="currentUserIsOwner"
                         :current-user-is-admin="currentUserIsAdmin"
                     />

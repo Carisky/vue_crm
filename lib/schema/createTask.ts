@@ -10,42 +10,6 @@ function normalizePastedText(value: string) {
     .replace(/\u00A0/g, " ");
 }
 
-function normalizeNumberString(value: string) {
-  const trimmed = normalizePastedText(value).trim();
-  if (!trimmed) return "";
-
-  const compact = trimmed.replace(/[\s\u202F\u00A0]/g, "");
-  const hasComma = compact.includes(",");
-  const hasDot = compact.includes(".");
-
-  if (hasComma && hasDot) {
-    const lastComma = compact.lastIndexOf(",");
-    const lastDot = compact.lastIndexOf(".");
-    const decimalSeparator = lastComma > lastDot ? "," : ".";
-    const thousandSeparator = decimalSeparator === "," ? "." : ",";
-
-    return compact
-      .split(thousandSeparator)
-      .join("")
-      .replace(decimalSeparator, ".");
-  }
-
-  if (hasComma) return compact.replace(",", ".");
-  return compact;
-}
-
-const optionalHoursField = z
-  .preprocess((value) => {
-    if (value === "" || value === null || value === undefined) return undefined;
-    if (typeof value === "string") {
-      const normalized = normalizeNumberString(value);
-      if (!normalized) return undefined;
-      return normalized;
-    }
-    return value;
-  }, z.coerce.number().nonnegative())
-  .optional();
-
 const optionalDueDateField = z
   .preprocess((value) => {
     if (value === "" || value === null || value === undefined) return null;
@@ -81,8 +45,6 @@ export const CreateTasksSchema = z.object({
       z.string(),
     )
     .optional(),
-  estimated_hours: optionalHoursField,
-  actual_hours: optionalHoursField,
   started_at: optionalStartedAtField,
   media: z
     .array(

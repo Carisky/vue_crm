@@ -1,4 +1,4 @@
-import { type ColumnDef } from "@tanstack/vue-table";
+﻿import { type ColumnDef } from "@tanstack/vue-table";
 import { format } from "date-fns";
 import { ArrowUpDownIcon } from "lucide-vue-next";
 
@@ -157,82 +157,6 @@ export const columns: ColumnDef<FilteredTask>[] = [
         { class: "text-sm font-medium" },
         format(parsedDate, "MMM d"),
       );
-    },
-  },
-  {
-    accessorKey: "estimated_hours",
-    size: 120,
-    minSize: 110,
-    sortingFn: (rowA, rowB, columnId) => {
-      const a = Number(rowA.getValue(columnId) ?? 0);
-      const b = Number(rowB.getValue(columnId) ?? 0);
-      return a - b;
-    },
-    meta: {
-      label: "Expected",
-      headerClass: "w-[120px]",
-      cellClass: "whitespace-nowrap",
-    },
-    header: ({ column }) => {
-      return h(
-        Button,
-        {
-          variant: "ghost",
-          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
-        },
-        () => ["Expected", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
-      );
-    },
-    cell: ({ row }) => {
-      const value = row.getValue("estimated_hours") as number | null | undefined;
-      if (value === null || value === undefined) {
-        return h("span", { class: "text-sm text-muted-foreground" }, "—");
-      }
-
-      const hours = Number(value);
-      if (!Number.isFinite(hours)) {
-        return h("span", { class: "text-sm text-muted-foreground" }, "—");
-      }
-
-      return h("span", { class: "text-sm font-medium" }, `${hours.toFixed(1)}h`);
-    },
-  },
-  {
-    accessorKey: "actual_hours",
-    size: 120,
-    minSize: 110,
-    sortingFn: (rowA, rowB, columnId) => {
-      const a = Number(rowA.getValue(columnId) ?? 0);
-      const b = Number(rowB.getValue(columnId) ?? 0);
-      return a - b;
-    },
-    meta: {
-      label: "Actual",
-      headerClass: "w-[120px]",
-      cellClass: "whitespace-nowrap",
-    },
-    header: ({ column }) => {
-      return h(
-        Button,
-        {
-          variant: "ghost",
-          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
-        },
-        () => ["Actual", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
-      );
-    },
-    cell: ({ row }) => {
-      const value = row.getValue("actual_hours") as number | null | undefined;
-      if (value === null || value === undefined) {
-        return h("span", { class: "text-sm text-muted-foreground" }, "—");
-      }
-
-      const hours = Number(value);
-      if (!Number.isFinite(hours)) {
-        return h("span", { class: "text-sm text-muted-foreground" }, "—");
-      }
-
-      return h("span", { class: "text-sm font-medium" }, `${hours.toFixed(1)}h`);
     },
   },
   {

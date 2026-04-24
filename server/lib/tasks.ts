@@ -79,10 +79,6 @@ export async function updateTask(
     updateData.description = params.data.description;
   if (params.data.position !== undefined)
     updateData.position = params.data.position;
-  if (Object.prototype.hasOwnProperty.call(params.data, "estimated_hours"))
-    updateData.estimatedHours = params.data.estimated_hours ?? null;
-  if (Object.prototype.hasOwnProperty.call(params.data, "actual_hours"))
-    updateData.actualHours = params.data.actual_hours ?? null;
   if (Object.prototype.hasOwnProperty.call(params.data, "started_at"))
     updateData.startedAt = params.data.started_at ?? null;
   const updatedTask = await prisma.task.update({

@@ -86,10 +86,6 @@ export default defineEventHandler(async (event) => {
       assigneeId: assigneeId ?? undefined,
       description: data.description,
       position,
-      estimatedHours:
-        data.estimated_hours === undefined ? undefined : data.estimated_hours,
-      actualHours:
-        data.actual_hours === undefined ? undefined : data.actual_hours,
       startedAt:
         data.started_at === undefined ? undefined : data.started_at,
     },

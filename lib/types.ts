@@ -73,15 +73,6 @@ export type WorkspaceMember = {
   membership_id: string;
   role: MemberRole;
   is_owner: boolean;
-  monthly_workload_target_hours?: number | null;
-  actual_hours?: number | null;
-  monthly_hours?: {
-    month: string;
-    label: string;
-    hours: number;
-    done_hours: number;
-    review_hours: number;
-  }[];
 };
 
 export type Notification = {
@@ -94,15 +85,12 @@ export type Notification = {
   taskName: string | null;
   projectName: string | null;
   type: string;
-  taskEstimatedHours: number | null;
   message: string | null;
   isRead: boolean;
   createdAt: string;
 };
 
 export type TaskTimeFields = {
-  estimated_hours?: number | null;
-  actual_hours?: number | null;
   started_at?: string | null;
 };
 

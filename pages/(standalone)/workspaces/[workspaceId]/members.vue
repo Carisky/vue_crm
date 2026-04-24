@@ -16,15 +16,14 @@ useHead({
 
 const route = useRoute()
 const workspaceId = computed(() => route.params['workspaceId'])
-const periodDays = 30
-const queryKey = computed(() => ['workspace-members', workspaceId.value, periodDays])
+const queryKey = computed(() => ['workspace-members', workspaceId.value])
 
 const { data, isFetching, isRefetching, suspense } = useQuery<WorkspaceMember[]>
     ({
         queryKey,
         queryFn: async () => {
             const res = await fetch(
-                `/api/workspaces/${workspaceId.value}/members?period_days=${periodDays}`,
+                `/api/workspaces/${workspaceId.value}/members`,
             )
             const data = await res.json()
             return (data?.members ?? []) as WorkspaceMember[]
@@ -46,7 +45,6 @@ onServerPrefetch(async () => {
                 v-if="!!data?.length && !!workspaceId"
                 :data="data"
                 :workspace-id="String(workspaceId)"
-                :period-days="periodDays"
             />
         </div>
     </div>

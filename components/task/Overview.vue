@@ -11,9 +11,6 @@ const statuses = Object.entries(TaskStatus).reduce(
     {} as Record<string, string>,
 );
 
-const formatHours = (value?: number | null) =>
-    typeof value === 'number' ? `${value}h` : 'Not set';
-
 const { open: openUpdateTaskModal } = useUpdateTaskModal()
 </script>
 
@@ -48,12 +45,6 @@ const { open: openUpdateTaskModal } = useUpdateTaskModal()
                 </TaskOverviewProperty>
                 <TaskOverviewProperty label="Priority">
                     <Badge :variant="task.priority">{{ taskPriorityLabels[task.priority] }}</Badge>
-                </TaskOverviewProperty>
-                <TaskOverviewProperty label="Estimated Time">
-                    <p class="text-sm font-medium">{{ formatHours(task.estimated_hours) }}</p>
-                </TaskOverviewProperty>
-                <TaskOverviewProperty label="Actual Time">
-                    <p class="text-sm font-medium">{{ formatHours(task.actual_hours) }}</p>
                 </TaskOverviewProperty>
             </div>
         </div>

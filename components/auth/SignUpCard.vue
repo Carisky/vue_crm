@@ -80,17 +80,6 @@ const handleSignUp = form.handleSubmit((values) => mutate(values))
         <div class="px-7">
             <DottedSeparator />
         </div>
-        <CardContent class="flex flex-col p-7 gap-y-4">
-            <form action="/api/auth/github" method="post">
-                <Button variant="secondary" size="lg" class="w-full">
-                    <Icon name="logos:github-icon" size="20px" class="size-5 mr-1" />
-                    Sign up with GitHub
-                </Button>
-            </form>
-        </CardContent>
-        <div class="px-7">
-            <DottedSeparator />
-        </div>
         <CardContent class="flex items-center justify-center p-7">
             <p>
                 Already have an account? <NuxtLink href="/sign-in"><span class="text-blue-700">Sign in</span></NuxtLink>

@@ -83,8 +83,6 @@ export function serializeTask(
           email: task.assignee.email,
         }
       : null,
-    estimated_hours: task.estimatedHours,
-    actual_hours: task.actualHours,
     started_at: task.startedAt ? task.startedAt.toISOString() : null,
     media: task.media ? task.media.map(serializeTaskMedia) : [],
   };
@@ -93,7 +91,6 @@ export function serializeTask(
 export function serializeMember(
   membership: Member & { user: User },
   ownerId: string,
-  actualHours?: number | null,
 ) {
   return {
     $id: membership.user.id,
@@ -102,9 +99,6 @@ export function serializeMember(
     membership_id: membership.id,
     role: membership.role === "ADMIN" ? "admin" : "member",
     is_owner: membership.userId === ownerId,
-    monthly_workload_target_hours:
-      membership.user.monthlyWorkloadTargetHours ?? null,
-    actual_hours: actualHours ?? null,
   };
 }
 

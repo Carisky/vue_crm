@@ -37,7 +37,6 @@ export default defineEventHandler(async (event) => {
         select: {
           id: true,
           name: true,
-          estimatedHours: true,
         },
       },
       project: {
@@ -71,7 +70,6 @@ export default defineEventHandler(async (event) => {
       taskName: notification.task?.name ?? null,
       projectName: notification.project?.name ?? null,
       type: notification.type,
-      taskEstimatedHours: notification.task?.estimatedHours ?? null,
       message: notification.message,
       isRead: notification.isRead,
       createdAt: notification.createdAt.toISOString(),
