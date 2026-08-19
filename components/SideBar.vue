@@ -2,8 +2,8 @@
 
 <template>
 <aside class="h-full w-full bg-sidebar p-4 text-sidebar-foreground border-r border-sidebar-border">
-  <NuxtLink href="/" class="block h-[40px] w-[164px] overflow-hidden">
-    <img src="/public/logo.svg" width="164" height="40" alt="Nuxt Jira" />
+  <NuxtLink href="/" class="block h-[56px] w-[164px] overflow-hidden">
+    <img src="/logo.png" width="164" height="56" alt="TSL Silesia" class="size-full object-contain object-left" />
   </NuxtLink>
   <div class="mt-2">
     <NuxtLink
