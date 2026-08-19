@@ -180,6 +180,7 @@ export function startScheduler() {
   globalState.__schedulerStarted = true;
 
   console.log(`[scheduler] started pid=${process.pid}`);
+  console.log(`[scheduler] registered tasks=${getTasks().length}`);
 
   const tick = async () => {
     if (globalState.__schedulerRunning) return;
