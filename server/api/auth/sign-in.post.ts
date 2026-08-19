@@ -19,6 +19,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ status: 400, statusText: "Invalid credentials" });
   }
 
+  if (!user.emailVerifiedAt) {
+    throw createError({
+      status: 403,
+      statusText: "Please verify your email address before signing in",
+    });
+  }
+
   await createAuthSession(event, user.id);
 
   return { ok: true };

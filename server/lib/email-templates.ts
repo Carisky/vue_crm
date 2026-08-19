@@ -11,6 +11,11 @@ type TaskNotificationTemplateInput = {
   taskUrl?: string | null;
 };
 
+type EmailVerificationTemplateInput = {
+  verificationUrl: string;
+  expiresInMinutes: number;
+};
+
 const escapeHtml = (value: string) =>
   value
     .replace(/&/g, "&amp;")
@@ -120,5 +125,18 @@ export function renderTaskNotificationEmail(input: TaskNotificationTemplateInput
   return {
     html,
     text: textLines.join("\n"),
+  };
+}
+
+export function renderEmailVerificationEmail(
+  input: EmailVerificationTemplateInput,
+) {
+  const verificationUrl = escapeHtml(input.verificationUrl);
+  const title = "Confirm your email address";
+  const message = `Click the button below to confirm your email address. The link is valid for ${input.expiresInMinutes} minutes.`;
+
+  return {
+    html: `<!doctype html><html lang="en"><body style="font-family:Arial,sans-serif;color:#111827;padding:24px"><h1>${title}</h1><p>${message}</p><p><a href="${verificationUrl}" style="display:inline-block;background:#111827;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px">Confirm email</a></p><p>If you did not create this account, ignore this email.</p></body></html>`,
+    text: `${title}\n\n${message}\n\n${input.verificationUrl}\n\nIf you did not create this account, ignore this email.`,
   };
 }

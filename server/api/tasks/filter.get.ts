@@ -1,4 +1,4 @@
-import { TaskStatus } from "@prisma/client";
+import { Prisma, TaskStatus } from "@prisma/client";
 import { endOfDay, startOfDay } from "date-fns";
 
 import prisma from "~/server/lib/prisma";
@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
 
   await requireWorkspaceMembership(event, workspace_id);
 
-  const where: any = {
+  const where: Prisma.TaskWhereInput = {
     workspaceId: workspace_id,
   };
 
@@ -37,10 +37,13 @@ export default defineEventHandler(async (event) => {
     where.assigneeId = assignee_id;
   }
   if (status && typeof status === "string") {
+    if (!Object.values(TaskStatus).includes(status as TaskStatus)) {
+      throw createError({ status: 400, statusText: "Invalid task status" });
+    }
     where.status = status as TaskStatus;
   }
   if (search && typeof search === "string") {
-    where.name = { contains: search, mode: "insensitive" };
+    where.name = { contains: search };
   }
   if (due_date && typeof due_date === "string") {
     const date = new Date(due_date);

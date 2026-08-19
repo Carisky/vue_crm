@@ -1,7 +1,9 @@
 import { SignUpSchema } from "~/lib/schema/auth";
 import prisma from "~/server/lib/prisma";
-import { createAuthSession } from "~/server/lib/auth";
 import { hashPassword } from "~/server/lib/password";
+import { createEmailVerification } from "~/server/lib/email-verification";
+import { renderEmailVerificationEmail } from "~/server/lib/email-templates";
+import { enqueueEmail } from "~/server/lib/email-queue";
 
 export default defineEventHandler(async (event) => {
   const params = await readValidatedBody(event, SignUpSchema.safeParse);
@@ -30,7 +32,22 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  await createAuthSession(event, user.id);
+  const { token } = await createEmailVerification(user.id);
+  const config = useRuntimeConfig(event);
+  const siteUrl = String(config.public.siteUrl ?? "").replace(/\/$/, "");
+  const verificationUrl = `${siteUrl}/api/auth/verify-email?token=${encodeURIComponent(token)}`;
+  const { html, text } = renderEmailVerificationEmail({
+    verificationUrl,
+    expiresInMinutes: 30,
+  });
 
-  return { ok: true };
+  await enqueueEmail({
+    userId: user.id,
+    to: user.email,
+    subject: "Confirm your email address",
+    html,
+    text,
+  });
+
+  return { ok: true, verificationRequired: true };
 });

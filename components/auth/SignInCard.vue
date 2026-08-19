@@ -7,6 +7,15 @@ import { toast } from 'vue-sonner'
 import { SignInSchema } from '~/lib/schema/auth'
 
 const queryClient = useQueryClient()
+const route = useRoute()
+
+onMounted(() => {
+    const status = route.query.verified
+    if (route.query.registered === '1') toast.success('Check your email to verify the account.')
+    if (status === 'success') toast.success('Email verified. You can sign in now.')
+    if (status === 'expired') toast.error('This verification link has expired.')
+    if (status === 'invalid') toast.error('This verification link is invalid.')
+})
 
 // Sign in with email & password
 configure({
@@ -25,7 +34,7 @@ const { isPending, mutate } = useMutation({
             await navigateTo('/')
         } else toast.error('Failed to sign in')
     },
-    onError: () => toast.error('Failed to sign in')
+    onError: (error: any) => toast.error(error?.data?.statusMessage ?? 'Failed to sign in')
 })
 
 const handleSignIn = form.handleSubmit((values) => mutate(values))

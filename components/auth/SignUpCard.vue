@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation } from '@tanstack/vue-query'
 import { configure, useForm } from 'vee-validate'
 import { toTypedSchema } from "@vee-validate/zod"
 import { toast } from 'vue-sonner'
 
 import { SignUpSchema } from '~/lib/schema/auth'
-
-const queryClient = useQueryClient()
 
 // Sign up with email & password
 configure({
@@ -21,8 +19,8 @@ const { isPending, mutate } = useMutation({
     mutationFn: async (credentials: typeof form.values) => {
         const res = await $fetch('/api/auth/sign-up', { method: 'POST', body: credentials })
         if (res.ok) {
-            await queryClient.refetchQueries({ queryKey: ['auth/me'] })
-            await navigateTo('/')
+            toast.success('Account created. Check your email to verify the account.')
+            await navigateTo('/sign-in?registered=1')
         } else toast.error('Failed to sign up')
     },
     onError: () => toast.error('Failed to sign up')
