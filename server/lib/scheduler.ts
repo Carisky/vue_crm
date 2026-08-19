@@ -88,7 +88,11 @@ function registerTask(entry: Omit<TaskEntry, "nextRunAt">) {
       tasks.splice(existingIndex, 1);
     }
   }
-  tasks.push({ ...entry, nextRunAt: computeNextRun(entry) });
+  const nextRunAt = entry.type === "interval" ? Date.now() : computeNextRun(entry);
+  tasks.push({ ...entry, nextRunAt });
+  console.log(
+    `[scheduler] registered ${entry.name ?? "unnamed"}; first run immediately`,
+  );
 }
 
 class TaskBuilder {

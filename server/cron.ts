@@ -3,9 +3,9 @@ import { Schedule } from "~/server/lib/scheduler";
 import { removeExpiredEmailVerificationAccounts } from "~/server/lib/email-verification-cleanup";
 
 Schedule.call(() => processEmailQueue(), { name: "email-queue" }).everyMinutes(
-  5,
+  1,
 );
 
 Schedule.call(removeExpiredEmailVerificationAccounts, {
   name: "email-verification-cleanup",
-}).everyMinutes(5);
+}).everyMinutes(1);
