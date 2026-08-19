@@ -51,7 +51,12 @@ export async function enqueueEmail(input: EnqueueEmailInput) {
 
 export async function processEmailQueue(options: EmailQueueOptions = {}) {
   const smtp = getSmtpConfig();
-  if (!smtp.host || !smtp.port || !smtp.from) return;
+  if (!smtp.host || !smtp.port || !smtp.from) {
+    console.warn(
+      "[email-queue] skipped: SMTP_HOST, SMTP_PORT or SMTP_FROM is missing",
+    );
+    return;
+  }
 
   const batchSize = options.batchSize ?? DEFAULT_BATCH_SIZE;
   const maxAttempts = options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;

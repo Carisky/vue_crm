@@ -175,6 +175,8 @@ export function startScheduler() {
   if (globalState.__schedulerStarted) return;
   globalState.__schedulerStarted = true;
 
+  console.log(`[scheduler] started pid=${process.pid}`);
+
   const tick = async () => {
     if (globalState.__schedulerRunning) return;
     globalState.__schedulerRunning = true;
@@ -187,7 +189,9 @@ export function startScheduler() {
 
     for (const task of dueTasks) {
       try {
+        console.log(`[scheduler] running ${task.name ?? "unnamed"}`);
         await task.handler();
+        console.log(`[scheduler] completed ${task.name ?? "unnamed"}`);
       } catch (error) {
         console.error("Scheduled task failed", {
           name: task.name ?? "unnamed",

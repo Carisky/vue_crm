@@ -38,6 +38,13 @@ start_server() {
     echo $! > "$pid_file"
   )
   echo "Started server with PID $(cat "$pid_file")"
+  sleep 1
+  pid="$(cat "$pid_file")"
+  if kill -0 "$pid" >/dev/null 2>&1 && grep -Fq "[scheduler] started pid=$pid" "$log_file"; then
+    echo "Scheduler: active (PID $pid)"
+  else
+    echo "Scheduler: not confirmed. Check $log_file"
+  fi
 }
 
 stop_server() {
