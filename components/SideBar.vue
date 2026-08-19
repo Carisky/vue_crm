@@ -1,4 +1,14 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+const route = useRoute()
+
+const profileHref = computed(() => {
+  const workspaceId = route.params['workspaceId'] ?? route.query['workspace_id']
+
+  return typeof workspaceId === 'string' && workspaceId
+    ? `/profile?workspace_id=${encodeURIComponent(workspaceId)}`
+    : '/profile'
+})
+</script>
 
 <template>
 <aside class="h-full w-full bg-sidebar p-4 text-sidebar-foreground border-r border-sidebar-border">
@@ -7,13 +17,13 @@
   </NuxtLink>
   <div class="mt-2">
     <NuxtLink
-        href="/profile"
+        :href="profileHref"
         class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition hover:text-sidebar-primary hover:bg-sidebar-primary/5"
     >
       <Icon
         name="heroicons:user-circle"
         size="16px"
-        class="size-4 text-sidebar-foreground/60"
+        class="size-4 text-sidebar-foreground/85"
       />
       Profile settings
     </NuxtLink>

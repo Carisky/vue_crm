@@ -40,10 +40,10 @@ const routes = computed(() => [
         <NuxtLink
             v-for="r of routes"
             :href="r.href"
-            active-class="bg-sidebar-primary/10 text-card-foreground shadow-sm"
+            active-class="bg-sidebar-primary/15 text-sidebar-foreground shadow-sm"
             class="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition hover:text-sidebar-primary hover:bg-sidebar-primary/5"
         >
-            <Icon :name="r.icon" size="20px" class="size-5 text-sidebar-foreground/60" />
+            <Icon :name="r.icon" size="20px" class="size-5 text-sidebar-foreground/85" />
             {{ r.label }}
         </NuxtLink>
     </ul>

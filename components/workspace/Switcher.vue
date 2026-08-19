@@ -25,28 +25,34 @@ const trigger = templateRef('trigger')
 const workspaceSelectOpen = ref(false)
 const selectedWorkspace: Ref<Workspace | ''> = ref('')
 
-watch([() => route.params['workspaceId'], data], ([wId, data]) => {
-    const workspaceId = (String(wId) || data?.[0]?.$id) ?? ''
+watch([() => route.params['workspaceId'], () => route.query['workspace_id'], data], ([routeId, queryId, data]) => {
+    const workspaceId = (
+        typeof routeId === 'string' && routeId
+            ? routeId
+            : typeof queryId === 'string' && queryId
+                ? queryId
+                : data?.[0]?.$id
+    ) ?? ''
     selectedWorkspace.value = data?.find(({ $id }) => $id === workspaceId) ?? ''
 }, { immediate: true })
 </script>
 
 <template>
     <div class="flex flex-col gap-y-2" @click="workspaceSelectOpen = false">
-        <div class="flex items-center justify-between text-sidebar-foreground/70">
+        <div class="flex items-center justify-between text-sidebar-foreground/85">
             <p class="text-xs uppercase">Workspaces</p>
             <button @click="open" class="flex items-center justify-center text-sidebar-foreground hover:text-sidebar-primary">
                 <Icon
                     v-if="isLoading"
                     name="svg-spinners:8-dots-rotate"
                     size="20px"
-                    class="size-5 text-sidebar-foreground/70"
+                    class="size-5 text-sidebar-foreground/85"
                 />
                 <Icon
                     v-else
                     name="heroicons:plus-circle-20-solid"
                     size="20px"
-                    class="size-5 text-sidebar-foreground/70 cursor-pointer transition hover:opacity-75"
+                    class="size-5 text-sidebar-foreground/85 cursor-pointer transition hover:opacity-75"
                 />
             </button>
         </div>
