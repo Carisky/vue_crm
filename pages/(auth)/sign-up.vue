@@ -7,7 +7,7 @@ definePageMeta({
 })
 
 useHead({
-    title: 'Sign Up | DEV crm'
+    title: 'Sign Up'
 })
 </script>
 

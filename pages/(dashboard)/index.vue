@@ -12,7 +12,7 @@ definePageMeta({
 });
 
 useHead({
-  title: "DEV crm",
+  title: "TSL Silesia",
 });
 
 const { data, isFetching, isSuccess, suspense } = useQuery<Workspace[]>(
