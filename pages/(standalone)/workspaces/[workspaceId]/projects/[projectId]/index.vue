@@ -11,6 +11,7 @@ definePageMeta({
 
 const route = useRoute()
 const queryClient = useQueryClient()
+const requestFetch = useRequestFetch()
 const projectId = computed(() => String(route.params['projectId'] ?? ''))
 
 const { data, isPending, isRefetching, suspense } = useQuery<{
@@ -33,9 +34,7 @@ const { data, isPending, isRefetching, suspense } = useQuery<{
     ({
         queryKey: computed(() => ['project-analytics', projectId.value]),
         queryFn: async () => {
-            const res = await fetch(`/api/projects/${projectId.value}/analytics`)
-            const data = await res.json()
-            return data
+            return await requestFetch(`/api/projects/${projectId.value}/analytics`)
         },
         staleTime: Infinity,
         experimental_prefetchInRender: true

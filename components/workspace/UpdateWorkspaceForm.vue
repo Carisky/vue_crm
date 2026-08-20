@@ -6,6 +6,7 @@ import { toTypedSchema } from "@vee-validate/zod";
 import { toast } from 'vue-sonner';
 
 import { UpdateWorkspaceSchema } from '~/lib/schema/updateWorkspace';
+import { buildWorkspaceInviteUrl } from '~/lib/invite-url';
 import type { Workspace } from '~/lib/types';
 import { ConfirmModal } from '#components';
 
@@ -18,9 +19,7 @@ const { data, isOwner, isAdmin, onSuccess, onCancel } = defineProps<{
 }>()
 
 const queryClient = useQueryClient()
-const config = useRuntimeConfig()
-
-const inviteBaseUrl = String(config.public.siteUrl ?? '').replace(/\/$/, '') || window.location.origin
+const inviteOrigin = useRequestURL().origin
 
 configure({
     validateOnBlur: false
@@ -84,7 +83,7 @@ const { openModal } = useConfirmModal()
 
 // Invite code control
 // Only admins can update invite code
-let fullInviteLink = ref(`${inviteBaseUrl}/workspaces/${data.$id}/join/${data.invite_code}`)
+let fullInviteLink = ref(buildWorkspaceInviteUrl(inviteOrigin, data.$id, data.invite_code))
 
 const handleCopyInviteLink = () => {
     window.navigator.clipboard.writeText(fullInviteLink.value)
@@ -95,7 +94,7 @@ const resetInviteCode = async () => {
     if (!isAdmin) return
 
     await $fetch(`/api/workspaces/${data.$id}/reset-invite-code`, { method: 'PATCH' }).then(async (res) => {
-        fullInviteLink.value = `${inviteBaseUrl}/workspaces/${data.$id}/join/${res.inviteCode}`
+        fullInviteLink.value = buildWorkspaceInviteUrl(inviteOrigin, data.$id, res.inviteCode)
 
         toast.success('Invite code changed')
     }).catch(() => {

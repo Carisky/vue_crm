@@ -7,14 +7,14 @@ import type { FilteredTask, Project, WorkspaceMember } from '~/lib/types';
 const { onCancel } = defineProps<{ onCancel?: () => void }>()
 
 const route = useRoute()
+const requestFetch = useRequestFetch()
 const { value: taskId } = useUrlQuery('update_task')
 
 const { data: task, isLoading: isLoadingTask } = useQuery<FilteredTask>
     ({
         queryKey: ['task', taskId.value],
         queryFn: async () => {
-            const res = await fetch(`/api/tasks/${taskId.value}`)
-            const data = await res.json()
+            const data = await requestFetch<{ task: FilteredTask | null }>(`/api/tasks/${taskId.value}`)
             return data?.task ?? null
         },
     })
@@ -23,8 +23,7 @@ const { data: projects, isLoading: isLoadingProjects } = useQuery<Project[]>
     ({
         queryKey: ['projects', () => route.params['workspaceId']],
         queryFn: async () => {
-            const res = await fetch(`/api/workspaces/${route.params['workspaceId']}/projects`)
-            const data = await res.json()
+            const data = await requestFetch<{ projects: Project[] }>(`/api/workspaces/${route.params['workspaceId']}/projects`)
             return data?.projects ?? []
         },
         staleTime: Infinity,
@@ -34,8 +33,7 @@ const { data: members, isLoading: isLoadingMembers } = useQuery<WorkspaceMember[
     ({
         queryKey: ['members', () => route.params['workspaceId']],
         queryFn: async () => {
-            const res = await fetch(`/api/workspaces/${route.params['workspaceId']}/members`)
-            const data = await res.json()
+            const data = await requestFetch<{ members: WorkspaceMember[] }>(`/api/workspaces/${route.params['workspaceId']}/members`)
             return data?.members ?? []
         },
         staleTime: Infinity,

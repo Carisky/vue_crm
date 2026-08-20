@@ -27,12 +27,13 @@ type TaskComment = {
 const { task } = defineProps<{ task: FilteredTask }>();
 
 const queryClient = useQueryClient();
+const requestFetch = useRequestFetch();
 const queryKey = computed(() => ['task-comments', task.$id]);
 
 const { data: comments, isFetching } = useQuery<TaskComment[]>({
   queryKey,
   queryFn: async () => {
-    const res = await $fetch<{ comments: TaskComment[] }>(
+    const res = await requestFetch<{ comments: TaskComment[] }>(
       `/api/tasks/${task.$id}/comments`,
     );
     return res.comments ?? [];
@@ -42,7 +43,7 @@ const { data: comments, isFetching } = useQuery<TaskComment[]>({
 const { data: people } = useQuery<Person[]>({
   queryKey: computed(() => ['workspace-people', task.workspace_id]),
   queryFn: async () => {
-    const res = await $fetch<{ people: Person[] }>(
+    const res = await requestFetch<{ people: Person[] }>(
       `/api/workspaces/${task.workspace_id}/people`,
     );
     return res.people ?? [];

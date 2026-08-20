@@ -47,6 +47,7 @@ type ConversationResponse = {
 const auth = useAuthStore();
 const route = useRoute();
 const queryClient = useQueryClient();
+const requestFetch = useRequestFetch();
 
 const workspaceId = computed(() => String(route.params['workspaceId'] ?? ''));
 const conversationId = computed(() => String(route.params['conversationId'] ?? ''));
@@ -55,7 +56,7 @@ const queryKey = computed(() => ['conversation', conversationId.value]);
 const { data, isFetching } = useQuery<ConversationResponse>({
   queryKey,
   queryFn: async () =>
-    await $fetch<ConversationResponse>(
+    await requestFetch<ConversationResponse>(
       `/api/messages/conversations/${conversationId.value}`,
     ),
   enabled: computed(() => Boolean(conversationId.value)),

@@ -15,6 +15,7 @@ useHead({
 })
 
 const route = useRoute()
+const requestFetch = useRequestFetch()
 const workspaceId = computed(() => route.params['workspaceId'])
 const queryKey = computed(() => ['workspace-members', workspaceId.value])
 
@@ -22,10 +23,9 @@ const { data, isFetching, isRefetching, suspense } = useQuery<WorkspaceMember[]>
     ({
         queryKey,
         queryFn: async () => {
-            const res = await fetch(
+            const data = await requestFetch<{ members: WorkspaceMember[] }>(
                 `/api/workspaces/${workspaceId.value}/members`,
             )
-            const data = await res.json()
             return (data?.members ?? []) as WorkspaceMember[]
         },
         staleTime: Infinity,

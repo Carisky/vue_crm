@@ -12,6 +12,7 @@ definePageMeta({
 
 const route = useRoute()
 const queryClient = useQueryClient()
+const requestFetch = useRequestFetch()
 const workspaceId = computed(() => String(route.params['workspaceId'] ?? ''))
 
 const { data: analytics, isPending: isLoadingAnalytics, suspense: loadAnalytics } = useQuery<{
@@ -34,9 +35,7 @@ const { data: analytics, isPending: isLoadingAnalytics, suspense: loadAnalytics 
     ({
         queryKey: computed(() => ['workspace-analytics', workspaceId.value]),
         queryFn: async () => {
-            const res = await fetch(`/api/workspaces/${workspaceId.value}/analytics`)
-            const data = await res.json()
-            return data
+            return await requestFetch(`/api/workspaces/${workspaceId.value}/analytics`)
         },
         staleTime: Infinity,
         experimental_prefetchInRender: true
@@ -45,8 +44,7 @@ const { data: projects, isPending: isLoadingProjects, suspense: loadProjects } =
     ({
         queryKey: computed(() => ['projects', workspaceId.value]),
         queryFn: async () => {
-            const res = await fetch(`/api/workspaces/${workspaceId.value}/projects`)
-            const data = await res.json()
+            const data = await requestFetch<{ projects: Project[] }>(`/api/workspaces/${workspaceId.value}/projects`)
             return data?.projects ?? []
         },
         staleTime: Infinity,
@@ -56,8 +54,7 @@ const { data: members, isPending: isLoadingMembers, suspense: loadMembers } = us
     ({
         queryKey: computed(() => ['members', workspaceId.value]),
         queryFn: async () => {
-            const res = await fetch(`/api/workspaces/${workspaceId.value}/members`)
-            const data = await res.json()
+            const data = await requestFetch<{ members: WorkspaceMember[] }>(`/api/workspaces/${workspaceId.value}/members`)
             return data?.members ?? []
         },
         staleTime: Infinity,
@@ -67,8 +64,7 @@ const { data: tasks, isPending: isLoadingTasks, suspense: loadTasks } = useQuery
     ({
         queryKey: computed(() => ['tasks', workspaceId.value]),
         queryFn: async () => {
-            const res = await fetch(`/api/tasks/filter?workspace_id=${workspaceId.value}`)
-            const data = await res.json()
+            const data = await requestFetch<{ tasks: FilteredTask[] }>(`/api/tasks/filter?workspace_id=${workspaceId.value}`)
             return data?.tasks ?? []
         },
         staleTime: Infinity,

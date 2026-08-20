@@ -9,6 +9,7 @@ const { projectId, assigneeId } = defineProps<{ projectId?: string; assigneeId?:
 
 const route = useRoute()
 const queryClient = useQueryClient()
+const requestFetch = useRequestFetch()
 const { open } = useCreateTaskModal()
 const {
     value: view,
@@ -62,7 +63,7 @@ const fetchTasks = async () => {
     if (due_date) searchParams.set('due_date', due_date)
     if (started_at) searchParams.set('started_at', started_at)
 
-    $fetch(`/api/tasks/filter?${searchParams.toString()}`)
+    requestFetch<{ tasks: FilteredTask[] }>(`/api/tasks/filter?${searchParams.toString()}`)
         .then(res => tasks.value = res.tasks as FilteredTask[])
         .finally(() => isLoadingTasks.value = false)
 }

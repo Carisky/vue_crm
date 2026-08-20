@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { useQuery } from "@tanstack/vue-query";
 
 import type { ApiUser } from "~/lib/types";
+import { createAuthQuery } from "./auth-query";
 
 const useAuthStore = defineStore("auth", () => {
   const user = ref<ApiUser | null>(null);
@@ -9,14 +10,19 @@ const useAuthStore = defineStore("auth", () => {
   const isLoading = ref(true);
 
   async function init() {
+    if (import.meta.server) {
+      const event = useRequestEvent();
+      user.value = (event?.context.user as ApiUser | null) ?? null;
+      isLoading.value = false;
+      isFirstLoading.value = false;
+      return;
+    }
+
+    const requestFetch = useRequestFetch();
     const { data, isFetching, isRefetching, isSuccess, isError } =
-      useQuery<ApiUser>({
+      useQuery<ApiUser | null>({
         queryKey: ["auth/me"],
-        queryFn: async () => {
-          const res = await fetch("/api/auth/me");
-          const data = await res.json();
-          return data.user;
-        },
+        queryFn: createAuthQuery((request) => requestFetch(request)),
         staleTime: Infinity,
       });
 

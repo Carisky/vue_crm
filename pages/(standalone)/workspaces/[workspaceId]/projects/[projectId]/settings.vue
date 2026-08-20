@@ -10,6 +10,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const requestFetch = useRequestFetch()
 const workspaceId = computed(() => route.params['workspaceId'])
 const projectId = computed(() => route.params['projectId'])
 
@@ -21,9 +22,7 @@ const { data, isPending, isRefetching, refetch, suspense } = useQuery<{
     ({
         queryKey: ['project-settings', () => projectId.value],
         queryFn: async () => {
-            const res = await fetch(`/api/projects/${projectId.value}`)
-            const data = await res.json()
-            return data
+            return await requestFetch(`/api/projects/${projectId.value}`)
         },
         staleTime: Infinity,
         experimental_prefetchInRender: true

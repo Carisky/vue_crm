@@ -6,7 +6,7 @@ import {
   type H3Event,
 } from "h3";
 
-const hostsWithBasicAuth = new Set(["85.11.79.242"]);
+import { requiresBasicAuth } from "../lib/basic-auth-policy";
 
 type FailedAttempt = {
   attempts: number[];
@@ -71,13 +71,9 @@ function credentialsMatch(provided: string, expected: string) {
 
 export default defineEventHandler((event) => {
   const hostname = getHostname(getHeader(event, "host"));
-  const destinationAddress = normalizeIpAddress(
-    getHeader(event, "x-crm-server-address"),
-  );
-  if (
-    !hostsWithBasicAuth.has(hostname) &&
-    !hostsWithBasicAuth.has(destinationAddress)
-  ) {
+  const isTrustedInternalRequest =
+    getHeader(event, "x-crm-internal-request") === "1";
+  if (!requiresBasicAuth({ hostname, isTrustedInternalRequest })) {
     return;
   }
 

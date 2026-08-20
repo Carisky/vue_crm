@@ -1,5 +1,4 @@
-import { MemberRole } from "@prisma/client";
-
+import { canRemoveWorkspaceMember } from "~/server/lib/member-removal-policy";
 import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
 
@@ -34,19 +33,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ status: 401, statusText: "Unauthorized" });
   }
 
-  const deletingSelf = membershipToDelete.userId === user.id;
-  const isAdmin = currentMembership.role === MemberRole.ADMIN;
-
-  if (!deletingSelf && !isAdmin) {
-    throw createError({ status: 401, statusText: "Unauthorized" });
-  }
-
   if (
-    !deletingSelf &&
-    membershipToDelete.role === MemberRole.ADMIN &&
-    membershipToDelete.workspace.ownerId !== user.id
+    !canRemoveWorkspaceMember({
+      actorUserId: user.id,
+      actorRole: currentMembership.role,
+      targetUserId: membershipToDelete.userId,
+      targetRole: membershipToDelete.role,
+      ownerId: membershipToDelete.workspace.ownerId,
+    })
   ) {
-    throw createError({ status: 401, statusText: "Unauthorized" });
+    throw createError({ status: 403, statusText: "Forbidden" });
   }
 
   if (memberships.length === 1) {

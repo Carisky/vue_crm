@@ -21,6 +21,7 @@ const router = useRouter();
 const workspaceId = computed(() => route.params['workspaceId']);
 const sheetOpen = ref(false);
 const queryClient = useQueryClient();
+const requestFetch = useRequestFetch();
 const queryKey = computed(() => ['notifications', workspaceId.value ?? 'global']);
 
 const { data, isFetching } = useQuery({
@@ -29,7 +30,7 @@ const { data, isFetching } = useQuery({
     if (!workspaceId.value) {
       return { notifications: [], unreadCount: 0 };
     }
-    const response = await $fetch<{
+    const response = await requestFetch<{
       notifications: Notification[];
       unreadCount: number;
     }>(`/api/notifications?workspace_id=${workspaceId.value}&exclude_types=TASK_COMMENT_MENTION`);

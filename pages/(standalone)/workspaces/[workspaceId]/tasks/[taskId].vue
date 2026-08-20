@@ -11,13 +11,13 @@ definePageMeta({
 
 const route = useRoute()
 const queryClient = useQueryClient()
+const requestFetch = useRequestFetch()
 
 const { data: task, isLoading, isRefetching, suspense } = useQuery<FilteredTask>
     ({
         queryKey: ['task', route.params['taskId']],
         queryFn: async () => {
-            const res = await fetch(`/api/tasks/${route.params['taskId']}`)
-            const data = await res.json()
+            const data = await requestFetch<{ task: FilteredTask }>(`/api/tasks/${route.params['taskId']}`)
             return data.task
         },
         staleTime: Infinity,

@@ -11,6 +11,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const requestFetch = useRequestFetch()
 const workspaceId = computed(() => route.params['workspaceId'])
 
 const { data, isPending, isRefetching, refetch, suspense } = useQuery<{
@@ -21,9 +22,7 @@ const { data, isPending, isRefetching, refetch, suspense } = useQuery<{
     ({
         queryKey: ['workspace-settings', () => workspaceId.value],
         queryFn: async () => {
-            const res = await fetch(`/api/workspaces/${workspaceId.value}`)
-            const data = await res.json()
-            return data
+            return await requestFetch(`/api/workspaces/${workspaceId.value}`)
         },
         staleTime: Infinity,
         experimental_prefetchInRender: true

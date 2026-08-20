@@ -69,6 +69,7 @@ const route = useRoute();
 const router = useRouter();
 const queryClient = useQueryClient();
 const auth = useAuthStore();
+const requestFetch = useRequestFetch();
 
 const workspaceId = computed(() => route.params['workspaceId']);
 const sheetOpen = ref(false);
@@ -87,7 +88,7 @@ const { data, isFetching } = useQuery({
       } satisfies InboxResponse;
     }
 
-    return await $fetch<InboxResponse>(
+    return await requestFetch<InboxResponse>(
       `/api/messages/inbox?workspace_id=${workspaceId.value}`,
     );
   },

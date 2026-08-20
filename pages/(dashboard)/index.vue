@@ -15,12 +15,13 @@ useHead({
   title: "TSL Silesia",
 });
 
+const requestFetch = useRequestFetch();
+
 const { data, isFetching, isSuccess, suspense } = useQuery<Workspace[]>(
   {
     queryKey: ["workspaces/all"],
     queryFn: async () => {
-      const res = await fetch("/api/workspaces/all");
-      const data = await res.json();
+      const data = await requestFetch<{ workspaces: Workspace[] }>("/api/workspaces/all");
       return data?.workspaces ?? null;
     },
     staleTime: Infinity,

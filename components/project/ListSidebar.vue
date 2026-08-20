@@ -5,11 +5,11 @@ import ProjectAvatar from './ProjectAvatar.vue'
 import type { Project, Workspace } from '~/lib/types';
 
 const route = useRoute()
+const requestFetch = useRequestFetch()
 const { data: workspaces } = useQuery<Workspace[]>({
     queryKey: ['workspaces/all'],
     queryFn: async () => {
-        const res = await fetch('/api/workspaces/all')
-        const data = await res.json()
+        const data = await requestFetch<{ workspaces: Workspace[] }>('/api/workspaces/all')
         return data?.workspaces ?? []
     },
     staleTime: Infinity,
@@ -29,8 +29,7 @@ const { data: projects, isLoading } = useQuery<Project[]>
     ({
         queryKey: ['projects', workspaceId],
         queryFn: async () => {
-            const res = await fetch(`/api/workspaces/${workspaceId.value}/projects`)
-            const data = await res.json()
+            const data = await requestFetch<{ projects: Project[] }>(`/api/workspaces/${workspaceId.value}/projects`)
             return data?.projects ?? []
         },
         enabled: computed(() => Boolean(workspaceId.value)),

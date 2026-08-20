@@ -5,13 +5,13 @@ import { useQuery } from '@tanstack/vue-query'
 import type { Workspace } from '~/lib/types';
 
 const route = useRoute()
+const requestFetch = useRequestFetch()
 
 const { data, isLoading } = useQuery<Workspace[]>
     ({
         queryKey: ['workspaces/all'],
         queryFn: async () => {
-            const res = await fetch('/api/workspaces/all')
-            const data = await res.json()
+            const data = await requestFetch<{ workspaces: Workspace[] }>('/api/workspaces/all')
             return data?.workspaces ?? []
         },
         staleTime: Infinity,

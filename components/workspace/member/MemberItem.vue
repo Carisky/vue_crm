@@ -65,7 +65,7 @@ const currentUserCanControl = computed(
 
 const { openModal } = useConfirmModal()
 
-const { isPending: isDeleting, mutate: removeMember } = useMutation({
+const { isPending: isDeleting, mutateAsync: removeMember } = useMutation({
     mutationFn: async () => {
         const res =
             await $fetch('/api/workspaces/remove-member', {
@@ -79,12 +79,15 @@ const { isPending: isDeleting, mutate: removeMember } = useMutation({
             toast.success(isSelf.value ? 'You left the workspace' : 'Member removed')
         } else toast.error(isSelf.value ? 'Failed to leave workspace' : 'Failed to remove member')
     },
-    onError: () => toast.error(isSelf.value ? 'Failed to leave workspace' : 'Failed to remove member')
+    onError: (error: any) => toast.error(
+        error?.data?.statusMessage
+        ?? (isSelf.value ? 'Failed to leave workspace' : 'Failed to remove member')
+    )
 })
 
 const openRemoveMemberModal = () => {
     openModal(ConfirmModal, {
-        onConfirm: removeMember,
+        onConfirm: async () => { await removeMember() },
         title: isSelf.value ? 'Leave workspace' : 'Remove member',
         message: isSelf.value
             ? 'Are you sure you want to leave this workspace?'
