@@ -36,7 +36,7 @@ function getClientIp(event: H3Event) {
     event.node.req.socket.remoteAddress ??
     "unknown";
 
-  return ip.replace(/^::ffff:/, "");
+  return normalizeIpAddress(ip);
 }
 
 function getFailedAttempt(ip: string, now: number, windowMs: number) {
@@ -64,6 +64,10 @@ function getHostname(host: string | undefined) {
   }
 }
 
+function normalizeIpAddress(address: string | undefined) {
+  return address?.trim().replace(/^::ffff:/, "") ?? "";
+}
+
 function credentialsMatch(provided: string, expected: string) {
   const providedHash = createHash("sha256").update(provided).digest();
   const expectedHash = createHash("sha256").update(expected).digest();
@@ -73,7 +77,18 @@ function credentialsMatch(provided: string, expected: string) {
 
 export default defineEventHandler((event) => {
   const hostname = getHostname(getHeader(event, "host"));
-  if (hostsWithoutBasicAuth.has(hostname)) return;
+  const destinationAddress = normalizeIpAddress(
+    getHeader(event, "x-crm-server-address"),
+  );
+  const isInternalNetworkRequest =
+    getHeader(event, "x-crm-internal-request") === "1";
+  if (
+    hostsWithoutBasicAuth.has(hostname) ||
+    hostsWithoutBasicAuth.has(destinationAddress) ||
+    isInternalNetworkRequest
+  ) {
+    return;
+  }
 
   const username = process.env.BASIC_AUTH_USERNAME;
   const password = process.env.BASIC_AUTH_PASSWORD;
