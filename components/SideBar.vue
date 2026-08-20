@@ -13,7 +13,8 @@ const profileHref = computed(() => {
 <template>
 <aside class="h-full w-full bg-sidebar p-4 text-sidebar-foreground border-r border-sidebar-border">
   <NuxtLink href="/" class="block h-[56px] w-[164px] overflow-hidden">
-    <img src="/logo.png" width="164" height="56" alt="TSL Silesia" class="size-full object-contain object-left" />
+    <img src="/TSL%20Silesia%20Collab.svg" width="164" height="56" alt="TSL Silesia Collab"
+      class="size-full object-cover object-center" />
   </NuxtLink>
   <div class="mt-2">
     <NuxtLink

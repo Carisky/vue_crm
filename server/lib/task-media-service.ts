@@ -5,8 +5,8 @@ import { generateVideoVariants } from "~/server/lib/video";
 
 export type TaskMediaUploadPayload = {
   path: string;
-  mime: string | null;
-  original_name: string | null;
+  mime?: string | null;
+  original_name?: string | null;
 };
 
 async function attachVideoVariants(media: TaskMedia) {

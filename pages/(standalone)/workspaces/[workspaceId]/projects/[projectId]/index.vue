@@ -84,7 +84,7 @@ onUnmounted(() => {
     <div v-else-if="data" class="flex flex-col gap-y-4">
         <div class="flex flex-col gap-y-2 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-x-2 min-w-0">
-                <ProjectAvatar :name="data.project.name" :image="data.project.image_url" class="size-8" />
+                <ProjectAvatar :name="data.project.name" :image="data.project.image_url ?? undefined" class="size-8" />
                 <p class="text-lg font-semibold truncate">{{ data.project.name }}</p>
             </div>
             <div class="w-full sm:w-auto">

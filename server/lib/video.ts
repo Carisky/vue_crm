@@ -9,7 +9,9 @@ import { resolveTaskMediaPath } from "~/server/lib/task-media";
 
 const TARGET_HEIGHTS = [720, 480, 360];
 
-const resolveBinaryPath = (value: string | { path: string } | undefined) => {
+const resolveBinaryPath = (
+  value: string | { path: string } | null | undefined,
+) => {
   if (!value) return null;
   if (typeof value === "string") return value;
   return value.path ?? null;

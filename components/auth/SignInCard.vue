@@ -20,6 +20,7 @@ function getRedirectPath(): string {
 onMounted(() => {
     const status = route.query.verified
     if (route.query.registered === '1') toast.success('Check your email to verify the account.')
+    if (route.query.reset === 'success') toast.success('Password changed. You can sign in now.')
     if (status === 'success') toast.success('Email verified. You can sign in now.')
     if (status === 'expired') toast.error('This verification link has expired.')
     if (status === 'invalid') toast.error('This verification link is invalid.')
@@ -76,6 +77,9 @@ const handleSignIn = form.handleSubmit((values) => mutate(values))
                             <FormMessage />
                         </FormItem>
                     </FormField>
+                    <div class="text-right">
+                        <NuxtLink href="/forgot-password" class="text-sm text-blue-700">Forgot password?</NuxtLink>
+                    </div>
                     <Button type="submit" size="lg" class="w-full">
                         <Icon v-if="isPending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
                         <span v-else>Sign in</span>

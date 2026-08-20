@@ -9,8 +9,9 @@ const buttonLink = computed(() => route.name === 'sign-in' ? '/sign-up' : "/sign
     <main class="bg-neutral-100 min-h-screen">
         <div class="max-w-screen-2xl mx-auto p-4">
             <nav class="flex items-center justify-between">
-                <NuxtLink href="/sign-in" class="block h-[56px] w-[152px]">
-                    <img src="/logo.png" width="152" height="56" alt="TSL Silesia" class="size-full object-contain object-left" />
+                <NuxtLink href="/sign-in" class="block h-[56px] w-[152px] overflow-hidden">
+                    <img src="/TSL%20Silesia%20Collab.svg" width="152" height="56" alt="TSL Silesia Collab"
+                        class="size-full object-cover object-center" />
                 </NuxtLink>
                 <Button variant="secondary" :as-child="true">
                     <NuxtLink :href="buttonLink">

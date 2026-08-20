@@ -10,7 +10,7 @@ const route = useRoute()
 const requestFetch = useRequestFetch()
 const { value: taskId } = useUrlQuery('update_task')
 
-const { data: task, isLoading: isLoadingTask } = useQuery<FilteredTask>
+const { data: task, isLoading: isLoadingTask } = useQuery<FilteredTask | null>
     ({
         queryKey: ['task', taskId.value],
         queryFn: async () => {

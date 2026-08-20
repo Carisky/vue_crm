@@ -5,7 +5,7 @@ import { toast } from 'vue-sonner';
 import type { FilteredTask, Project } from '~/lib/types';
 import { ConfirmModal } from '#components';
 
-const { project, task } = defineProps<{ project: Project; task: FilteredTask; }>()
+const { project, task } = defineProps<{ project: Project | null; task: FilteredTask; }>()
 
 const route = useRoute()
 const { openModal } = useConfirmModal()
@@ -36,13 +36,13 @@ const showDeleteModal = () => {
 
 <template>
     <div class="flex items-center gap-x-2">
-        <ProjectAvatar :name="project.name" :image="project.image_url ?? undefined" class="size-6 lg:size-8" />
-        <NuxtLink :href="`/workspaces/${route.params['workspaceId']}/projects/${project.$id}`">
+        <ProjectAvatar v-if="project" :name="project.name" :image="project.image_url ?? undefined" class="size-6 lg:size-8" />
+        <NuxtLink v-if="project" :href="`/workspaces/${route.params['workspaceId']}/projects/${project.$id}`">
             <p class="text-sm font-semibold text-muted-foreground transition hover:opacity-75 lg:text-lg">{{
                 project.name }}</p>
         </NuxtLink>
-        <Icon name="lucide:chevron-right" size="16px" class="size-4 text-muted-foreground lg:hidden!" />
-        <Icon name="lucide:chevron-right" size="20px" class="size-5 text-muted-foreground hidden! lg:block!" />
+        <Icon v-if="project" name="lucide:chevron-right" size="16px" class="size-4 text-muted-foreground lg:hidden!" />
+        <Icon v-if="project" name="lucide:chevron-right" size="20px" class="size-5 text-muted-foreground hidden! lg:block!" />
         <p class="text-sm font-semibold lg:text-lg">{{
             task.name }}</p>
         <Button @click="showDeleteModal" variant="destructive" size="sm" class="ml-auto">

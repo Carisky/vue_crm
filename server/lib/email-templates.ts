@@ -16,6 +16,11 @@ type EmailVerificationTemplateInput = {
   expiresInMinutes: number;
 };
 
+type PasswordResetTemplateInput = {
+  resetUrl: string;
+  expiresInMinutes: number;
+};
+
 const escapeHtml = (value: string) =>
   value
     .replace(/&/g, "&amp;")
@@ -138,5 +143,16 @@ export function renderEmailVerificationEmail(
   return {
     html: `<!doctype html><html lang="en"><body style="font-family:Arial,sans-serif;color:#111827;padding:24px"><h1>${title}</h1><p>${message}</p><p><a href="${verificationUrl}" style="display:inline-block;background:#111827;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px">Confirm email</a></p><p>If you did not create this account, ignore this email.</p></body></html>`,
     text: `${title}\n\n${message}\n\n${input.verificationUrl}\n\nIf you did not create this account, ignore this email.`,
+  };
+}
+
+export function renderPasswordResetEmail(input: PasswordResetTemplateInput) {
+  const resetUrl = escapeHtml(input.resetUrl);
+  const title = "Reset password";
+  const message = `Click the button below to choose a new password. The link is valid for ${input.expiresInMinutes} minutes.`;
+
+  return {
+    html: `<!doctype html><html lang="en"><body style="font-family:Arial,sans-serif;color:#111827;padding:24px"><h1>${title}</h1><p>${message}</p><p><a href="${resetUrl}" style="display:inline-block;background:#111827;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px">Reset password</a></p><p>If you did not request a password reset, ignore this email. Your current password will remain unchanged.</p></body></html>`,
+    text: `${title}\n\n${message}\n\n${input.resetUrl}\n\nIf you did not request a password reset, ignore this email. Your current password will remain unchanged.`,
   };
 }
