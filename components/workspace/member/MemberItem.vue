@@ -1,32 +1,34 @@
 ﻿<script setup lang="ts">
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import type { $Fetch } from 'ofetch'
 import { toast } from 'vue-sonner'
 
 import { MEMBER_ROLE } from '~/lib/constant'
 import type { WorkspaceMember } from '~/lib/types'
-import useAuthStore from '~/stores/auth'
+import { createWorkspaceMemberClient } from '~/lib/workspace-member-client'
 import { ConfirmModal } from '#components'
 
 const {
     data,
     workspaceId,
     totalMembers,
+    currentUserId,
     currentUserIsOwner,
     currentUserIsAdmin,
 } = defineProps<{
     data: WorkspaceMember
     workspaceId: string
     totalMembers: number
+    currentUserId: string
     currentUserIsOwner: boolean
     currentUserIsAdmin: boolean
 }>()
 
 const queryClient = useQueryClient()
-const authStore = useAuthStore()
-const $fetch = useNuxtApp().$fetch as $Fetch
+const memberClient = createWorkspaceMemberClient((url, options) =>
+    $fetch(url, options),
+)
 
-const isSelf = computed(() => data.$id === authStore.user?.id)
+const isSelf = computed(() => data.$id === currentUserId)
 const isMember = computed(() => data.role === MEMBER_ROLE.member)
 const displayName = computed(() => data.name ?? 'Unknown member')
 
@@ -67,10 +69,7 @@ const { openModal } = useConfirmModal()
 
 const { isPending: isDeleting, mutateAsync: removeMember } = useMutation({
     mutationFn: async () => {
-        const res =
-            await $fetch('/api/workspaces/remove-member', {
-                method: 'DELETE', body: { membershipId: data.membership_id }
-            })
+        const res = await memberClient.remove(data.membership_id)
         if (res.ok) {
             await queryClient.refetchQueries({ queryKey: ['workspace-members', workspaceId] })
 
@@ -87,13 +86,7 @@ const { isPending: isDeleting, mutateAsync: removeMember } = useMutation({
 
 const { isPending: isUpdatingRole, mutateAsync: updateMemberRole } = useMutation({
     mutationFn: async (role: 'ADMIN' | 'MEMBER') =>
-        await $fetch('/api/workspaces/update-member', {
-            method: 'PATCH',
-            body: {
-                membershipId: data.membership_id,
-                role,
-            },
-        }),
+        await memberClient.updateRole(data.membership_id, role),
     onSuccess: async (_, role) => {
         await queryClient.refetchQueries({ queryKey: ['workspace-members', workspaceId] })
         toast.success(role === 'ADMIN' ? 'Administrator assigned' : 'Administrator removed')

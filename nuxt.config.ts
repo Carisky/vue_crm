@@ -27,7 +27,11 @@ export default defineNuxtConfig({
   ],
   nitro: {
     externals: {
-      external: ["@prisma/client", ".prisma/client", ".prisma"],
+      // Prisma 7's generated CommonJS entry imports `.prisma/client`, which
+      // Nitro's file tracer treats as an invalid package specifier. The app is
+      // deployed with `npm ci`, so runtime dependencies can stay external.
+      trace: false,
+      external: ["@prisma/client", "@prisma/adapter-mariadb"],
     },
   },
 

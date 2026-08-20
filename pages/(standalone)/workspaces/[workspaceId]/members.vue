@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/vue-query'
 
 import authenticatedPageProtectMiddleware from '~/middleware/page-protect/authenticatedPage'
 import MemberList from '~/components/workspace/member/MemberList.vue'
-import type { WorkspaceMember } from '~/lib/types';
+import type { WorkspaceMembersResponse } from '~/lib/types';
 
 definePageMeta({
     layout: 'standalone',
@@ -19,14 +19,13 @@ const requestFetch = useRequestFetch()
 const workspaceId = computed(() => route.params['workspaceId'])
 const queryKey = computed(() => ['workspace-members', workspaceId.value])
 
-const { data, isFetching, isRefetching, suspense } = useQuery<WorkspaceMember[]>
+const { data, isFetching, isRefetching, suspense } = useQuery<WorkspaceMembersResponse>
     ({
         queryKey,
         queryFn: async () => {
-            const data = await requestFetch<{ members: WorkspaceMember[] }>(
+            return await requestFetch<WorkspaceMembersResponse>(
                 `/api/workspaces/${workspaceId.value}/members`,
             )
-            return (data?.members ?? []) as WorkspaceMember[]
         },
         staleTime: Infinity,
         experimental_prefetchInRender: true
@@ -42,9 +41,12 @@ onServerPrefetch(async () => {
         <Loader v-if="isFetching && !isRefetching" class="min-h-auto h-96" />
         <div v-else class="flex flex-col gap-4">
             <MemberList
-                v-if="!!data?.length && !!workspaceId"
-                :data="data"
+                v-if="!!data?.members.length && !!workspaceId"
+                :data="data.members"
                 :workspace-id="String(workspaceId)"
+                :current-user-id="data.current_user_id"
+                :current-user-is-owner="data.is_owner"
+                :current-user-is-admin="data.is_admin"
             />
         </div>
     </div>

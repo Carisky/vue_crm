@@ -75,6 +75,13 @@ export type WorkspaceMember = {
   is_owner: boolean;
 };
 
+export type WorkspaceMembersResponse = {
+  members: WorkspaceMember[];
+  current_user_id: string;
+  is_owner: boolean;
+  is_admin: boolean;
+};
+
 export type Notification = {
   id: string;
   workspaceId: string;

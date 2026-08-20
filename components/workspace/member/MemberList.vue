@@ -1,28 +1,16 @@
 <script setup lang="ts">
-import { MEMBER_ROLE } from '~/lib/constant';
 import type { WorkspaceMember } from '~/lib/types';
-import useAuthStore from '~/stores/auth';
 import MemberItem from './MemberItem.vue';
 
-const { data, workspaceId } = defineProps<{
+const { data, workspaceId, currentUserId, currentUserIsOwner, currentUserIsAdmin } = defineProps<{
     data: WorkspaceMember[];
     workspaceId: string;
+    currentUserId: string;
+    currentUserIsOwner: boolean;
+    currentUserIsAdmin: boolean;
 }>()
 
 const route = useRoute()
-const authStore = useAuthStore()
-
-const currentUserMembership = computed(
-    () => data.find(({ $id }) => $id === authStore.user?.id),
-)
-const currentUserIsOwner = computed(
-    () => currentUserMembership.value?.is_owner === true,
-)
-const currentUserIsAdmin = computed(
-    () =>
-        !currentUserIsOwner.value
-        && currentUserMembership.value?.role === MEMBER_ROLE.admin,
-)
 </script>
 
 <template>
@@ -43,6 +31,7 @@ const currentUserIsAdmin = computed(
                         :data="member"
                         :workspace-id="workspaceId"
                         :total-members="data.length"
+                        :current-user-id="currentUserId"
                         :current-user-is-owner="currentUserIsOwner"
                         :current-user-is-admin="currentUserIsAdmin"
                     />
