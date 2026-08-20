@@ -15,7 +15,8 @@ export async function createAuthSession(event: H3Event, userId: string) {
 
   setCookie(event, config.public.sessionCookieName, token, {
     httpOnly: true,
-    sameSite: "strict",
+    // Preserve a valid session when the user follows an invite or email link.
+    sameSite: "lax",
     secure,
     path: "/",
     expires: session.expiresAt,

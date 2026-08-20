@@ -14,8 +14,8 @@ const { isPending, mutate } = useMutation({
             await navigateTo(`/workspaces/${workspaceId}`)
         } else toast.error('Failed to join workspace')
     },
-    onError: (e) => {
-        toast.error('Failed to join workspace')
+    onError: (error: any) => {
+        toast.error(error?.data?.statusMessage ?? 'Failed to join workspace')
     }
 })
 

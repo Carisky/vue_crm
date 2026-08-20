@@ -18,6 +18,9 @@ const { data, isOwner, isAdmin, onSuccess, onCancel } = defineProps<{
 }>()
 
 const queryClient = useQueryClient()
+const config = useRuntimeConfig()
+
+const inviteBaseUrl = String(config.public.siteUrl ?? '').replace(/\/$/, '') || window.location.origin
 
 configure({
     validateOnBlur: false
@@ -81,7 +84,7 @@ const { openModal } = useConfirmModal()
 
 // Invite code control
 // Only admins can update invite code
-let fullInviteLink = ref(`${window.location.origin}/workspaces/${data.$id}/join/${data.invite_code}`)
+let fullInviteLink = ref(`${inviteBaseUrl}/workspaces/${data.$id}/join/${data.invite_code}`)
 
 const handleCopyInviteLink = () => {
     window.navigator.clipboard.writeText(fullInviteLink.value)
@@ -92,7 +95,7 @@ const resetInviteCode = async () => {
     if (!isAdmin) return
 
     await $fetch(`/api/workspaces/${data.$id}/reset-invite-code`, { method: 'PATCH' }).then(async (res) => {
-        fullInviteLink.value = `${window.location.origin}/workspaces/${data.$id}/join/${res.inviteCode}`
+        fullInviteLink.value = `${inviteBaseUrl}/workspaces/${data.$id}/join/${res.inviteCode}`
 
         toast.success('Invite code changed')
     }).catch(() => {
