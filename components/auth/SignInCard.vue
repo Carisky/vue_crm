@@ -9,6 +9,14 @@ import { SignInSchema } from '~/lib/schema/auth'
 const queryClient = useQueryClient()
 const route = useRoute()
 
+function getRedirectPath(): string {
+    const redirect = route.query.redirect
+    if (typeof redirect !== 'string') return '/'
+
+    // Only allow an internal application path to prevent open redirects.
+    return redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/'
+}
+
 onMounted(() => {
     const status = route.query.verified
     if (route.query.registered === '1') toast.success('Check your email to verify the account.')
@@ -31,7 +39,7 @@ const { isPending, mutate } = useMutation({
         const res = await $fetch('/api/auth/sign-in', { method: 'POST', body: credentials })
         if (res.ok) {
             await queryClient.refetchQueries({ queryKey: ['auth/me'] })
-            await navigateTo('/')
+            await navigateTo(getRedirectPath())
         } else toast.error('Failed to sign in')
     },
     onError: (error: any) => toast.error(error?.data?.statusMessage ?? 'Failed to sign in')

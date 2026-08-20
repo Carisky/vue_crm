@@ -12,9 +12,8 @@ async function authPageProtectMiddleware(
 ) {
   if (import.meta.server) {
     const event = useRequestEvent();
-    const user = useState("user");
 
-    if (event && user.value) await sendRedirect(event, "/", 303);
+    if (event?.context.user) await sendRedirect(event, "/", 303);
     return;
   }
 

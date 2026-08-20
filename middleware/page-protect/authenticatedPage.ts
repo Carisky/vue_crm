@@ -12,13 +12,20 @@ async function authenticatedPageProtectMiddleware(
 ) {
   if (import.meta.server) {
     const event = useRequestEvent();
-    const user = useState("user");
 
-    if (event && !user.value) await sendRedirect(event, "/sign-in", 303);
+    if (event && !event.context.user) {
+      await sendRedirect(
+        event,
+        `/sign-in?redirect=${encodeURIComponent(to.fullPath)}`,
+        303,
+      );
+    }
     return;
   }
 
-  if (!useAuthStore().user) return navigateTo("/sign-in");
+  if (!useAuthStore().user) {
+    return navigateTo({ path: "/sign-in", query: { redirect: to.fullPath } });
+  }
 }
 
 export default authenticatedPageProtectMiddleware;
