@@ -29,11 +29,23 @@ test("requires an absolute production STORAGE_ROOT", () => {
   );
 });
 
-test("rejects a storage root inside public", () => {
+test("rejects the public directory itself as a storage root", () => {
   assert.throws(
     () =>
       resolveStorageConfig({
-        env: { STORAGE_ROOT: join(repo, "public", "files") },
+        env: { STORAGE_ROOT: join(repo, "public") },
+        cwd: repo,
+        production: true,
+      }),
+    /public/,
+  );
+});
+
+test("rejects a dot-prefixed descendant of the public directory", () => {
+  assert.throws(
+    () =>
+      resolveStorageConfig({
+        env: { STORAGE_ROOT: join(repo, "public", "..storage") },
         cwd: repo,
         production: true,
       }),
@@ -63,5 +75,24 @@ test("rejects non-positive or non-integer numeric upload limits", () => {
   assert.throws(
     () => resolveStorageConfig({ env: { STORAGE_MAX_FILES_PER_UPLOAD: "1.5" }, cwd: repo }),
     /STORAGE_MAX_FILES_PER_UPLOAD/,
+  );
+});
+
+test("rejects upload limits that are not safe integers or produce unsafe byte sizes", () => {
+  assert.throws(
+    () => resolveStorageConfig({ env: { STORAGE_MAX_FILE_SIZE_MB: "1e308" }, cwd: repo }),
+    /STORAGE_MAX_FILE_SIZE_MB/,
+  );
+  assert.throws(
+    () =>
+      resolveStorageConfig({
+        env: {
+          STORAGE_MAX_FILE_SIZE_MB: String(
+            Math.floor(Number.MAX_SAFE_INTEGER / (1024 * 1024)) + 1,
+          ),
+        },
+        cwd: repo,
+      }),
+    /STORAGE_MAX_FILE_SIZE_MB/,
   );
 });

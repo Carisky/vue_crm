@@ -1,4 +1,4 @@
-import { isAbsolute, relative, resolve } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 
 export type StorageConfig = {
   root: string;
@@ -15,14 +15,14 @@ type ResolveStorageConfigInput = {
 const DEFAULT_MAX_FILE_SIZE_MB = 50;
 const DEFAULT_MAX_FILES_PER_UPLOAD = 10;
 
-function parsePositiveInteger(value: string | undefined, fallback: number, name: string): number {
+function parsePositiveSafeInteger(value: string | undefined, fallback: number, name: string): number {
   if (value === undefined) {
     return fallback;
   }
 
   const parsed = Number(value);
-  if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error(`${name} must be a finite positive integer.`);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a finite positive safe integer.`);
   }
 
   return parsed;
@@ -32,7 +32,9 @@ function isWithinDirectory(path: string, directory: string): boolean {
   const pathRelativeToDirectory = relative(directory, path);
   return (
     pathRelativeToDirectory === "" ||
-    (!pathRelativeToDirectory.startsWith("..") && !isAbsolute(pathRelativeToDirectory))
+    (pathRelativeToDirectory !== ".." &&
+      !pathRelativeToDirectory.startsWith(`..${sep}`) &&
+      !isAbsolute(pathRelativeToDirectory))
   );
 }
 
@@ -55,20 +57,25 @@ export function resolveStorageConfig(input: ResolveStorageConfigInput = {}): Sto
     throw new Error("STORAGE_ROOT must not be inside the public directory.");
   }
 
-  const maxFileSizeMb = parsePositiveInteger(
+  const maxFileSizeMb = parsePositiveSafeInteger(
     env.STORAGE_MAX_FILE_SIZE_MB,
     DEFAULT_MAX_FILE_SIZE_MB,
     "STORAGE_MAX_FILE_SIZE_MB",
   );
-  const maxFilesPerUpload = parsePositiveInteger(
+  const maxFilesPerUpload = parsePositiveSafeInteger(
     env.STORAGE_MAX_FILES_PER_UPLOAD,
     DEFAULT_MAX_FILES_PER_UPLOAD,
     "STORAGE_MAX_FILES_PER_UPLOAD",
   );
 
+  const maxFileSizeBytes = maxFileSizeMb * 1024 * 1024;
+  if (!Number.isFinite(maxFileSizeBytes) || !Number.isSafeInteger(maxFileSizeBytes)) {
+    throw new Error("STORAGE_MAX_FILE_SIZE_MB produces an unsafe byte size.");
+  }
+
   return {
     root,
-    maxFileSizeBytes: maxFileSizeMb * 1024 * 1024,
+    maxFileSizeBytes,
     maxFilesPerUpload,
   };
 }
