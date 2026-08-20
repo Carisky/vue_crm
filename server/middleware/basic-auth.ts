@@ -6,13 +6,7 @@ import {
   type H3Event,
 } from "h3";
 
-const hostsWithoutBasicAuth = new Set([
-  "localhost",
-  "127.0.0.1",
-  "::1",
-  "192.168.1.222",
-  "192.168.0.204",
-]);
+const hostsWithBasicAuth = new Set(["85.11.79.242"]);
 
 type FailedAttempt = {
   attempts: number[];
@@ -80,12 +74,9 @@ export default defineEventHandler((event) => {
   const destinationAddress = normalizeIpAddress(
     getHeader(event, "x-crm-server-address"),
   );
-  const isInternalNetworkRequest =
-    getHeader(event, "x-crm-internal-request") === "1";
   if (
-    hostsWithoutBasicAuth.has(hostname) ||
-    hostsWithoutBasicAuth.has(destinationAddress) ||
-    isInternalNetworkRequest
+    !hostsWithBasicAuth.has(hostname) &&
+    !hostsWithBasicAuth.has(destinationAddress)
   ) {
     return;
   }
