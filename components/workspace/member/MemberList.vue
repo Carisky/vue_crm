@@ -12,9 +12,17 @@ const { data, workspaceId } = defineProps<{
 const route = useRoute()
 const authStore = useAuthStore()
 
-const currentUserMembership = data.find(({ $id }) => $id === authStore.user?.id)
-const currentUserIsOwner = currentUserMembership!.is_owner
-const currentUserIsAdmin = !currentUserIsOwner && currentUserMembership!.role === MEMBER_ROLE.admin
+const currentUserMembership = computed(
+    () => data.find(({ $id }) => $id === authStore.user?.id),
+)
+const currentUserIsOwner = computed(
+    () => currentUserMembership.value?.is_owner === true,
+)
+const currentUserIsAdmin = computed(
+    () =>
+        !currentUserIsOwner.value
+        && currentUserMembership.value?.role === MEMBER_ROLE.admin,
+)
 </script>
 
 <template>

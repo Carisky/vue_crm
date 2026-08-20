@@ -1,18 +1,18 @@
-import { MemberRole } from "@prisma/client";
-
+import { UpdateMemberRoleSchema } from "~/lib/schema/updateRole";
+import { canChangeWorkspaceMemberRole } from "~/server/lib/member-role-policy";
 import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
-  const { membershipId } = await readBody<{ membershipId?: string }>(event);
+  const params = UpdateMemberRoleSchema.safeParse(await readBody(event));
 
-  if (!membershipId) {
-    throw createError({ status: 400, statusText: "Member ID required" });
+  if (!params.success) {
+    throw createError({ status: 400, statusText: "Invalid role change" });
   }
 
   const membership = await prisma.member.findUnique({
-    where: { id: membershipId },
+    where: { id: params.data.membershipId },
     include: { workspace: true },
   });
 
@@ -20,25 +20,33 @@ export default defineEventHandler(async (event) => {
     throw createError({ status: 404, statusText: "Member not found" });
   }
 
-  if (membership.workspace.ownerId !== user.id) {
-    throw createError({ status: 401, statusText: "Unauthorized" });
+  const currentMembership = await prisma.member.findUnique({
+    where: {
+      workspaceId_userId: {
+        workspaceId: membership.workspaceId,
+        userId: user.id,
+      },
+    },
+  });
+
+  if (
+    !currentMembership ||
+    !canChangeWorkspaceMemberRole({
+      actorUserId: user.id,
+      actorRole: currentMembership.role,
+      targetUserId: membership.userId,
+      targetRole: membership.role,
+      nextRole: params.data.role,
+      ownerId: membership.workspace.ownerId,
+    })
+  ) {
+    throw createError({ status: 403, statusText: "Forbidden" });
   }
-
-  const updatingOther = membership.userId !== user.id;
-
-  if (!updatingOther && membership.role === MemberRole.MEMBER) {
-    throw createError({ status: 401, statusText: "Unauthorized" });
-  }
-
-  const newRole =
-    membership.role === MemberRole.ADMIN
-      ? MemberRole.MEMBER
-      : MemberRole.ADMIN;
 
   await prisma.member.update({
     where: { id: membership.id },
-    data: { role: newRole },
+    data: { role: params.data.role },
   });
 
-  return { ok: true };
+  return { ok: true, role: params.data.role };
 });

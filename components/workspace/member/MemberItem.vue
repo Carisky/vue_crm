@@ -85,6 +85,28 @@ const { isPending: isDeleting, mutateAsync: removeMember } = useMutation({
     )
 })
 
+const { isPending: isUpdatingRole, mutateAsync: updateMemberRole } = useMutation({
+    mutationFn: async (role: 'ADMIN' | 'MEMBER') =>
+        await $fetch('/api/workspaces/update-member', {
+            method: 'PATCH',
+            body: {
+                membershipId: data.membership_id,
+                role,
+            },
+        }),
+    onSuccess: async (_, role) => {
+        await queryClient.refetchQueries({ queryKey: ['workspace-members', workspaceId] })
+        toast.success(role === 'ADMIN' ? 'Administrator assigned' : 'Administrator removed')
+    },
+    onError: (error: any) => toast.error(
+        error?.data?.statusMessage ?? 'Failed to update member role',
+    ),
+})
+
+const changeMemberRole = async () => {
+    await updateMemberRole(isMember.value ? 'ADMIN' : 'MEMBER')
+}
+
 const openRemoveMemberModal = () => {
     openModal(ConfirmModal, {
         onConfirm: async () => { await removeMember() },
@@ -120,17 +142,17 @@ const openRemoveMemberModal = () => {
     <DropdownMenu v-if="currentUserCanControl">
         <DropdownMenuTrigger :as-child="true">
             <Button variant="secondary" size="icon" class="ml-auto">
-                <Icon v-if="isDeleting" name="svg-spinners:8-dots-rotate" size="16px"
+                <Icon v-if="isDeleting || isUpdatingRole" name="svg-spinners:8-dots-rotate" size="16px"
                     class="size-4 text-muted-foreground" />
                 <Icon v-else name="heroicons:ellipsis-vertical-16-solid" size="16px"
                     class="size-4 text-muted-foreground" />
             </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="bottom" align="end">
-            <DropdownMenuItem v-if="canUpgradeOtherMembers" class="font-medium">
+            <DropdownMenuItem v-if="canUpgradeOtherMembers" class="font-medium" @select="changeMemberRole">
                 Set as Administrator
             </DropdownMenuItem>
-            <DropdownMenuItem v-if="canDowngradeOtherMembers" class="font-medium">
+            <DropdownMenuItem v-if="canDowngradeOtherMembers" class="font-medium" @select="changeMemberRole">
                 Set as Member
             </DropdownMenuItem>
             <DropdownMenuItem v-if="canBeRemoved" @select="openRemoveMemberModal"

@@ -150,6 +150,7 @@ export default defineEventHandler(async (event) => {
       overdue_task_diff,
     },
     is_owner: workspace.ownerId === user.id,
-    is_admin: membership.role === MemberRole.ADMIN,
+    is_admin:
+      workspace.ownerId === user.id || membership.role === MemberRole.ADMIN,
   };
 });

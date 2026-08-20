@@ -16,6 +16,7 @@ export default defineEventHandler(async (event) => {
   return {
     workspace: serializeWorkspace(workspace),
     is_owner: workspace.ownerId === user.id,
-    is_admin: membership.role === MemberRole.ADMIN,
+    is_admin:
+      workspace.ownerId === user.id || membership.role === MemberRole.ADMIN,
   };
 });
