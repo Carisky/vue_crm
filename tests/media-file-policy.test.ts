@@ -209,39 +209,6 @@ const validBinaryCases: Array<{
       disposition: "inline",
     },
   },
-  {
-    name: "legacy.doc",
-    content: createMinimalCfb("WordDocument"),
-    claimedMime: canonicalMime.doc,
-    expected: {
-      mime: canonicalMime.doc,
-      extension: "doc",
-      kind: "document",
-      disposition: "attachment",
-    },
-  },
-  {
-    name: "legacy.xls",
-    content: createMinimalCfb("Workbook"),
-    claimedMime: canonicalMime.xls,
-    expected: {
-      mime: canonicalMime.xls,
-      extension: "xls",
-      kind: "document",
-      disposition: "attachment",
-    },
-  },
-  {
-    name: "legacy.ppt",
-    content: createMinimalCfb("PowerPoint Document"),
-    claimedMime: canonicalMime.ppt,
-    expected: {
-      mime: canonicalMime.ppt,
-      extension: "ppt",
-      kind: "document",
-      disposition: "attachment",
-    },
-  },
 ];
 
 test("validates approved signature-bearing media with canonical metadata", async () => {
@@ -322,6 +289,31 @@ test("validates structurally correct OOXML and OpenDocument package fixtures", a
     { name: "document.odt", mime: canonicalMime.odt, extension: "odt" },
     { name: "workbook.ods", mime: canonicalMime.ods, extension: "ods" },
     { name: "slides.odp", mime: canonicalMime.odp, extension: "odp" },
+  ];
+
+  for (const item of cases) {
+    assert.deepEqual(
+      await validateMediaFile({
+        path: join(fixturesDirectory, item.name),
+        originalName: item.name,
+        claimedMime: item.mime,
+      }),
+      {
+        mime: item.mime,
+        extension: item.extension,
+        kind: "document",
+        disposition: "attachment",
+      },
+      item.name,
+    );
+  }
+});
+
+test("validates real legacy DOC, XLS, and PPT fixtures with live family data", async () => {
+  const cases = [
+    { name: "legacy-real.doc", mime: canonicalMime.doc, extension: "doc" },
+    { name: "legacy-real.xls", mime: canonicalMime.xls, extension: "xls" },
+    { name: "legacy-real.ppt", mime: canonicalMime.ppt, extension: "ppt" },
   ];
 
   for (const item of cases) {
@@ -460,14 +452,99 @@ test("rejects malformed OOXML and OpenDocument packages", async () => {
   });
 });
 
+for (const item of [
+  {
+    behavior: "rejects OOXML package declarations found only in comments",
+    name: "decoy.docx",
+    mime: canonicalMime.docx,
+  },
+  {
+    behavior:
+      "rejects an OOXML package with the wrong officeDocument relationship",
+    name: "wrong-relationship.xlsx",
+    mime: canonicalMime.xlsx,
+  },
+  {
+    behavior: "rejects an OOXML package with empty main XML",
+    name: "empty-main.pptx",
+    mime: canonicalMime.pptx,
+  },
+  {
+    behavior:
+      "rejects macro artifacts renamed with a non-macro OOXML extension",
+    name: "renamed-macro.docx",
+    mime: canonicalMime.docx,
+  },
+  {
+    behavior:
+      "rejects macro-enabled content types under a non-macro OOXML extension",
+    name: "macro-content-type.docx",
+    mime: canonicalMime.docx,
+  },
+]) {
+  test(item.behavior, async () => {
+    await assertUnsupported({
+      path: join(fixturesDirectory, item.name),
+      originalName: item.name,
+      claimedMime: item.mime,
+    });
+  });
+}
+
+for (const item of [
+  {
+    behavior:
+      "rejects an OpenDocument package with manifest identity only in a comment",
+    name: "decoy-manifest.odt",
+    mime: canonicalMime.odt,
+  },
+  {
+    behavior: "rejects an OpenDocument package with empty content XML",
+    name: "empty-content.ods",
+    mime: canonicalMime.ods,
+  },
+  {
+    behavior: "rejects an OpenDocument package with the wrong manifest root",
+    name: "wrong-manifest.odp",
+    mime: canonicalMime.odp,
+  },
+]) {
+  test(item.behavior, async () => {
+    await assertUnsupported({
+      path: join(fixturesDirectory, item.name),
+      originalName: item.name,
+      claimedMime: item.mime,
+    });
+  });
+}
+
 test("rejects a legacy OLE document whose family does not match its extension", async () => {
-  await withTemporaryFile("renamed.doc", createMinimalCfb("Workbook"), (path) =>
-    assertUnsupported({
-      path,
-      originalName: "renamed.doc",
-      claimedMime: canonicalMime.doc,
-    }),
+  await assertUnsupported({
+    path: join(fixturesDirectory, "legacy-real.xls"),
+    originalName: "renamed.doc",
+    claimedMime: canonicalMime.doc,
+  });
+});
+
+test("rejects a generic CFB containing only an empty spoofed family stream", async () => {
+  await withTemporaryFile(
+    "spoofed.doc",
+    createMinimalCfb("WordDocument"),
+    (path) =>
+      assertUnsupported({
+        path,
+        originalName: "spoofed.doc",
+        claimedMime: canonicalMime.doc,
+      }),
   );
+});
+
+test("rejects a legacy Office CFB containing a live VBA project", async () => {
+  await assertUnsupported({
+    path: join(fixturesDirectory, "legacy-macro.doc"),
+    originalName: "legacy-macro.doc",
+    claimedMime: canonicalMime.doc,
+  });
 });
 
 test("rejects binary data disguised as CSV and oversized bounded text inputs", async () => {
