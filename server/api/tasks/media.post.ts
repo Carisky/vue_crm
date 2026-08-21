@@ -1,66 +1,69 @@
-import { Buffer } from "node:buffer";
-import { promises as fs } from "node:fs";
-import { randomUUID } from "node:crypto";
-import { join } from "node:path";
+import { createError, isError } from "h3";
 
+import {
+  MediaUploadStorageError,
+  MediaUploadTooLargeError,
+  storePendingMedia,
+} from "~/server/lib/media-upload-service";
+import {
+  MultipartMediaUploadError,
+  parseMediaMultipart,
+} from "~/server/lib/multipart-media-upload";
 import {
   requireUser,
   requireWorkspaceMembership,
 } from "~/server/lib/permissions";
-
-const UPLOAD_DIR = join(process.cwd(), "public", "uploads", "tasks", "media");
-
-function sanitizeFileName(value: string) {
-  return value.replace(/[^a-zA-Z0-9_.-]/g, "_");
-}
+import { getPrivateStorage } from "~/server/lib/storage";
+import { UnsupportedMediaTypeError } from "~/server/lib/storage/file-policy";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
-  const formData = await readFormData(event);
-  const workspaceValue = formData?.get("workspace_id");
-  const files = formData?.getAll("files") ?? [];
+  const { config } = getPrivateStorage();
 
-  const workspaceId =
-    typeof workspaceValue === "string"
-      ? workspaceValue
-      : workspaceValue instanceof Blob
-        ? await workspaceValue.text()
-        : undefined;
-  if (!workspaceId) {
-    throw createError({ status: 400, statusText: "Workspace ID required" });
-  }
+  try {
+    const uploadedFiles = await parseMediaMultipart(event, {
+      maxFiles: config.maxFilesPerUpload,
+      maxFileSizeBytes: config.maxFileSizeBytes,
+      async authorizeWorkspace(workspaceId) {
+        await requireWorkspaceMembership(event, workspaceId);
+      },
+      uploadFile(input) {
+        return storePendingMedia({
+          workspaceId: input.workspaceId,
+          userId: user.id,
+          originalName: input.originalName,
+          claimedMime: input.claimedMime,
+          stream: input.stream,
+        });
+      },
+    });
 
-  await requireWorkspaceMembership(event, workspaceId);
-
-  const uploadFiles = files.filter(
-    (value): value is File =>
-      typeof value === "object" &&
-      value !== null &&
-      "arrayBuffer" in value &&
-      "name" in value
-  );
-
-  if (!uploadFiles.length) {
-    throw createError({ status: 400, statusText: "At least one file required" });
-  }
-
-  await fs.mkdir(UPLOAD_DIR, { recursive: true });
-
-  const savedFiles = [];
-  for (const file of uploadFiles) {
-    const name = file.name ? sanitizeFileName(file.name) : "upload";
-    const targetName = `${Date.now()}-${randomUUID()}-${name}`;
-    const targetPath = join(UPLOAD_DIR, targetName);
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(targetPath, buffer);
-
-    savedFiles.push({
-      path: `/uploads/tasks/media/${targetName}`,
-      mime: file.type ?? null,
-      original_name: file.name ?? null,
+    return { files: uploadedFiles };
+  } catch (error) {
+    if (isError(error)) {
+      throw error;
+    }
+    if (error instanceof MediaUploadTooLargeError) {
+      throw createError({ statusCode: 413, statusMessage: "File too large" });
+    }
+    if (
+      error instanceof UnsupportedMediaTypeError ||
+      error instanceof MultipartMediaUploadError
+    ) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Invalid media upload",
+      });
+    }
+    if (error instanceof MediaUploadStorageError) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: "Unable to upload media",
+      });
+    }
+    throw createError({
+      statusCode: 500,
+      statusMessage: "Unable to upload media",
     });
   }
-
-  return { files: savedFiles };
 });
