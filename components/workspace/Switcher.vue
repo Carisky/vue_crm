@@ -43,7 +43,7 @@ watch([() => route.params['workspaceId'], () => route.query['workspace_id'], dat
             <p class="text-xs uppercase">Workspaces</p>
             <button @click="open" class="flex items-center justify-center text-sidebar-foreground hover:text-sidebar-primary">
                 <Icon
-                    v-if="isLoading"
+                    v-if="isLoading && !data"
                     name="svg-spinners:8-dots-rotate"
                     size="20px"
                     class="size-5 text-sidebar-foreground/85"

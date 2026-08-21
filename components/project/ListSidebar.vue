@@ -49,7 +49,7 @@ const { open } = useCreateProjectModal()
                 class="flex items-center justify-center text-sidebar-foreground hover:text-sidebar-primary"
             >
                 <Icon
-                    v-if="isLoading"
+                    v-if="isLoading && !projects"
                     name="svg-spinners:8-dots-rotate"
                     size="20px"
                     class="size-5 text-sidebar-foreground/80"
