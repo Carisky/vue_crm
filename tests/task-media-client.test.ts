@@ -90,7 +90,7 @@ test("uploads workspace before files and returns opaque pending media IDs", asyn
     ["workspace_id", "files", "files"],
   );
   assert.deepEqual(entries[0], ["workspace_id", "workspace-1"]);
-  assert.equal((entries[1]?.[1] as File).name, "photo_one.png");
+  assert.equal((entries[1]?.[1] as File).name, "photo one.png");
   assert.equal((entries[2]?.[1] as File).name, "notes.pdf");
   assert.deepEqual(progress, [25]);
   assert.deepEqual(result, response);

@@ -11,6 +11,10 @@ import {
     uploadTaskMedia,
     type PendingMedia,
 } from '~/lib/task-media-client';
+import {
+    buildUpdateTaskInitialValues,
+    UNASSIGNED_TASK_ASSIGNEE,
+} from '~/lib/task-update-form';
 import { TaskPriority, TaskStatus, taskPriorityLabels, type FilteredTask, type UpdateTaskInject } from '~/lib/types';
 
 const {
@@ -26,7 +30,7 @@ const {
 }>()
 
 const onUpdateTask: UpdateTaskInject | undefined = inject('update-task-inject')
-const UNASSIGNED_VALUE = '__UNASSIGNED__'
+const UNASSIGNED_VALUE = UNASSIGNED_TASK_ASSIGNEE
 
 const existingMedia = ref([...initialValues.media])
 const uploadedMedia = ref<PendingMedia[]>([])
@@ -41,13 +45,7 @@ configure({
 
 const form = useForm({
     validationSchema: toTypedSchema(CreateTasksSchema.omit({ workspace_id: true, media_ids: true })),
-    initialValues: {
-        ...initialValues,
-        assignee_id: initialValues.assignee_id ?? UNASSIGNED_VALUE,
-        due_date: initialValues.due_date ? new Date(initialValues.due_date) : undefined,
-        description: initialValues.description ?? "",
-        started_at: initialValues.started_at ? new Date(initialValues.started_at) : undefined,
-    }
+    initialValues: buildUpdateTaskInitialValues(initialValues)
 })
 
 const statuses = Object.entries(TaskStatus)

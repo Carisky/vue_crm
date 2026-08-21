@@ -40,10 +40,6 @@ function defaultDependencies(): TaskMediaClientDependencies {
   };
 }
 
-function sanitizeFileName(value: string): string {
-  return value.replace(/[^a-zA-Z0-9_.-]/g, "_");
-}
-
 export function uploadTaskMedia(
   workspaceId: string,
   files: File[],
@@ -53,8 +49,8 @@ export function uploadTaskMedia(
   const formData = dependencies.createFormData();
   formData.append("workspace_id", workspaceId);
   files.forEach((file, index) => {
-    const safeName = sanitizeFileName(file.name) || `upload-${index}`;
-    formData.append("files", file, safeName);
+    const name = file.name || `upload-${index}`;
+    formData.append("files", file, name);
   });
 
   return new Promise((resolve, reject) => {
