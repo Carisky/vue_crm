@@ -5,6 +5,9 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "dev:local": "nuxt dev --dotenv .env.development",
+    "db:dev:up": "docker compose -f docker-compose.dev.yml up -d",
+    "db:dev:down": "docker compose -f docker-compose.dev.yml down",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "test": "node --test --experimental-strip-types tests/*.test.ts",

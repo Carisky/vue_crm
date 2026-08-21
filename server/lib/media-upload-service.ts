@@ -118,7 +118,8 @@ async function createPrivateVideoVariants(
   storage: PrivateStorage,
   repository: PendingMediaRepository,
 ): Promise<void> {
-  if (!repository.createVariant) return;
+  const createVariant = repository.createVariant;
+  if (!createVariant) return;
   await storage.withPhysicalPath(originalKey, async (sourcePath) => {
     const height = await probeVideoHeight(sourcePath);
     for (const resolution of selectVariantHeights(height)) {
@@ -132,7 +133,7 @@ async function createPrivateVideoVariants(
         await storage.commitTemporaryObject(key, temporary.path);
         committed = true;
         const object = await storage.stat(key);
-        await repository.createVariant({ taskMediaId: mediaId, storageKey: key, mime: "video/mp4", size: object.size, resolution });
+        await createVariant({ taskMediaId: mediaId, storageKey: key, mime: "video/mp4", size: object.size, resolution });
       } catch {
         if (temporary) await storage.discardTemporaryObject(temporary.path).catch(() => undefined);
         if (committed) await storage.remove(key).catch(() => undefined);
