@@ -1,63 +1,95 @@
-import type { TaskMedia } from "@prisma/client";
-
-import prisma from "~/server/lib/prisma";
-import { generateVideoVariants } from "~/server/lib/video";
-
-export type TaskMediaUploadPayload = {
-  path: string;
-  mime?: string | null;
-  original_name?: string | null;
+type PendingTaskMediaRow = {
+  id: string;
+  taskId: string | null;
+  workspaceId: string;
+  uploadedById: string | null;
+  storageKey: string | null;
 };
 
-async function attachVideoVariants(media: TaskMedia) {
-  if (!media.mime?.startsWith("video")) {
-    return;
-  }
+type PendingTaskMediaWhere = {
+  id: { in: string[] };
+  taskId: null;
+  workspaceId: string;
+  uploadedById: string;
+  storageKey: { not: null };
+};
 
-  try {
-    const { height, variants } = await generateVideoVariants(media.path);
-    if (height) {
-      await prisma.taskMedia.update({
-        where: { id: media.id },
-        data: { resolution: height },
-      });
-    }
+export type TaskMediaTransaction = {
+  taskMedia: {
+    findMany(input: {
+      where: { id: { in: string[] } };
+      select: {
+        id: true;
+        taskId: true;
+        workspaceId: true;
+        uploadedById: true;
+        storageKey: true;
+      };
+    }): Promise<PendingTaskMediaRow[]>;
+    updateMany(input: {
+      where: PendingTaskMediaWhere;
+      data: { taskId: string };
+    }): Promise<{ count: number }>;
+  };
+};
 
-    if (!variants.length) {
-      return;
-    }
-
-    await prisma.taskMediaVariant.createMany({
-      data: variants.map((variant) => ({
-        taskMediaId: media.id,
-        path: variant.path,
-        mime: media.mime,
-        resolution: variant.resolution,
-      })),
-    });
-  } catch (error) {
-    console.warn("Failed to generate video variants for media", media.path, error);
+export class PendingMediaAttachmentError extends Error {
+  constructor() {
+    super("Unable to attach pending media.");
+    this.name = "PendingMediaAttachmentError";
   }
 }
 
-export async function attachMediaToTask(
-  taskId: string,
-  files: TaskMediaUploadPayload[],
-) {
-  const created: TaskMedia[] = [];
-  for (const file of files) {
-    const media = await prisma.taskMedia.create({
-      data: {
-        taskId,
-        path: file.path,
-        mime: file.mime,
-        originalName: file.original_name ?? null,
-      },
-    });
-    created.push(media);
+function rejectPendingMedia(): never {
+  throw new PendingMediaAttachmentError();
+}
+
+export async function assertAndAttachPendingMedia(input: {
+  taskId: string;
+  mediaIds: string[];
+  workspaceId: string;
+  userId: string;
+  db: TaskMediaTransaction;
+}): Promise<void> {
+  if (input.mediaIds.length === 0) return;
+
+  const uniqueIds = new Set(input.mediaIds);
+  if (uniqueIds.size !== input.mediaIds.length) rejectPendingMedia();
+
+  const rows = await input.db.taskMedia.findMany({
+    where: { id: { in: input.mediaIds } },
+    select: {
+      id: true,
+      taskId: true,
+      workspaceId: true,
+      uploadedById: true,
+      storageKey: true,
+    },
+  });
+
+  if (
+    rows.length !== input.mediaIds.length ||
+    rows.some(
+      (row) =>
+        row.taskId !== null ||
+        row.workspaceId !== input.workspaceId ||
+        row.uploadedById !== input.userId ||
+        row.storageKey === null,
+    )
+  ) {
+    rejectPendingMedia();
   }
 
-  await Promise.all(created.map((media) => attachVideoVariants(media)));
+  const result = await input.db.taskMedia.updateMany({
+    where: {
+      id: { in: input.mediaIds },
+      taskId: null,
+      workspaceId: input.workspaceId,
+      uploadedById: input.userId,
+      storageKey: { not: null },
+    },
+    data: { taskId: input.taskId },
+  });
 
-  return created;
+  if (result.count !== input.mediaIds.length) rejectPendingMedia();
 }

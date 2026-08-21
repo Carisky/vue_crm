@@ -8,31 +8,32 @@ datasource db {
 }
 
 model User {
-  id                         String         @id @default(cuid())
+  id                         String                    @id @default(cuid())
   name                       String?
-  email                      String         @unique
+  email                      String                    @unique
   passwordHash               String?
-  githubId                   String?        @unique
+  githubId                   String?                   @unique
   avatarUrl                  String?
-  createdAt                  DateTime       @default(now())
-  updatedAt                  DateTime       @updatedAt
+  createdAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
   emailVerifiedAt            DateTime?
   monthlyWorkloadTargetHours Float?
-  themePreference            String         @default("light")
-  emailNotificationsEnabled  Boolean        @default(true)
+  themePreference            String                    @default("light")
+  emailNotificationsEnabled  Boolean                   @default(true)
   emailQueues                EmailQueue[]
   memberships                Member[]
-  notificationActed          Notification[] @relation("NotificationActor")
+  notificationActed          Notification[]            @relation("NotificationActor")
   notifications              Notification[]
   sessions                   Session[]
-  assignedTasks              Task[]         @relation("TaskAssignee")
+  assignedTasks              Task[]                    @relation("TaskAssignee")
   taskComments               TaskComment[]
   taskCommentMentions        TaskCommentMention[]
   conversationParticipants   ConversationParticipant[]
-  conversationMessages       ConversationMessage[] @relation("ConversationMessageSender")
+  conversationMessages       ConversationMessage[]     @relation("ConversationMessageSender")
   projectDocs                ProjectDoc[]
   projectDocSections         ProjectDocSection[]
-  ownedWorkspaces            Workspace[]    @relation("WorkspaceOwner")
+  taskMediaUploads           TaskMedia[]               @relation("TaskMediaUploader")
+  ownedWorkspaces            Workspace[]               @relation("WorkspaceOwner")
   uiPreferences              UiPreference[]
   emailVerification          EmailVerificationToken?
   passwordReset              PasswordResetToken?
@@ -74,35 +75,36 @@ model Session {
 }
 
 model Workspace {
-  id            String         @id @default(cuid())
-  name          String
-  inviteCode    String         @unique
-  imageUrl      String?        @db.Text
-  ownerId       String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  members       Member[]
-  notifications Notification[]
-  projects      Project[]
-  tasks         Task[]
-  taskComments  TaskComment[]
-  conversations Conversation[]
-  projectDocs   ProjectDoc[]
+  id                 String              @id @default(cuid())
+  name               String
+  inviteCode         String              @unique
+  imageUrl           String?             @db.Text
+  ownerId            String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  members            Member[]
+  notifications      Notification[]
+  projects           Project[]
+  tasks              Task[]
+  taskComments       TaskComment[]
+  conversations      Conversation[]
+  projectDocs        ProjectDoc[]
   projectDocSections ProjectDocSection[]
-  owner         User           @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  uiPreferences UiPreference[]
+  taskMedia          TaskMedia[]
+  owner              User                @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  uiPreferences      UiPreference[]
 
   @@index([ownerId], map: "Workspace_ownerId_fkey")
 }
 
 model UiPreference {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
   workspaceId String
   key         String
   value       Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -128,16 +130,16 @@ model Member {
 }
 
 model Project {
-  id            String         @id @default(cuid())
+  id            String              @id @default(cuid())
   name          String
-  imageUrl      String?        @db.Text
+  imageUrl      String?             @db.Text
   workspaceId   String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
   notifications Notification[]
   docs          ProjectDoc[]
   docSections   ProjectDocSection[]
-  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace     Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   tasks         Task[]
 
   @@index([workspaceId])
@@ -184,9 +186,9 @@ model ProjectDoc {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  workspace Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author    User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
   section   ProjectDocSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId])
@@ -205,9 +207,9 @@ model ProjectDocSection {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author    User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
   docs      ProjectDoc[]
 
   @@index([workspaceId])
@@ -217,17 +219,17 @@ model ProjectDocSection {
 }
 
 model TaskComment {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   taskId      String
   workspaceId String
   authorId    String
-  body        String    @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  body        String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  task      Task                 @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  workspace Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  author    User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
   mentions  TaskCommentMention[]
 
   @@index([taskId])
@@ -237,10 +239,10 @@ model TaskComment {
 }
 
 model TaskCommentMention {
-  id        String      @id @default(cuid())
+  id        String   @id @default(cuid())
   commentId String
   userId    String
-  createdAt DateTime    @default(now())
+  createdAt DateTime @default(now())
 
   comment TaskComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
   user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -250,14 +252,14 @@ model TaskCommentMention {
 }
 
 model Conversation {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   workspaceId String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  workspace     Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  participants  ConversationParticipant[]
-  messages      ConversationMessage[]
+  workspace    Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+  messages     ConversationMessage[]
 
   @@index([workspaceId])
 }
@@ -339,26 +341,37 @@ model EmailQueue {
 }
 
 model TaskMedia {
-  id           String               @id @default(cuid())
+  id           String             @id @default(cuid())
   taskId       String?
-  path         String
+  workspaceId  String
+  uploadedById String?
+  storageKey   String?            @unique
+  path         String?
   mime         String?
   originalName String?
+  size         Int                @default(0)
   resolution   Int?
-  createdAt    DateTime             @default(now())
-  task         Task?                @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt    DateTime           @default(now())
+  task         Task?              @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  workspace    Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  uploadedBy   User?              @relation("TaskMediaUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
   variants     TaskMediaVariant[]
 
   @@index([taskId])
+  @@index([workspaceId])
+  @@index([uploadedById])
+  @@index([taskId, createdAt])
 }
 
 model TaskMediaVariant {
-  id          String     @id @default(cuid())
+  id          String   @id @default(cuid())
   taskMediaId String
-  path        String
+  storageKey  String?  @unique
+  path        String?
   mime        String?
+  size        Int      @default(0)
   resolution  Int?
-  createdAt   DateTime   @default(now())
+  createdAt   DateTime @default(now())
 
   taskMedia TaskMedia @relation(fields: [taskMediaId], references: [id], onDelete: Cascade)
 
