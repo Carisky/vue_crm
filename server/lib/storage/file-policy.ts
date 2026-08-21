@@ -531,6 +531,45 @@ function splitQualifiedName(name: string): {
   };
 }
 
+function normalizeXmlAttributeValue(value: string): string {
+  const reference = /&(?:#(\d+)|#x([\dA-Fa-f]+)|(amp|lt|gt|quot|apos));/gu;
+  if (value.replace(reference, "").includes("&")) {
+    unsupported();
+  }
+  return value.replace(
+    reference,
+    (_match, decimal: string, hexadecimal: string, named: string) => {
+      if (named) {
+        return (
+          {
+            amp: "&",
+            apos: "'",
+            gt: ">",
+            lt: "<",
+            quot: '"',
+          } as const
+        )[named as "amp" | "apos" | "gt" | "lt" | "quot"];
+      }
+      const codePoint = Number.parseInt(
+        decimal || hexadecimal,
+        decimal ? 10 : 16,
+      );
+      if (
+        codePoint !== 0x09 &&
+        codePoint !== 0x0a &&
+        codePoint !== 0x0d &&
+        (codePoint < 0x20 ||
+          (codePoint > 0xd7ff && codePoint < 0xe000) ||
+          (codePoint > 0xfffd && codePoint < 0x10000) ||
+          codePoint > 0x10ffff)
+      ) {
+        unsupported();
+      }
+      return String.fromCodePoint(codePoint);
+    },
+  );
+}
+
 function parseXmlElements(
   nodes: unknown,
   inheritedNamespaces: ReadonlyMap<string, string>,
@@ -613,7 +652,7 @@ function parseXmlElements(
       attributes.push({
         localName: parsedName.localName,
         namespaceUri: attributeNamespace,
-        value: rawValue as string,
+        value: normalizeXmlAttributeValue(rawValue as string),
       });
     }
 
@@ -690,6 +729,11 @@ const OFFICE_DOCUMENT_RELATIONSHIPS = new Set([
 const ODF_MANIFEST_NAMESPACE =
   "urn:oasis:names:tc:opendocument:xmlns:manifest:1.0";
 const ODF_OFFICE_NAMESPACE = "urn:oasis:names:tc:opendocument:xmlns:office:1.0";
+const ODF_BODY_ROOTS: Readonly<Record<string, string>> = {
+  odt: "text",
+  ods: "spreadsheet",
+  odp: "presentation",
+};
 const OOXML_MAIN_ROOTS: Readonly<
   Record<string, { namespaceUri: string; localName: string }>
 > = {
@@ -865,6 +909,17 @@ async function validateOpenDocumentPackage(
   if (!hasName(content, ODF_OFFICE_NAMESPACE, "document-content")) {
     unsupported();
   }
+  const bodies = childrenNamed(content, ODF_OFFICE_NAMESPACE, "body");
+  const expectedBodyRoot = ODF_BODY_ROOTS[selected.extension];
+  if (
+    bodies.length !== 1 ||
+    !expectedBodyRoot ||
+    bodies[0]!.children.length !== 1 ||
+    childrenNamed(bodies[0]!, ODF_OFFICE_NAMESPACE, expectedBodyRoot).length !==
+      1
+  ) {
+    unsupported();
+  }
 }
 
 async function validatePackage(path: string, selected: Policy) {
@@ -885,10 +940,17 @@ function liveCfbStream(
   acceptedNames: readonly string[],
 ): Buffer | undefined {
   const names = new Set(acceptedNames.map((name) => name.toLowerCase()));
-  const matches = container.FileIndex.filter(
-    (entry): entry is CFB$Entry =>
-      entry.type === 2 && names.has(entry.name.toLowerCase()),
-  );
+  const reachableIndexes = reachableCfbEntryIndexes(container);
+  const matches = container.FileIndex.flatMap((entry, index) => {
+    if (
+      entry.type !== 2 ||
+      !names.has(entry.name.toLowerCase()) ||
+      !reachableIndexes.has(index)
+    ) {
+      return [];
+    }
+    return [entry as CFB$Entry];
+  });
   if (matches.length > 1) {
     unsupported();
   }
@@ -897,6 +959,50 @@ function liveCfbStream(
     return undefined;
   }
   return Buffer.from(entry.content).subarray(0, entry.size);
+}
+
+type CfbTreeEntry = CFB$Entry & { L: number; R: number; C: number };
+
+function reachableCfbEntryIndexes(container: CFB$Container): Set<number> {
+  const root = container.FileIndex[0] as CfbTreeEntry | undefined;
+  if (!root || root.type !== 5) {
+    unsupported();
+  }
+
+  const reachable = new Set<number>();
+  const pending = [0];
+  while (pending.length > 0) {
+    const index = pending.pop()!;
+    if (reachable.has(index)) {
+      unsupported();
+    }
+    const entry = container.FileIndex[index] as CfbTreeEntry | undefined;
+    if (!entry || ![1, 2, 5].includes(entry.type)) {
+      unsupported();
+    }
+    reachable.add(index);
+
+    const pointers = [entry.L, entry.R];
+    if (entry.type === 1 || entry.type === 5) {
+      pointers.push(entry.C);
+    } else if (entry.C !== -1) {
+      unsupported();
+    }
+    for (const pointer of pointers) {
+      if (pointer === -1) {
+        continue;
+      }
+      if (
+        !Number.isInteger(pointer) ||
+        pointer < 0 ||
+        pointer >= container.FileIndex.length
+      ) {
+        unsupported();
+      }
+      pending.push(pointer);
+    }
+  }
+  return reachable;
 }
 
 function hasCfbMacroArtifact(container: CFB$Container): boolean {
@@ -913,6 +1019,80 @@ const SUPPORTED_WORD_FIB_VERSIONS = new Set([
   0x0065, 0x0067, 0x00c1, 0x00d9, 0x0101, 0x010c, 0x0112,
 ]);
 
+function validateWordPieceTable(
+  wordDocument: Buffer,
+  table: Buffer,
+  fibVariableOffset: number,
+) {
+  const fibLongWordCountOffset = fibVariableOffset + 2 + 28;
+  if (fibLongWordCountOffset + 2 > wordDocument.length) {
+    unsupported();
+  }
+  const fibLongWordCount = wordDocument.readUInt16LE(fibLongWordCountOffset);
+  const fibPairCountOffset = fibLongWordCountOffset + 2 + fibLongWordCount * 4;
+  if (fibLongWordCount < 4 || fibPairCountOffset + 2 > wordDocument.length) {
+    unsupported();
+  }
+  const fibPairCount = wordDocument.readUInt16LE(fibPairCountOffset);
+  const clxPairIndex = 33;
+  const clxPairOffset = fibPairCountOffset + 2 + clxPairIndex * 8;
+  if (fibPairCount <= clxPairIndex || clxPairOffset + 8 > wordDocument.length) {
+    unsupported();
+  }
+
+  const mainCharacterCount = wordDocument.readUInt32LE(
+    fibLongWordCountOffset + 2 + 3 * 4,
+  );
+  const clxOffset = wordDocument.readUInt32LE(clxPairOffset);
+  const clxLength = wordDocument.readUInt32LE(clxPairOffset + 4);
+  if (
+    mainCharacterCount === 0 ||
+    clxLength < 21 ||
+    clxOffset + clxLength > table.length
+  ) {
+    unsupported();
+  }
+
+  let offset = clxOffset;
+  const endOffset = clxOffset + clxLength;
+  while (offset < endOffset && table[offset] === 0x01) {
+    if (offset + 3 > endOffset) {
+      unsupported();
+    }
+    const propertyLength = table.readUInt16LE(offset + 1);
+    offset += 3 + propertyLength;
+  }
+  if (offset + 5 > endOffset || table[offset] !== 0x02) {
+    unsupported();
+  }
+  const pieceTableLength = table.readUInt32LE(offset + 1);
+  if (
+    pieceTableLength < 16 ||
+    (pieceTableLength - 4) % 12 !== 0 ||
+    offset + 5 + pieceTableLength !== endOffset
+  ) {
+    unsupported();
+  }
+  const pieceCount = (pieceTableLength - 4) / 12;
+  const characterPositionsOffset = offset + 5;
+  let previousCharacterPosition = table.readUInt32LE(characterPositionsOffset);
+  if (previousCharacterPosition !== 0) {
+    unsupported();
+  }
+  for (let index = 1; index <= pieceCount; index += 1) {
+    const characterPosition = table.readUInt32LE(
+      characterPositionsOffset + index * 4,
+    );
+    if (characterPosition <= previousCharacterPosition) {
+      unsupported();
+    }
+    previousCharacterPosition = characterPosition;
+  }
+  if (previousCharacterPosition < mainCharacterCount) {
+    unsupported();
+  }
+}
+
 function validateWordCfb(container: CFB$Container) {
   const wordDocument = liveCfbStream(container, ["WordDocument"]);
   if (
@@ -921,6 +1101,11 @@ function validateWordCfb(container: CFB$Container) {
     wordDocument.readUInt16LE(0) !== 0xa5ec ||
     !SUPPORTED_WORD_FIB_VERSIONS.has(wordDocument.readUInt16LE(2))
   ) {
+    unsupported();
+  }
+  const firstVariableFieldOffset = 32;
+  const fibWordCount = wordDocument.readUInt16LE(firstVariableFieldOffset);
+  if (fibWordCount !== 14) {
     unsupported();
   }
   const flags = wordDocument.readUInt16LE(10);
@@ -933,6 +1118,15 @@ function validateWordCfb(container: CFB$Container) {
   ) {
     unsupported();
   }
+  const firstCharacterOffset = wordDocument.readUInt32LE(24);
+  const lastCharacterOffset = wordDocument.readUInt32LE(28);
+  if (
+    firstCharacterOffset >= lastCharacterOffset ||
+    lastCharacterOffset > wordDocument.length
+  ) {
+    unsupported();
+  }
+  validateWordPieceTable(wordDocument, table, firstVariableFieldOffset);
 }
 
 function validateExcelCfb(container: CFB$Container) {

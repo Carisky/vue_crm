@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+
+import CFB from "cfb";
 
 import {
   MEDIA_ACCEPT_ATTRIBUTE,
@@ -93,6 +95,29 @@ function createMinimalCfb(streamName: string): Buffer {
   fat.writeUInt32LE(fatSector, 4);
 
   return file;
+}
+
+function createSuperficialDocCfb(): Buffer {
+  const container = CFB.utils.cfb_new();
+  const wordDocument = Buffer.alloc(32);
+  wordDocument.writeUInt16LE(0xa5ec, 0);
+  wordDocument.writeUInt16LE(0x00c1, 2);
+  CFB.utils.cfb_add(container, "WordDocument", wordDocument);
+  CFB.utils.cfb_add(container, "0Table", Buffer.alloc(16, 1));
+  return CFB.write(container, { type: "buffer", fileType: "cfb" }) as Buffer;
+}
+
+async function createDocWithOrphanedFamilyStreams(): Promise<Buffer> {
+  const content = Buffer.from(
+    await readFile(join(fixturesDirectory, "legacy-real.doc")),
+  );
+  const directorySector = content.readUInt32LE(48);
+  const rootDirectoryOffset = (directorySector + 1) * 512;
+
+  // Keep only DocumentSummaryInformation reachable from the root. The parser
+  // still exposes the orphaned WordDocument and 1Table directory records.
+  content.writeUInt32LE(4, rootDirectoryOffset + 76);
+  return content;
 }
 
 function createMp4(): Buffer {
@@ -494,6 +519,27 @@ for (const item of [
 for (const item of [
   {
     behavior:
+      "rejects a macro content type concealed with an XML character reference",
+    name: "entity-macro-content-type.docx",
+  },
+  {
+    behavior:
+      "rejects an external package relationship concealed with an XML character reference",
+    name: "entity-external-relationship.docx",
+  },
+]) {
+  test(item.behavior, async () => {
+    await assertUnsupported({
+      path: join(fixturesDirectory, item.name),
+      originalName: item.name,
+      claimedMime: canonicalMime.docx,
+    });
+  });
+}
+
+for (const item of [
+  {
+    behavior:
       "rejects an OpenDocument package with manifest identity only in a comment",
     name: "decoy-manifest.odt",
     mime: canonicalMime.odt,
@@ -518,6 +564,26 @@ for (const item of [
   });
 }
 
+for (const item of [
+  {
+    behavior: "rejects an OpenDocument package without an office body",
+    name: "missing-body.odt",
+  },
+  {
+    behavior:
+      "rejects an OpenDocument text package with a spreadsheet office body",
+    name: "wrong-body.odt",
+  },
+]) {
+  test(item.behavior, async () => {
+    await assertUnsupported({
+      path: join(fixturesDirectory, item.name),
+      originalName: item.name,
+      claimedMime: canonicalMime.odt,
+    });
+  });
+}
+
 test("rejects a legacy OLE document whose family does not match its extension", async () => {
   await assertUnsupported({
     path: join(fixturesDirectory, "legacy-real.xls"),
@@ -534,6 +600,32 @@ test("rejects a generic CFB containing only an empty spoofed family stream", asy
       assertUnsupported({
         path,
         originalName: "spoofed.doc",
+        claimedMime: canonicalMime.doc,
+      }),
+  );
+});
+
+test("rejects legacy Office family streams orphaned from the CFB root tree", async () => {
+  await withTemporaryFile(
+    "orphaned.doc",
+    await createDocWithOrphanedFamilyStreams(),
+    (path) =>
+      assertUnsupported({
+        path,
+        originalName: "orphaned.doc",
+        claimedMime: canonicalMime.doc,
+      }),
+  );
+});
+
+test("rejects a reachable DOC with only superficial FIB and table markers", async () => {
+  await withTemporaryFile(
+    "superficial.doc",
+    createSuperficialDocCfb(),
+    (path) =>
+      assertUnsupported({
+        path,
+        originalName: "superficial.doc",
         claimedMime: canonicalMime.doc,
       }),
   );
