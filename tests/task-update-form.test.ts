@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { buildUpdateTaskInitialValues } from "../lib/task-update-form.ts";
+import { TaskPriority, TaskStatus } from "../lib/types.ts";
 
 test("keeps only editable task fields in update-form initial values", () => {
   const result = buildUpdateTaskInitialValues({
@@ -9,15 +10,15 @@ test("keeps only editable task fields in update-form initial values", () => {
     name: "Task",
     workspace_id: "workspace-1",
     project_id: "project-1",
-    status: "TODO",
-    priority: "MEDIUM",
+    status: TaskStatus.Todo,
+    priority: TaskPriority.Medium,
     due_date: null,
     assignee_id: null,
     description: null,
     position: 1,
     started_at: null,
     media: [],
-    project: { $id: "project-1", name: "Project", image_url: null },
+    project: { $id: "project-1", name: "Project", image_url: null, workspace_id: "workspace-1" },
     assignee: null,
   });
 

@@ -19,8 +19,8 @@ export function registerCronJobs() {
     name: "password-reset-cleanup",
   }).everyMinutes(5);
 
-  Schedule.call(() => removeExpiredPendingMedia({}, {
+  Schedule.call(async () => { await removeExpiredPendingMedia({}, {
     media: { findExpiredPending: (input) => prisma.taskMedia.findMany({ where: { taskId: null, createdAt: { lt: input.before } }, take: input.take, select: { id: true, storageKey: true } }), deleteById: async (id) => { await prisma.taskMedia.delete({ where: { id } }); } },
     storage: getPrivateStorage().storage,
-  }), { name: "pending-media-cleanup" }).hourly();
+  }); }, { name: "pending-media-cleanup" }).hourly();
 }

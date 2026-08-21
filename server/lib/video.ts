@@ -23,5 +23,5 @@ export async function probeVideoHeight(path: string): Promise<number | null> {
 }
 
 export function transcodeVideo(inputPath: string, outputPath: string, height: number): Promise<void> {
-  return new Promise((resolve, reject) => ffmpeg(inputPath).videoCodec("libx264").audioCodec("aac").audioBitrate("128k").outputOptions(["-preset", "veryfast", "-crf", "23", "-movflags", "+faststart", "-y"]).videoFilters(`scale=-2:${height}`).output(outputPath).on("end", resolve).on("error", reject).run());
+  return new Promise((resolve, reject) => ffmpeg(inputPath).videoCodec("libx264").audioCodec("aac").audioBitrate("128k").outputOptions(["-preset", "veryfast", "-crf", "23", "-movflags", "+faststart", "-y"]).videoFilters(`scale=-2:${height}`).output(outputPath).on("end", () => resolve()).on("error", reject).run());
 }
