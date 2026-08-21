@@ -9,6 +9,7 @@ import {
 } from "./storage/file-policy.ts";
 import { getPrivateStorage } from "./storage/index.ts";
 import type { PrivateStorage } from "./storage/filesystem.ts";
+import { probeVideoHeight, selectVariantHeights, transcodeVideo } from "./video.ts";
 
 export type PendingMediaRepository = {
   create(input: {
@@ -20,6 +21,7 @@ export type PendingMediaRepository = {
     size: number;
   }): Promise<{ id: string }>;
   remove(id: string): Promise<void>;
+  createVariant?(input: { taskMediaId: string; storageKey: string; mime: string; size: number; resolution: number }): Promise<void>;
 };
 
 export type PublicPendingMedia = {
@@ -103,8 +105,40 @@ async function createDefaultDependencies(): Promise<MediaUploadDependencies> {
       async remove(id) {
         await prisma.taskMedia.delete({ where: { id } });
       },
+      async createVariant(input) {
+        await prisma.taskMediaVariant.create({ data: input });
+      },
     },
   };
+}
+
+async function createPrivateVideoVariants(
+  mediaId: string,
+  originalKey: string,
+  storage: PrivateStorage,
+  repository: PendingMediaRepository,
+): Promise<void> {
+  if (!repository.createVariant) return;
+  await storage.withPhysicalPath(originalKey, async (sourcePath) => {
+    const height = await probeVideoHeight(sourcePath);
+    for (const resolution of selectVariantHeights(height)) {
+      const key = storage.createKey("task-media-variant");
+      let temporary: Awaited<ReturnType<PrivateStorage["createTemporaryObject"]>> | undefined;
+      let committed = false;
+      try {
+        temporary = await storage.createTemporaryObject(key);
+        temporary.stream.destroy();
+        await transcodeVideo(sourcePath, temporary.path, resolution);
+        await storage.commitTemporaryObject(key, temporary.path);
+        committed = true;
+        const object = await storage.stat(key);
+        await repository.createVariant({ taskMediaId: mediaId, storageKey: key, mime: "video/mp4", size: object.size, resolution });
+      } catch {
+        if (temporary) await storage.discardTemporaryObject(temporary.path).catch(() => undefined);
+        if (committed) await storage.remove(key).catch(() => undefined);
+      }
+    }
+  });
 }
 
 function publicMedia(
@@ -171,6 +205,10 @@ export async function storePendingMedia(
       mime: validated.mime,
       size: byteLimit.bytesWritten,
     });
+
+    if (validated.kind === "video") {
+      await createPrivateVideoVariants(row.id, storageKey, dependencies.storage, dependencies.repository);
+    }
 
     return publicMedia(
       row.id,
