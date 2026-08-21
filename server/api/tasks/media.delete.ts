@@ -1,71 +1,24 @@
+import { createError, readBody } from "h3";
 import prisma from "~/server/lib/prisma";
-import { requireUser, requireWorkspaceMembership } from "~/server/lib/permissions";
-import { deleteTaskMediaFile } from "~/server/lib/task-media";
-import { broadcastTaskEvent } from "~/server/lib/task-events";
-import { serializeTask } from "~/server/lib/serializers";
+import { requireUser } from "~/server/lib/permissions";
+import { getPrivateStorage } from "~/server/lib/storage";
+import { deleteTaskMediaById, MediaDeleteForbiddenError, MediaDeleteNotFoundError } from "~/server/lib/task-media-delete";
 
 export default defineEventHandler(async (event) => {
-  requireUser(event);
-
-  const { path, workspace_id, media_id } = await readBody<{
-    path?: string;
-    workspace_id?: string;
-    media_id?: string;
-  }>(event);
-
-  if (!path && !media_id) {
-    throw createError({
-      status: 400,
-      statusText: "Media path or media ID required",
-    });
-  }
-
-  if (media_id) {
-    const media = await prisma.taskMedia.findUnique({
-      where: { id: media_id },
-      include: { task: true, variants: true },
-    });
-    if (!media || !media.task) {
-      throw createError({ status: 404, statusText: "Media not found" });
-    }
-
-    await requireWorkspaceMembership(event, media.task.workspaceId);
-    await deleteTaskMediaFile(media.path);
-    await Promise.all(
-      (media.variants ?? []).map((variant) =>
-        deleteTaskMediaFile(variant.path),
-      ),
-    );
-    await prisma.taskMedia.delete({ where: { id: media_id } });
-
-    const updatedTask = await prisma.task.findUnique({
-      where: { id: media.task.id },
-      include: {
-        project: true,
-        assignee: true,
-        media: { include: { variants: true } },
+  const user = requireUser(event);
+  const body = await readBody<{ media_id?: unknown }>(event);
+  if (typeof body?.media_id !== "string" || !body.media_id) throw createError({ statusCode: 400, statusMessage: "Media ID required" });
+  try {
+    return await deleteTaskMediaById({ mediaId: body.media_id, userId: user.id }, {
+      media: {
+        findById: (id) => prisma.taskMedia.findUnique({ where: { id }, select: { id: true, taskId: true, workspaceId: true, uploadedById: true, storageKey: true, variants: { select: { storageKey: true } } } }),
+        deleteById: async (id) => { await prisma.taskMedia.delete({ where: { id } }); },
       },
-    });
-
-    if (updatedTask) {
-      try {
-        broadcastTaskEvent(updatedTask.workspaceId, {
-          type: "TASK_UPDATED",
-          workspaceId: updatedTask.workspaceId,
-          task: serializeTask(updatedTask),
-        });
-      } catch {
-        // ignore realtime errors
-      }
-    }
-  } else {
-    if (!workspace_id) {
-      throw createError({ status: 400, statusText: "Workspace ID required" });
-    }
-
-    await requireWorkspaceMembership(event, workspace_id);
-    await deleteTaskMediaFile(path ?? "");
+      membership: { async exists(input) { return Boolean(await prisma.member.findFirst({ where: input, select: { id: true } })); } },
+      storage: getPrivateStorage().storage,
+    }).then(() => ({ ok: true }));
+  } catch (error) {
+    if (error instanceof MediaDeleteNotFoundError || error instanceof MediaDeleteForbiddenError) throw createError({ statusCode: 404, statusMessage: "Media not found" });
+    throw error;
   }
-
-  return { ok: true };
 });

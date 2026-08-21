@@ -5,7 +5,8 @@ import {
   requireUser,
   requireWorkspaceMembership,
 } from "~/server/lib/permissions";
-import { deleteTaskMediaFile } from "~/server/lib/task-media";
+import { deleteTaskMediaObjects } from "~/server/lib/task-media-delete";
+import { getPrivateStorage } from "~/server/lib/storage";
 import { broadcastTaskEvent } from "~/server/lib/task-events";
 
 export default defineEventHandler(async (event) => {
@@ -28,16 +29,7 @@ export default defineEventHandler(async (event) => {
     MemberRole.ADMIN,
   ]);
 
-  if (task.media?.length) {
-    await Promise.all(
-      task.media.flatMap((media) => [
-        deleteTaskMediaFile(media.path),
-        ...(media.variants ?? []).map((variant) =>
-          deleteTaskMediaFile(variant.path),
-        ),
-      ]),
-    );
-  }
+  await deleteTaskMediaObjects(task.media, getPrivateStorage().storage);
 
   await prisma.task.delete({ where: { id: taskId } });
 
