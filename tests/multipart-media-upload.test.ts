@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
+import { spawn } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -443,4 +444,49 @@ test("maps a truncated multipart protocol error to a stable route-level 400", as
     );
     return true;
   });
+});
+
+test("survives active-file truncation with one stable public parser error", async () => {
+  const helperPath = join(
+    import.meta.dirname,
+    "helpers",
+    "multipart-active-truncation.ts",
+  );
+  const child = spawn(
+    process.execPath,
+    ["--experimental-strip-types", helperPath],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+  let stdout = "";
+  let stderr = "";
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => {
+    stdout += chunk;
+  });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+  });
+
+  const result = await new Promise<{
+    code: number | null;
+    signal: NodeJS.Signals | null;
+  }>((resolve, reject) => {
+    child.once("error", reject);
+    child.once("exit", (code, signal) => resolve({ code, signal }));
+  });
+
+  assert.equal(result.signal, null);
+  assert.equal(result.code, 0, stderr);
+  assert.equal(
+    stdout,
+    JSON.stringify({
+      name: "MultipartMediaUploadError",
+      message: "Invalid media upload.",
+    }),
+  );
+  assert.doesNotMatch(stderr, /unhandled|MultipartMediaUploadError/iu);
 });

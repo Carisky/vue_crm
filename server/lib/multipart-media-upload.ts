@@ -51,6 +51,7 @@ export async function parseMediaMultipart(
   let failure: unknown;
   let workspaceId: string | undefined;
   let authorization: Promise<void> | undefined;
+  let parserTerminal = false;
   let sawFile = false;
   let nextFileIndex = 0;
   const uploads: Promise<void>[] = [];
@@ -65,7 +66,9 @@ export async function parseMediaMultipart(
     if (stream.destroyed && !stream.readableEnded) {
       event.node.req.unpipe(parser);
       event.node.req.resume();
-      parser.destroy(new MultipartMediaUploadError());
+      if (!parserTerminal) {
+        parser.destroy(new MultipartMediaUploadError());
+      }
       return;
     }
     drain(stream);
@@ -98,6 +101,14 @@ export async function parseMediaMultipart(
     "file",
     (fieldName, stream, filename, _transferEncoding, mimeType) => {
       sawFile = true;
+      stream.on("error", () => {
+        fail(new MultipartMediaUploadError());
+        event.node.req.unpipe(parser);
+        event.node.req.resume();
+        if (!parserTerminal) {
+          parser.destroy(new MultipartMediaUploadError());
+        }
+      });
 
       if (
         failure ||
@@ -139,14 +150,22 @@ export async function parseMediaMultipart(
   parser.on("fieldsLimit", () => fail(new MultipartMediaUploadError()));
 
   await new Promise<void>((resolve) => {
-    parser.once("finish", resolve);
-    parser.once("error", () => {
-      fail(new MultipartMediaUploadError());
+    const settleParser = () => {
+      if (parserTerminal) {
+        return;
+      }
+      parserTerminal = true;
       resolve();
+    };
+
+    parser.once("finish", settleParser);
+    parser.on("error", () => {
+      fail(new MultipartMediaUploadError());
+      settleParser();
     });
     event.node.req.once("aborted", () => {
       fail(new MultipartMediaUploadError());
-      resolve();
+      settleParser();
     });
     event.node.req.pipe(parser);
   });
