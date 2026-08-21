@@ -5,6 +5,12 @@ import { toTypedSchema } from "@vee-validate/zod";
 import { toast } from 'vue-sonner';
 
 import { CreateTasksSchema } from '~/lib/schema/createTask';
+import {
+    TASK_MEDIA_ACCEPT,
+    deleteTaskMedia,
+    uploadTaskMedia,
+    type PendingMedia,
+} from '~/lib/task-media-client';
 import { TaskPriority, TaskStatus, taskPriorityLabels, type FilteredTask, type UpdateTaskInject } from '~/lib/types';
 
 const {
@@ -22,15 +28,8 @@ const {
 const onUpdateTask: UpdateTaskInject | undefined = inject('update-task-inject')
 const UNASSIGNED_VALUE = '__UNASSIGNED__'
 
-type UploadedMediaPreview = {
-    path: string;
-    mime?: string;
-    original_name?: string;
-    name: string;
-}
-
 const existingMedia = ref([...initialValues.media])
-const uploadedMedia = ref<UploadedMediaPreview[]>([])
+const uploadedMedia = ref<PendingMedia[]>([])
 const isUploadingMedia = ref(false)
 const mediaUploadProgress = ref(0)
 const mediaUploadError = ref<string | null>(null)
@@ -41,7 +40,7 @@ configure({
 });
 
 const form = useForm({
-    validationSchema: toTypedSchema(CreateTasksSchema.omit({ workspace_id: true, media: true })),
+    validationSchema: toTypedSchema(CreateTasksSchema.omit({ workspace_id: true, media_ids: true })),
     initialValues: {
         ...initialValues,
         assignee_id: initialValues.assignee_id ?? UNASSIGNED_VALUE,
@@ -54,37 +53,6 @@ const form = useForm({
 const statuses = Object.entries(TaskStatus)
 const priorities = Object.entries(taskPriorityLabels) as [TaskPriority, string][]
 
-const sanitizeFileName = (value: string) =>
-    value.replace(/[^a-zA-Z0-9_.-]/g, '_')
-
-const uploadMedia = (formData: FormData, onProgress: (value: number) => void) =>
-    new Promise<{ files?: UploadedMediaPreview[] }>((resolve, reject) => {
-        const request = new XMLHttpRequest()
-        request.open('POST', '/api/tasks/media')
-        request.responseType = 'json'
-
-        request.upload.onprogress = (event) => {
-            if (!event.lengthComputable) return
-            const percent = Math.round((event.loaded / event.total) * 100)
-            onProgress(percent)
-        }
-
-        request.onload = () => {
-            if (request.status >= 200 && request.status < 300) {
-                const response =
-                    request.response ??
-                    (request.responseText ? JSON.parse(request.responseText) : {})
-                resolve(response as { files?: UploadedMediaPreview[] })
-                return
-            }
-
-            reject(new Error(`Upload failed (${request.status})`))
-        }
-
-        request.onerror = () => reject(new Error('Upload failed'))
-        request.send(formData)
-    })
-
 const handleMediaChange = async (event: Event) => {
     const target = event.target as HTMLInputElement | null
     const files = target?.files
@@ -94,31 +62,17 @@ const handleMediaChange = async (event: Event) => {
     mediaUploadProgress.value = 0
     mediaUploadError.value = null
 
-    const formData = new FormData()
-    formData.append('workspace_id', initialValues.workspace_id)
     const uploadFiles = Array.from(files)
-    const originalNames = uploadFiles.map((file) => file.name)
-    uploadFiles.forEach((file, index) => {
-        const safeName = sanitizeFileName(file.name) || `upload-${index}`
-        formData.append('files', file, safeName)
-    })
 
     try {
-        const res = await uploadMedia(formData, (value) => {
-            mediaUploadProgress.value = value
-        })
-        const uploaded = (res as { files?: UploadedMediaPreview[] }).files ?? []
-        uploadedMedia.value.push(
-            ...uploaded.map((file, index) => {
-                const originalName = originalNames[index] ?? file.original_name
-                return {
-                    path: file.path,
-                    mime: file.mime,
-                    original_name: originalName,
-                    name: originalName ?? file.original_name ?? file.path.split('/').pop() ?? 'media',
-                }
-            }),
+        const res = await uploadTaskMedia(
+            initialValues.workspace_id,
+            uploadFiles,
+            (value) => {
+                mediaUploadProgress.value = value
+            },
         )
+        uploadedMedia.value.push(...res.files)
     } catch (error) {
         mediaUploadError.value = 'Failed to upload media'
     } finally {
@@ -133,13 +87,7 @@ const removeUploadedMedia = async (index: number) => {
     if (!removed) return
 
     try {
-        await $fetch('/api/tasks/media', {
-            method: 'DELETE',
-            body: {
-                path: removed.path,
-                workspace_id: initialValues.workspace_id,
-            },
-        })
+        await deleteTaskMedia(removed.id)
     } catch (error) {
         toast.error('Failed to delete media file')
     }
@@ -182,16 +130,6 @@ const { isPending, mutate } = useMutation({
 })
 
 const handleSubmit = form.handleSubmit((values) => {
-    const mediaPayload = uploadedMedia.value.length
-        ? uploadedMedia.value.map(
-              ({ path, mime, original_name }) => ({
-                  path,
-                  mime,
-                  original_name,
-              }),
-          )
-        : undefined
-
     const payload = {
         ...values,
         assignee_id:
@@ -200,7 +138,7 @@ const handleSubmit = form.handleSubmit((values) => {
                 : values.assignee_id ?? null,
         due_date: values.due_date ?? null,
         started_at: values.started_at ?? undefined,
-        media: mediaPayload,
+        media_ids: uploadedMedia.value.map((file) => file.id),
     }
 
     mutate(payload as typeof form.values)
@@ -311,6 +249,7 @@ const handleSubmit = form.handleSubmit((values) => {
                                         ref="mediaInput"
                                         type="file"
                                         multiple
+                                        :accept="TASK_MEDIA_ACCEPT"
                                         class="hidden"
                                         @change="handleMediaChange"
                                     />
@@ -352,7 +291,7 @@ const handleSubmit = form.handleSubmit((values) => {
                                     :key="file.id"
                                     class="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm text-muted-foreground"
                                 >
-                                    <span class="truncate">{{ file.original_name ?? file.path.split('/').pop() }}</span>
+                                    <span class="truncate">{{ file.name }}</span>
                                     <Button type="button" variant="ghost" size="icon" @click="removeExistingMedia(index)">
                                         <Icon name="lucide:trash-2" size="16px" />
                                     </Button>
@@ -361,7 +300,7 @@ const handleSubmit = form.handleSubmit((values) => {
                             <ul v-if="uploadedMedia.length" class="grid gap-2 sm:grid-cols-2">
                                 <li
                                     v-for="(file, index) of uploadedMedia"
-                                    :key="file.path"
+                                    :key="file.id"
                                     class="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm text-muted-foreground"
                                 >
                                     <span class="truncate">{{ file.name }}</span>

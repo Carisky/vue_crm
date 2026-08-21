@@ -46,14 +46,6 @@ export const CreateTasksSchema = z.object({
     )
     .optional(),
   started_at: optionalStartedAtField,
-  media: z
-    .array(
-      z.object({
-        path: z.string().trim().min(1, "Required"),
-        mime: z.string().optional(),
-        original_name: z.string().optional(),
-      }),
-    )
-    .optional(),
+  media_ids: z.array(z.string().trim().min(1)).max(10).optional(),
   position: z.number().optional(),
-});
+}).strict();

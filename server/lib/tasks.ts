@@ -4,11 +4,11 @@ import { Prisma, TaskPriority, TaskStatus } from "@prisma/client";
 
 import { CreateTasksSchema } from "~/lib/schema/createTask";
 import prisma from "./prisma";
-import { requireWorkspaceMembership } from "./permissions";
+import { requireUser, requireWorkspaceMembership } from "./permissions";
 import { getTaskPriorityLabel, sendTaskNotificationEmails } from "./email";
 import { serializeTask } from "./serializers";
 import { broadcastTaskEvent } from "./task-events";
-import { attachMediaToTask } from "./task-media-service";
+import { assertAndAttachPendingMedia } from "./task-media-service";
 
 export async function updateTask(
   event: H3Event,
@@ -33,6 +33,7 @@ export async function updateTask(
   }
 
   await requireWorkspaceMembership(event, task.workspaceId);
+  const user = requireUser(event);
 
   if (params.data.assignee_id) {
     const membership = await prisma.member.findFirst({
@@ -81,19 +82,26 @@ export async function updateTask(
     updateData.position = params.data.position;
   if (Object.prototype.hasOwnProperty.call(params.data, "started_at"))
     updateData.startedAt = params.data.started_at ?? null;
-  const updatedTask = await prisma.task.update({
-    where: { id: taskId },
-    data: updateData,
-    include: {
-      project: true,
-      assignee: true,
-    },
-  });
+  const updatedTask = await prisma.$transaction(async (tx) => {
+    const transactionTask = await tx.task.update({
+      where: { id: taskId },
+      data: updateData,
+      include: {
+        project: true,
+        assignee: true,
+      },
+    });
 
-  const mediaPayload = params.data.media?.length ? params.data.media : undefined;
-  if (mediaPayload?.length) {
-    await attachMediaToTask(taskId, mediaPayload);
-  }
+    await assertAndAttachPendingMedia({
+      taskId,
+      mediaIds: params.data.media_ids ?? [],
+      workspaceId: task.workspaceId,
+      userId: user.id,
+      db: tx,
+    });
+
+    return transactionTask;
+  });
 
   const updatedTaskWithMedia = await prisma.task.findUnique({
     where: { id: taskId },

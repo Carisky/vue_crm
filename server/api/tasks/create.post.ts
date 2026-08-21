@@ -9,7 +9,7 @@ import {
 import { serializeTask } from "~/server/lib/serializers";
 import { sendTaskNotificationEmails } from "~/server/lib/email";
 import { broadcastTaskEvent } from "~/server/lib/task-events";
-import { attachMediaToTask } from "~/server/lib/task-media-service";
+import { assertAndAttachPendingMedia } from "~/server/lib/task-media-service";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -75,30 +75,37 @@ export default defineEventHandler(async (event) => {
   });
   const position = (highestPositionTask?.position ?? 1000) + 1;
 
-  const task = await prisma.task.create({
-    data: {
-      name: data.name,
-      workspaceId: data.workspace_id,
-      projectId: data.project_id,
-      status: data.status as TaskStatus,
-      priority: data.priority as TaskPriority,
-      dueDate: data.due_date ?? null,
-      assigneeId: assigneeId ?? undefined,
-      description: data.description,
-      position,
-      startedAt:
-        data.started_at === undefined ? undefined : data.started_at,
-    },
-    include: {
-      project: true,
-      assignee: true,
-    },
-  });
+  const task = await prisma.$transaction(async (tx) => {
+    const createdTask = await tx.task.create({
+      data: {
+        name: data.name,
+        workspaceId: data.workspace_id,
+        projectId: data.project_id,
+        status: data.status as TaskStatus,
+        priority: data.priority as TaskPriority,
+        dueDate: data.due_date ?? null,
+        assigneeId: assigneeId ?? undefined,
+        description: data.description,
+        position,
+        startedAt:
+          data.started_at === undefined ? undefined : data.started_at,
+      },
+      include: {
+        project: true,
+        assignee: true,
+      },
+    });
 
-  const mediaPayload = data.media?.length ? data.media : undefined;
-  if (mediaPayload?.length) {
-    await attachMediaToTask(task.id, mediaPayload);
-  }
+    await assertAndAttachPendingMedia({
+      taskId: createdTask.id,
+      mediaIds: data.media_ids ?? [],
+      workspaceId: data.workspace_id,
+      userId: user.id,
+      db: tx,
+    });
+
+    return createdTask;
+  });
 
   const taskWithMedia = await prisma.task.findUnique({
     where: { id: task.id },
