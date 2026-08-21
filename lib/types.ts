@@ -116,16 +116,17 @@ export type Task = TaskTimeFields & {
 
 export type TaskMediaVariant = {
   id: string;
-  path: string;
-  mime: string | null;
+  mime: string;
+  size: number;
   resolution: number | null;
 };
 
 export type TaskMedia = {
   id: string;
-  path: string;
-  mime: string | null;
-  original_name: string | null;
+  name: string;
+  mime: string;
+  size: number;
+  kind: "image" | "video" | "pdf" | "document";
   resolution: number | null;
   variants: TaskMediaVariant[];
 };

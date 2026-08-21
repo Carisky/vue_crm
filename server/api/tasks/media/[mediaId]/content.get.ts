@@ -107,7 +107,7 @@ export default defineEventHandler(async (event) => {
     if (error instanceof RangeNotSatisfiableError) {
       setResponseStatus(event, 416);
       setHeader(event, "Content-Range", `bytes */${error.size}`);
-      setHeader(event, "Content-Length", "0");
+      setHeader(event, "Content-Length", 0);
       setHeader(event, "X-Content-Type-Options", "nosniff");
       setHeader(event, "Cache-Control", "private, no-store");
       return null;

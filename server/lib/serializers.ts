@@ -12,6 +12,8 @@ import type {
   Workspace,
 } from "@prisma/client";
 
+import { mediaKindFromMime, type MediaKind } from "./storage/file-policy.ts";
+
 export function serializeWorkspace(workspace: Workspace) {
   return {
     $id: workspace.id,
@@ -38,18 +40,30 @@ export function serializeProject(project: Project) {
 function serializeTaskMediaVariant(variant: TaskMediaVariant) {
   return {
     id: variant.id,
-    path: variant.path,
-    mime: variant.mime,
+    mime: variant.mime ?? "application/octet-stream",
+    size: variant.size,
     resolution: variant.resolution,
   };
 }
 
-function serializeTaskMedia(media: TaskMedia & { variants?: TaskMediaVariant[] }) {
+function safeMediaKind(mime: string): MediaKind {
+  try {
+    return mediaKindFromMime(mime);
+  } catch {
+    return "document";
+  }
+}
+
+export function serializeTaskMedia(
+  media: TaskMedia & { variants?: TaskMediaVariant[] },
+) {
+  const mime = media.mime ?? "application/octet-stream";
   return {
     id: media.id,
-    path: media.path,
-    mime: media.mime,
-    original_name: media.originalName,
+    name: media.originalName ?? "attachment",
+    mime,
+    size: media.size,
+    kind: safeMediaKind(mime),
     resolution: media.resolution,
     variants: (media.variants ?? []).map(serializeTaskMediaVariant),
   };
@@ -59,7 +73,7 @@ export function serializeTask(
   task: Task & {
     project?: Project | null;
     assignee?: User | null;
-    media?: TaskMedia[] | null;
+    media?: (TaskMedia & { variants?: TaskMediaVariant[] })[] | null;
   },
 ) {
   return {
