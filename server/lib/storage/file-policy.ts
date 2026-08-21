@@ -969,21 +969,21 @@ function reachableCfbEntryIndexes(container: CFB$Container): Set<number> {
     unsupported();
   }
 
-  const reachable = new Set<number>();
-  const pending = [0];
+  const reachable = new Set<number>([0]);
+  const pending = root.C === -1 ? [] : [root.C];
   while (pending.length > 0) {
     const index = pending.pop()!;
     if (reachable.has(index)) {
       unsupported();
     }
     const entry = container.FileIndex[index] as CfbTreeEntry | undefined;
-    if (!entry || ![1, 2, 5].includes(entry.type)) {
+    if (!entry || ![1, 2].includes(entry.type)) {
       unsupported();
     }
     reachable.add(index);
 
     const pointers = [entry.L, entry.R];
-    if (entry.type === 1 || entry.type === 5) {
+    if (entry.type === 1) {
       pointers.push(entry.C);
     } else if (entry.C !== -1) {
       unsupported();
@@ -1075,6 +1075,10 @@ function validateWordPieceTable(
   }
   const pieceCount = (pieceTableLength - 4) / 12;
   const characterPositionsOffset = offset + 5;
+  const descriptorsOffset = characterPositionsOffset + (pieceCount + 1) * 4;
+  if (descriptorsOffset + pieceCount * 8 !== endOffset) {
+    unsupported();
+  }
   let previousCharacterPosition = table.readUInt32LE(characterPositionsOffset);
   if (previousCharacterPosition !== 0) {
     unsupported();
@@ -1084,6 +1088,25 @@ function validateWordPieceTable(
       characterPositionsOffset + index * 4,
     );
     if (characterPosition <= previousCharacterPosition) {
+      unsupported();
+    }
+
+    const descriptorOffset = descriptorsOffset + (index - 1) * 8;
+    const encodedDocumentOffset = table.readUInt32LE(descriptorOffset + 2);
+    const compressed = (encodedDocumentOffset & 0x40000000) !== 0;
+    const storedDocumentOffset = encodedDocumentOffset & 0x3fffffff;
+    if (
+      (encodedDocumentOffset & 0x80000000) !== 0 ||
+      (compressed && storedDocumentOffset % 2 !== 0)
+    ) {
+      unsupported();
+    }
+    const documentOffset = compressed
+      ? storedDocumentOffset / 2
+      : storedDocumentOffset;
+    const documentByteLength =
+      (characterPosition - previousCharacterPosition) * (compressed ? 1 : 2);
+    if (documentOffset + documentByteLength > wordDocument.length) {
       unsupported();
     }
     previousCharacterPosition = characterPosition;

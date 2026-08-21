@@ -120,6 +120,35 @@ async function createDocWithOrphanedFamilyStreams(): Promise<Buffer> {
   return content;
 }
 
+async function createDocWithFamilyStreamsOnlyViaRootSibling(): Promise<Buffer> {
+  const content = Buffer.from(
+    await readFile(join(fixturesDirectory, "legacy-real.doc")),
+  );
+  const directorySector = content.readUInt32LE(48);
+  const rootDirectoryOffset = (directorySector + 1) * 512;
+  const rootChild = content.readUInt32LE(rootDirectoryOffset + 76);
+
+  content.writeUInt32LE(rootChild, rootDirectoryOffset + 68);
+  content.writeUInt32LE(0xffffffff, rootDirectoryOffset + 76);
+  return content;
+}
+
+async function createDocWithOutOfBoundsPieceDescriptor(): Promise<Buffer> {
+  const content = Buffer.from(
+    await readFile(join(fixturesDirectory, "legacy-real.doc")),
+  );
+  const container = CFB.read(content, { type: "buffer", WTF: true });
+  const table = container.FileIndex.find((entry) => entry.name === "1Table");
+  assert.ok(table);
+
+  // The fixture has one Pcd at offset 375. Keep its CP range coherent while
+  // moving the compressed document-data offset beyond WordDocument.
+  const tableContent = Buffer.from(table.content);
+  tableContent.writeUInt32LE(0x40004000, 377);
+  table.content = tableContent;
+  return CFB.write(container, { type: "buffer", fileType: "cfb" }) as Buffer;
+}
+
 function createMp4(): Buffer {
   const buffer = Buffer.alloc(24);
   buffer.writeUInt32BE(24, 0);
@@ -613,6 +642,32 @@ test("rejects legacy Office family streams orphaned from the CFB root tree", asy
       assertUnsupported({
         path,
         originalName: "orphaned.doc",
+        claimedMime: canonicalMime.doc,
+      }),
+  );
+});
+
+test("rejects legacy Office family streams reachable only through a root sibling pointer", async () => {
+  await withTemporaryFile(
+    "root-sibling.doc",
+    await createDocWithFamilyStreamsOnlyViaRootSibling(),
+    (path) =>
+      assertUnsupported({
+        path,
+        originalName: "root-sibling.doc",
+        claimedMime: canonicalMime.doc,
+      }),
+  );
+});
+
+test("rejects a DOC piece table whose descriptor references absent document data", async () => {
+  await withTemporaryFile(
+    "missing-piece-data.doc",
+    await createDocWithOutOfBoundsPieceDescriptor(),
+    (path) =>
+      assertUnsupported({
+        path,
+        originalName: "missing-piece-data.doc",
         claimedMime: canonicalMime.doc,
       }),
   );
