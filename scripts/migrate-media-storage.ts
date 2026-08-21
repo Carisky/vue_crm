@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import { resolveStorageConfig } from "../server/lib/storage/config.ts";
 import { inspectLegacyMedia } from "../server/lib/storage/legacy-migration.ts";
 
