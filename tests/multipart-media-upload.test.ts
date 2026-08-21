@@ -1,14 +1,49 @@
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { PassThrough, type Readable } from "node:stream";
 import test from "node:test";
+
+import { register } from "tsx/esm/api";
 
 import {
   MultipartMediaUploadError,
   parseMediaMultipart,
   type MultipartMediaUploadHandlers,
 } from "../server/lib/multipart-media-upload.ts";
-import { MediaUploadTooLargeError } from "../server/lib/media-upload-service.ts";
+import {
+  MediaUploadStorageError,
+  MediaUploadTooLargeError,
+  storePendingMedia,
+  type MediaUploadDependencies,
+} from "../server/lib/media-upload-service.ts";
+import { createPrivateFilesystemStorage } from "../server/lib/storage/filesystem.ts";
+
+register();
+const originalDatabaseUrl = process.env.DATABASE_URL;
+const originalDefineEventHandler = (
+  globalThis as typeof globalThis & { defineEventHandler?: unknown }
+).defineEventHandler;
+process.env.DATABASE_URL =
+  "mysql://test:test@localhost:3306/private_media_test";
+(
+  globalThis as typeof globalThis & {
+    defineEventHandler: <T>(handler: T) => T;
+  }
+).defineEventHandler = (handler) => handler;
+const { default: mediaUploadRoute } = await import(
+  "../server/api/tasks/media.post.ts"
+);
+if (originalDatabaseUrl === undefined) {
+  delete process.env.DATABASE_URL;
+} else {
+  process.env.DATABASE_URL = originalDatabaseUrl;
+}
+(
+  globalThis as typeof globalThis & { defineEventHandler?: unknown }
+).defineEventHandler = originalDefineEventHandler;
 
 type MultipartPart =
   | { field: string; value: string }
@@ -306,4 +341,106 @@ test("does not start an upload when membership authorization fails", async () =>
   );
   assert.deepEqual(operation.uploadCalls, []);
   assert.equal(operation.request.readableEnded, true);
+});
+
+test("settles after temporary storage rejects before consuming the Busboy file stream", async () => {
+  const root = await mkdtemp(join(tmpdir(), "multipart-storage-rejection-"));
+  const realStorage = createPrivateFilesystemStorage(root);
+  const deps: MediaUploadDependencies = {
+    maxFileSizeBytes: 1024,
+    storage: {
+      ...realStorage,
+      async createTemporaryObject() {
+        throw new Error(
+          "temporary storage unavailable at C:\\private\\secret.part",
+        );
+      },
+    },
+    repository: {
+      async create() {
+        return { id: "unexpected" };
+      },
+      async remove() {},
+    },
+  };
+  const operation = parse(
+    [
+      { field: "workspace_id", value: "workspace-1" },
+      {
+        field: "files",
+        filename: "first.png",
+        mime: "image/png",
+        value: "bytes",
+      },
+    ],
+    {
+      uploadFile(input) {
+        return storePendingMedia(
+          {
+            workspaceId: input.workspaceId,
+            userId: "user-1",
+            originalName: input.originalName,
+            claimedMime: input.claimedMime,
+            stream: input.stream,
+          },
+          deps,
+        );
+      },
+    },
+  );
+
+  let timeout: NodeJS.Timeout | undefined;
+  try {
+    await assert.rejects(
+      Promise.race([
+        operation.promise,
+        new Promise<never>((_resolve, reject) => {
+          timeout = setTimeout(
+            () => reject(new Error("parseMediaMultipart did not settle")),
+            150,
+          );
+        }),
+      ]),
+      (error: unknown) => {
+        assert.ok(error instanceof MediaUploadStorageError);
+        assert.equal(error.message, "Unable to store media.");
+        return true;
+      },
+    );
+  } finally {
+    if (timeout) clearTimeout(timeout);
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("maps a truncated multipart protocol error to a stable route-level 400", async () => {
+  const request = new PassThrough();
+  Object.assign(request, {
+    headers: { "content-type": `multipart/form-data; boundary=${boundary}` },
+  });
+  const event = {
+    context: { user: { id: "user-1" } },
+    node: { req: request },
+  } as never;
+  const response = mediaUploadRoute(event);
+  request.end(
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="workspace_id"`,
+    ),
+  );
+
+  await assert.rejects(response, (error: unknown) => {
+    const httpError = error as {
+      statusCode?: number;
+      statusMessage?: string;
+      message?: string;
+    };
+    assert.equal(httpError.statusCode, 400);
+    assert.equal(httpError.statusMessage, "Invalid media upload");
+    assert.doesNotMatch(
+      `${httpError.statusMessage ?? ""} ${httpError.message ?? ""}`,
+      /unexpected|multipart|boundary|storage|path|key/iu,
+    );
+    return true;
+  });
 });

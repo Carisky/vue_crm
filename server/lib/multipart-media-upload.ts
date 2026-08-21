@@ -60,6 +60,17 @@ export async function parseMediaMultipart(
     failure ??= error;
   };
 
+  const rejectUpload = (stream: BusboyFileStream, error: unknown) => {
+    fail(error);
+    if (stream.destroyed && !stream.readableEnded) {
+      event.node.req.unpipe(parser);
+      event.node.req.resume();
+      parser.destroy(new MultipartMediaUploadError());
+      return;
+    }
+    drain(stream);
+  };
+
   parser.on("field", (fieldName, value, fieldNameTruncated, valueTruncated) => {
     if (fieldName !== "workspace_id") {
       return;
@@ -117,7 +128,7 @@ export async function parseMediaMultipart(
           stream,
         });
         files[fileIndex] = uploaded;
-      })().catch(fail);
+      })().catch((error) => rejectUpload(stream, error));
 
       uploads.push(upload);
     },
@@ -129,8 +140,8 @@ export async function parseMediaMultipart(
 
   await new Promise<void>((resolve) => {
     parser.once("finish", resolve);
-    parser.once("error", (error) => {
-      fail(error);
+    parser.once("error", () => {
+      fail(new MultipartMediaUploadError());
       resolve();
     });
     event.node.req.once("aborted", () => {
