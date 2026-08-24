@@ -12,11 +12,19 @@
                             class="size-full object-cover object-center" />
                     </picture>
                 </NuxtLink>
-                <AuthUserButton />
+                <div class="flex items-center gap-2">
+                    <ClientOnly>
+                        <ProductTourButton />
+                    </ClientOnly>
+                    <AuthUserButton />
+                </div>
             </nav>
             <div class="flex flex-col items-center py-4">
                 <slot></slot>
             </div>
         </div>
     </main>
+    <ClientOnly>
+        <ProductTour />
+    </ClientOnly>
 </template>

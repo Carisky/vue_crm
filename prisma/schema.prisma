@@ -20,6 +20,9 @@ model User {
   monthlyWorkloadTargetHours Float?
   themePreference            String                    @default("light")
   emailNotificationsEnabled  Boolean                   @default(true)
+  onboardingStatus           String                    @default("NOT_STARTED")
+  onboardingVersion          Int                       @default(0)
+  onboardingUpdatedAt        DateTime?
   emailQueues                EmailQueue[]
   memberships                Member[]
   notificationActed          Notification[]            @relation("NotificationActor")

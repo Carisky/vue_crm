@@ -151,4 +151,7 @@ if (import.meta.client) {
     <CreateProjectModal />
     <CreateTaskModal />
     <UpdateTaskModal />
+    <ClientOnly>
+        <ProductTour />
+    </ClientOnly>
 </template>

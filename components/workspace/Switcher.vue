@@ -38,7 +38,7 @@ watch([() => route.params['workspaceId'], () => route.query['workspace_id'], dat
 </script>
 
 <template>
-    <div class="flex flex-col gap-y-2" @click="workspaceSelectOpen = false">
+    <div class="flex flex-col gap-y-2" data-tour="workspace-switcher" @click="workspaceSelectOpen = false">
         <div class="flex items-center justify-between text-sidebar-foreground/85">
             <p class="text-xs uppercase">Workspaces</p>
             <button @click="open" class="flex items-center justify-center text-sidebar-foreground hover:text-sidebar-primary">

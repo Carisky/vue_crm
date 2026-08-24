@@ -41,7 +41,7 @@ const { open } = useCreateProjectModal()
 </script>
 
 <template>
-    <div class="flex flex-col gap-y-2 text-sidebar-foreground">
+    <div class="flex flex-col gap-y-2 text-sidebar-foreground" data-tour="project-list">
         <div class="flex items-center justify-between text-sidebar-foreground/85">
             <p class="text-xs uppercase">Projects</p>
             <button

@@ -72,8 +72,11 @@ const titleDescription = computed(() => {
         <SideBarMobile />
         <ClientOnly>
             <div class="flex items-center gap-2">
-                <MessageCenter />
-                <NotificationCenter />
+                <ProductTourButton />
+                <div class="flex items-center gap-1" data-tour="collaboration">
+                    <MessageCenter />
+                    <NotificationCenter />
+                </div>
                 <AuthUserButton />
             </div>
         </ClientOnly>

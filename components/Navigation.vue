@@ -36,7 +36,7 @@ const routes = computed(() => [
 </script>
 
 <template>
-<ul v-if="route.params['workspaceId']" class="flex flex-col gap-1">
+<ul v-if="route.params['workspaceId']" class="flex flex-col gap-1" data-tour="main-navigation">
         <NuxtLink
             v-for="r of routes"
             :href="r.href"
