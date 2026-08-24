@@ -27,6 +27,8 @@ start_server() {
     echo "Build output not found at $entry_file. Run rebuild first."
     exit 1
   fi
+  # A direct server:start is also allowed to take over from maintenance mode.
+  bash "$root_dir/scripts/maintenance.sh" release
   local pid
   if pid="$(get_running_pid)"; then
     echo "Server already running with PID $pid"
@@ -40,7 +42,13 @@ start_server() {
   echo "Started server with PID $(cat "$pid_file")"
   sleep 1
   pid="$(cat "$pid_file")"
-  if kill -0 "$pid" >/dev/null 2>&1 && grep -Fq "[scheduler] started pid=$pid" "$log_file"; then
+  if ! kill -0 "$pid" >/dev/null 2>&1; then
+    rm -f "$pid_file"
+    echo "Server failed to start. Recent log output:"
+    tail -n 20 "$log_file" 2>/dev/null || true
+    return 1
+  fi
+  if grep -Fq "[scheduler] started pid=$pid" "$log_file"; then
     echo "Scheduler: active (PID $pid)"
   else
     echo "Scheduler: not confirmed. Check $log_file"
@@ -55,6 +63,16 @@ stop_server() {
     return 0
   fi
   kill "$pid" || true
+  for _ in {1..100}; do
+    if ! kill -0 "$pid" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.1
+  done
+  if kill -0 "$pid" >/dev/null 2>&1; then
+    echo "Server with PID $pid did not stop within 10 seconds."
+    return 1
+  fi
   rm -f "$pid_file"
   echo "Stopped server with PID $pid"
 }

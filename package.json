@@ -19,6 +19,12 @@
     "server:restart": "bash scripts/server.sh restart",
     "server:rebuild": "bash scripts/server.sh rebuild",
     "server:status": "bash scripts/server.sh status",
+    "maintenance:run": "bash scripts/maintenance.sh run",
+    "maintenance:stop": "bash scripts/maintenance.sh stop",
+    "maintenance:status": "bash scripts/maintenance.sh status",
+    "maintence:run": "npm run maintenance:run",
+    "maintence:stop": "npm run maintenance:stop",
+    "maintence:status": "npm run maintenance:status",
     "ssl:get": "bash scripts/ssl-get.sh"
   },
   "dependencies": {

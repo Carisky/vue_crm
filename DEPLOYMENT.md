@@ -6,17 +6,23 @@ The application OS user must have read/write access to it.
 Production update sequence:
 
 ```bash
+npm run maintenance:run
 npm ci
 npm test
 npm run typecheck
 npm run build
-npm run server:stop
 npx prisma migrate deploy
 npm run storage:migrate -- --dry-run
 # verify the JSON inventory and take a database backup
 npm run storage:migrate -- --apply
-npm run server:start
+npm run maintenance:stop
 ```
+
+`maintenance:run` stops Nuxt and keeps a standalone, auto-refreshing maintenance
+page on the application port while the build is replaced. `maintenance:stop`
+starts the new build; if startup fails, it restores the maintenance page. The
+short misspelled aliases `maintence:run`, `maintence:stop`, and
+`maintence:status` are also available for operator convenience.
 
 Keep the database backup and migrated source files until the post-deploy smoke
 test is complete. Do not add Nginx or Apache aliases to `STORAGE_ROOT`.
