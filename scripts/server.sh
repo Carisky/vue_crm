@@ -7,6 +7,24 @@ pid_file="$root_dir/.output/server.pid"
 log_file="$root_dir/.output/server.log"
 entry_file="$root_dir/.output/server/index.mjs"
 
+process_is_running() {
+  local pid="$1"
+  local state
+  if ! kill -0 "$pid" >/dev/null 2>&1; then
+    return 1
+  fi
+  state="$(ps -o stat= -p "$pid" 2>/dev/null | tr -d '[:space:]' || true)"
+  [[ -n "$state" && "${state:0:1}" != "Z" ]]
+}
+
+process_is_application() {
+  local pid="$1"
+  local command_line
+  [[ -r "/proc/$pid/cmdline" ]] || return 1
+  command_line="$(tr '\0' ' ' < "/proc/$pid/cmdline")"
+  [[ "$command_line" == *".output/server/index.mjs"* ]]
+}
+
 get_running_pid() {
   if [[ ! -f "$pid_file" ]]; then
     return 1
@@ -16,7 +34,7 @@ get_running_pid() {
   if [[ -z "$pid" ]]; then
     return 1
   fi
-  if ! kill -0 "$pid" >/dev/null 2>&1; then
+  if ! process_is_running "$pid" || ! process_is_application "$pid"; then
     return 1
   fi
   printf "%s" "$pid"
@@ -42,7 +60,7 @@ start_server() {
   echo "Started server with PID $(cat "$pid_file")"
   sleep 1
   pid="$(cat "$pid_file")"
-  if ! kill -0 "$pid" >/dev/null 2>&1; then
+  if ! process_is_running "$pid"; then
     rm -f "$pid_file"
     echo "Server failed to start. Recent log output:"
     tail -n 20 "$log_file" 2>/dev/null || true
@@ -62,15 +80,25 @@ stop_server() {
     rm -f "$pid_file"
     return 0
   fi
-  kill "$pid" || true
-  for _ in {1..100}; do
-    if ! kill -0 "$pid" >/dev/null 2>&1; then
+  kill -TERM "$pid" || true
+  for _ in {1..30}; do
+    if ! process_is_running "$pid"; then
       break
     fi
     sleep 0.1
   done
-  if kill -0 "$pid" >/dev/null 2>&1; then
-    echo "Server with PID $pid did not stop within 10 seconds."
+  if process_is_running "$pid"; then
+    echo "Server did not finish graceful shutdown; forcing PID $pid to stop."
+    kill -KILL "$pid" || true
+    for _ in {1..20}; do
+      if ! process_is_running "$pid"; then
+        break
+      fi
+      sleep 0.1
+    done
+  fi
+  if process_is_running "$pid"; then
+    echo "Server with PID $pid could not be stopped."
     return 1
   fi
   rm -f "$pid_file"

@@ -72,10 +72,10 @@ export function createMaintenanceServer() {
       return;
     }
 
-    response.writeHead(503, {
+    response.writeHead(200, {
       "Cache-Control": "no-store, no-cache, must-revalidate",
       "Content-Type": "text/html; charset=utf-8",
-      "Retry-After": "60",
+      "X-Maintenance-Mode": "active",
       "X-Content-Type-Options": "nosniff",
       "X-Frame-Options": "DENY",
     });

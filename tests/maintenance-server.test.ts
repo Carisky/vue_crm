@@ -25,8 +25,8 @@ test("serves maintenance responses without the Nuxt application", async (context
   const origin = `http://127.0.0.1:${address.port}`;
 
   const pageResponse = await fetch(origin);
-  assert.equal(pageResponse.status, 503);
-  assert.equal(pageResponse.headers.get("retry-after"), "60");
+  assert.equal(pageResponse.status, 200);
+  assert.equal(pageResponse.headers.get("x-maintenance-mode"), "active");
   assert.match(await pageResponse.text(), /Scheduled maintenance/);
 
   const healthResponse = await fetch(`${origin}/health`);
