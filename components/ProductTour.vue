@@ -3,6 +3,8 @@ import { toast } from "vue-sonner";
 
 import type { OnboardingOutcome } from "~/lib/product-tour";
 
+const { t } = useAppI18n();
+
 type TourStep = {
   title: string;
   description: string;
@@ -21,59 +23,52 @@ type HighlightRect = {
   height: number;
 };
 
-const steps: TourStep[] = [
+const steps = computed<TourStep[]>(() => [
   {
-    title: "Welcome to your workspace",
-    description:
-      "Take a two-minute tour of the essentials. You can safely try a sample workflow before working with real tasks.",
+    title: t("tour.welcome.title"),
+    description: t("tour.welcome.description"),
     icon: "lucide:sparkles",
   },
   {
-    title: "Switch between workspaces",
-    description:
-      "Your teams and clients stay separated in workspaces. Use this switcher to move between them or create another one.",
+    title: t("tour.workspaces.title"),
+    description: t("tour.workspaces.description"),
     icon: "lucide:building-2",
     selector: '[data-tour="workspace-switcher"]',
     mobileSelector: '[data-tour="mobile-navigation"]',
   },
   {
-    title: "Everything is one click away",
-    description:
-      "Home gives you the overview. My Tasks, Messages, Members and Settings keep the daily work organized.",
+    title: t("tour.navigation.title"),
+    description: t("tour.navigation.description"),
     icon: "lucide:panel-left",
     selector: '[data-tour="main-navigation"]',
     mobileSelector: '[data-tour="mobile-navigation"]',
   },
   {
-    title: "Projects organize the work",
-    description:
-      "Projects group tasks and documentation. Open a project from here whenever you need its board, docs or settings.",
+    title: t("tour.projects.title"),
+    description: t("tour.projects.description"),
     icon: "lucide:folder-kanban",
     selector: '[data-tour="project-list"]',
     mobileSelector: '[data-tour="mobile-navigation"]',
   },
   {
-    title: "Stay in the loop",
-    description:
-      "Messages collect conversations and @mentions. The bell shows activity that needs your attention.",
+    title: t("tour.collaboration.title"),
+    description: t("tour.collaboration.description"),
     icon: "lucide:messages-square",
     selector: '[data-tour="collaboration"]',
   },
   {
-    title: "Try a task workflow",
-    description:
-      "This sample exists only inside the guide. Nothing below is written to your workspace.",
+    title: t("tour.workflow.title"),
+    description: t("tour.workflow.description"),
     icon: "lucide:mouse-pointer-click",
     demo: true,
   },
   {
-    title: "You are ready",
-    description:
-      "Finish the guide to remember your progress. You can replay it at any time from this help button.",
+    title: t("tour.ready.title"),
+    description: t("tour.ready.description"),
     icon: "lucide:circle-check-big",
     selector: '[data-tour="restart"]',
   },
-];
+]);
 
 const route = useRoute();
 const {
@@ -90,9 +85,13 @@ const {
 const viewport = reactive({ width: 1280, height: 800 });
 const targetRect = ref<HighlightRect | null>(null);
 const card = ref<HTMLElement | null>(null);
-const step = computed(() => steps[currentStep.value] ?? steps[0]!);
-const isLastStep = computed(() => currentStep.value === steps.length - 1);
-const progress = computed(() => ((currentStep.value + 1) / steps.length) * 100);
+const step = computed(() => steps.value[currentStep.value] ?? steps.value[0]!);
+const isLastStep = computed(
+  () => currentStep.value === steps.value.length - 1,
+);
+const progress = computed(
+  () => ((currentStep.value + 1) / steps.value.length) * 100,
+);
 
 function getSelector() {
   if (viewport.width < 1024 && step.value.mobileSelector) {
@@ -195,7 +194,7 @@ async function closeWith(status: OnboardingOutcome) {
   try {
     await saveOutcome(status);
   } catch {
-    toast.error("Could not save your guide progress. Please try again.");
+    toast.error(t("tour.saveError"));
   }
 }
 
@@ -332,7 +331,7 @@ watch(
               <p
                 class="text-xs font-semibold tracking-wide text-blue-600 uppercase"
               >
-                Step {{ currentStep + 1 }} of {{ steps.length }}
+                {{ t("tour.step", { current: currentStep + 1, total: steps.length }) }}
               </p>
               <h2 class="mt-1 text-xl font-semibold">{{ step.title }}</h2>
             </div>
@@ -348,9 +347,9 @@ watch(
           >
             <div class="mb-3 flex items-center justify-between gap-3">
               <div>
-                <p class="text-sm font-semibold">Prepare weekly report</p>
+                <p class="text-sm font-semibold">{{ t("tour.demoTask") }}</p>
                 <p class="text-xs text-muted-foreground">
-                  Demo task · not saved
+                  {{ t("tour.demoNotSaved") }}
                 </p>
               </div>
               <span
@@ -362,7 +361,11 @@ watch(
                 "
               >
                 {{
-                  demoPhase === 3 ? "Done" : demoPhase === 0 ? "Draft" : "To do"
+                  demoPhase === 3
+                    ? t("task.done")
+                    : demoPhase === 0
+                      ? t("tour.draft")
+                      : t("task.todo")
                 }}
               </span>
             </div>
@@ -374,7 +377,7 @@ watch(
               @click="demoPhase = 1"
             >
               <Icon name="lucide:plus" class="size-4" />
-              Create sample task
+              {{ t("tour.createSample") }}
             </button>
             <button
               v-else-if="demoPhase === 1"
@@ -383,7 +386,7 @@ watch(
               @click="demoPhase = 2"
             >
               <Icon name="lucide:user-plus" class="size-4" />
-              Assign to me
+              {{ t("tour.assignMe") }}
             </button>
             <button
               v-else-if="demoPhase === 2"
@@ -392,14 +395,14 @@ watch(
               @click="demoPhase = 3"
             >
               <Icon name="lucide:check" class="size-4" />
-              Mark as complete
+              {{ t("tour.markComplete") }}
             </button>
             <div
               v-else
               class="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700"
             >
               <Icon name="lucide:party-popper" class="size-4" />
-              Workflow complete — nice work!
+              {{ t("tour.workflowComplete") }}
             </div>
           </div>
 
@@ -410,7 +413,7 @@ watch(
               :disabled="isSaving"
               @click="closeWith('SKIPPED')"
             >
-              Skip guide
+              {{ t("tour.skip") }}
             </button>
             <div class="flex items-center gap-2">
               <Button
@@ -421,7 +424,7 @@ watch(
                 :disabled="isSaving"
                 @click="previous"
               >
-                Back
+                {{ t("common.back") }}
               </Button>
               <Button
                 type="button"
@@ -434,7 +437,7 @@ watch(
                   name="svg-spinners:3-dots-fade"
                   class="size-4"
                 />
-                {{ isLastStep ? "Finish" : "Next" }}
+                {{ isLastStep ? t("tour.finish") : t("common.next") }}
                 <Icon
                   v-if="!isSaving && !isLastStep"
                   name="lucide:arrow-right"

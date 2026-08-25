@@ -24,13 +24,14 @@ const {
 }>()
 
 const queryClient = useQueryClient()
+const { t } = useAppI18n()
 const memberClient = createWorkspaceMemberClient((url, options) =>
     $fetch(url, options),
 )
 
 const isSelf = computed(() => data.$id === currentUserId)
 const isMember = computed(() => data.role === MEMBER_ROLE.member)
-const displayName = computed(() => data.name ?? 'Unknown member')
+const displayName = computed(() => data.name ?? t('members.unknown'))
 
 const canUpgradeOtherMembers = computed(
     () =>
@@ -75,12 +76,12 @@ const { isPending: isDeleting, mutateAsync: removeMember } = useMutation({
 
             if (isSelf.value) await navigateTo('/')
 
-            toast.success(isSelf.value ? 'You left the workspace' : 'Member removed')
-        } else toast.error(isSelf.value ? 'Failed to leave workspace' : 'Failed to remove member')
+            toast.success(isSelf.value ? t('members.youLeft') : t('members.removed'))
+        } else toast.error(isSelf.value ? t('members.leaveFailed') : t('members.removeFailed'))
     },
     onError: (error: any) => toast.error(
         error?.data?.statusMessage
-        ?? (isSelf.value ? 'Failed to leave workspace' : 'Failed to remove member')
+        ?? (isSelf.value ? t('members.leaveFailed') : t('members.removeFailed'))
     )
 })
 
@@ -89,10 +90,10 @@ const { isPending: isUpdatingRole, mutateAsync: updateMemberRole } = useMutation
         await memberClient.updateRole(data.membership_id, role),
     onSuccess: async (_, role) => {
         await queryClient.refetchQueries({ queryKey: ['workspace-members', workspaceId] })
-        toast.success(role === 'ADMIN' ? 'Administrator assigned' : 'Administrator removed')
+        toast.success(role === 'ADMIN' ? t('members.adminAssigned') : t('members.adminRemoved'))
     },
     onError: (error: any) => toast.error(
-        error?.data?.statusMessage ?? 'Failed to update member role',
+        error?.data?.statusMessage ?? t('members.roleUpdateFailed'),
     ),
 })
 
@@ -103,10 +104,10 @@ const changeMemberRole = async () => {
 const openRemoveMemberModal = () => {
     openModal(ConfirmModal, {
         onConfirm: async () => { await removeMember() },
-        title: isSelf.value ? 'Leave workspace' : 'Remove member',
+        title: isSelf.value ? t('members.leave') : t('members.remove'),
         message: isSelf.value
-            ? 'Are you sure you want to leave this workspace?'
-            : 'This member will be removed from the workspace.',
+            ? t('members.leaveConfirm')
+            : t('members.removeConfirm'),
         variant: 'destructive'
     })
 }
@@ -127,7 +128,7 @@ const openRemoveMemberModal = () => {
                     {{ data.role }}
                 </Badge>
                 <Badge v-if="isSelf" variant="destructive" class="text-[10px]">
-                    You
+                    {{ t('members.you') }}
                 </Badge>
             </div>
         </div>
@@ -143,15 +144,15 @@ const openRemoveMemberModal = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent side="bottom" align="end">
             <DropdownMenuItem v-if="canUpgradeOtherMembers" class="font-medium" @select="changeMemberRole">
-                Set as Administrator
+                {{ t('members.setAdmin') }}
             </DropdownMenuItem>
             <DropdownMenuItem v-if="canDowngradeOtherMembers" class="font-medium" @select="changeMemberRole">
-                Set as Member
+                {{ t('members.setMember') }}
             </DropdownMenuItem>
             <DropdownMenuItem v-if="canBeRemoved" @select="openRemoveMemberModal"
                 class="font-medium text-amber-700">
-                <span v-if="isSelf">Leave workspace</span>
-                <span v-else>Remove {{ displayName }}</span>
+                <span v-if="isSelf">{{ t('members.leave') }}</span>
+                <span v-else>{{ t('members.removeNamed', { name: displayName }) }}</span>
             </DropdownMenuItem>
         </DropdownMenuContent>
     </DropdownMenu>

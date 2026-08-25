@@ -5,6 +5,7 @@ import useAuthStore from '~/stores/auth'
 
 const queryClient = useQueryClient()
 const authStore = useAuthStore()
+const { t } = useAppI18n()
 
 const { isPending, mutate } = useMutation({
     mutationFn: () => fetch('/api/auth/sign-out', { method: 'POST' }),
@@ -40,14 +41,14 @@ const { isPending, mutate } = useMutation({
                     </AvatarFallback>
                 </Avatar>
                 <div class="flex flex-col items-center justify-center">
-                    <p class="text-sm font-medium text-foreground">{{ authStore.user?.name ?? 'User' }}</p>
+                    <p class="text-sm font-medium text-foreground">{{ authStore.user?.name ?? t('common.user') }}</p>
                     <p class="text-xs text-muted-foreground">{{ authStore.user?.email }}</p>
                 </div>
             </div>
             <DottedSeparator class="mb-1" />
             <DropdownMenuItem @select="mutate"
                 class="h-10 flex items-center justify-between text-destructive font-medium cursor-pointer">
-                <Icon name="lucide:log-out" size="16px" class="size-4 mr-1" /> Sign out
+                <Icon name="lucide:log-out" size="16px" class="size-4 mr-1" /> {{ t('nav.signOut') }}
             </DropdownMenuItem>
         </DropdownMenuContent>
     </DropdownMenu>

@@ -6,6 +6,7 @@ import type { Project, Workspace } from '~/lib/types';
 
 const route = useRoute()
 const requestFetch = useRequestFetch()
+const { t } = useAppI18n()
 const { data: workspaces } = useQuery<Workspace[]>({
     queryKey: ['workspaces/all'],
     queryFn: async () => {
@@ -43,7 +44,7 @@ const { open } = useCreateProjectModal()
 <template>
     <div class="flex flex-col gap-y-2 text-sidebar-foreground" data-tour="project-list">
         <div class="flex items-center justify-between text-sidebar-foreground/85">
-            <p class="text-xs uppercase">Projects</p>
+            <p class="text-xs uppercase">{{ t('nav.projects') }}</p>
             <button
                 @click="open"
                 class="flex items-center justify-center text-sidebar-foreground hover:text-sidebar-primary"

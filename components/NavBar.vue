@@ -2,41 +2,42 @@
 const route = useRoute()
 import NotificationCenter from '~/components/NotificationCenter.vue'
 import MessageCenter from '~/components/MessageCenter.vue'
+const { t } = useAppI18n()
 
 const pathnameMap = {
     default: {
-        title: 'Home',
-        description: 'Monitor all of your projects and tasks here'
+        title: 'nav.home',
+        description: 'header.home.description'
     },
     tasks: {
-        title: 'My tasks',
-        description: 'View all of your tasks here'
+        title: 'nav.myTasks',
+        description: 'header.tasks.description'
     },
     projects: {
-        title: 'My project',
-        description: 'View tasks of your project here'
+        title: 'header.project.title',
+        description: 'header.project.description'
     },
     docs: {
-        title: 'Docs',
-        description: 'Documentation for this project'
+        title: 'header.docs',
+        description: 'header.docs.description'
     },
     messages: {
-        title: 'Messages',
-        description: 'Chat with your teammates here'
+        title: 'nav.messages',
+        description: 'header.messages.description'
     },
     chat: {
-        title: 'Chat',
-        description: 'Conversation'
+        title: 'header.chat',
+        description: 'header.chat.description'
     },
     members: {
-        title: 'Members',
-        description: 'Workspace members'
+        title: 'nav.members',
+        description: 'header.members.description'
     },
     settings: {
-        title: 'Settings',
-        description: 'Workspace settings'
+        title: 'nav.settings',
+        description: 'header.settings.description'
     },
-}
+} as const
 
 const titleDescription = computed(() => {
     const segments = route.path.split('/').filter(Boolean)
@@ -66,8 +67,8 @@ const titleDescription = computed(() => {
 <template>
     <nav class="pt-4 px-6 flex items-center justify-between">
         <div class="hidden flex-col lg:flex">
-            <h1 class="text-2xl font-semibold">{{ titleDescription.title }}</h1>
-            <p class="text-muted-foreground">{{ titleDescription.description }}</p>
+            <h1 class="text-2xl font-semibold">{{ t(titleDescription.title) }}</h1>
+            <p class="text-muted-foreground">{{ t(titleDescription.description) }}</p>
         </div>
         <SideBarMobile />
         <ClientOnly>
@@ -77,6 +78,7 @@ const titleDescription = computed(() => {
                     <MessageCenter />
                     <NotificationCenter />
                 </div>
+                <LanguageSwitcher />
                 <AuthUserButton />
             </div>
         </ClientOnly>

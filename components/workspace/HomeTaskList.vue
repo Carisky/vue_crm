@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { formatDistanceToNow } from 'date-fns';
-import { taskPriorityLabels, type FilteredTask } from '~/lib/types';
+import { enUS, pl, ru, uk } from 'date-fns/locale';
+import { taskPriorityTranslationKeys } from '~/lib/i18n';
+import type { FilteredTask } from '~/lib/types';
 
 const { tasks } = defineProps<{ tasks: FilteredTask[] }>()
 
 const route = useRoute()
 const { open: openTaskModal } = useCreateTaskModal()
+const { locale, t } = useAppI18n()
+const dateLocales = { en: enUS, pl, ru, uk }
 </script>
 
 <template>
@@ -13,7 +17,7 @@ const { open: openTaskModal } = useCreateTaskModal()
         <div class="bg-muted rounded-lg p-4">
             <div class="flex items-center justify-between">
                 <p class="text-lg font-semibold">
-                    Tasks ({{ tasks.length }})
+                    {{ t('task.total') }} ({{ tasks.length }})
                 </p>
                 <Button variant="muted" size="icon" @click="openTaskModal('1')">
                     <Icon name="lucide:plus" size="16px" class="size-4 text-neutral-400" />
@@ -28,7 +32,7 @@ const { open: openTaskModal } = useCreateTaskModal()
                                 <div class="flex items-center justify-between gap-2">
                                     <p class="text-lg font-medium truncate">{{ task.name }}</p>
                                     <Badge :variant="task.priority" class="text-[10px]">
-                                        {{ taskPriorityLabels[task.priority] }}
+                                        {{ t(taskPriorityTranslationKeys[task.priority]) }}
                                     </Badge>
                                 </div>
                                 <div class="flex items-center gap-x-2">
@@ -37,7 +41,7 @@ const { open: openTaskModal } = useCreateTaskModal()
                                     <div class="flex items-center text-sm text-muted-foreground">
                                         <Icon name="lucide:calendar" size="12px" class="size-3 mr-1" />
                                         <span class="truncate">
-                                            {{ task.due_date ? formatDistanceToNow(task.due_date) : 'No due date' }}
+                                            {{ task.due_date ? formatDistanceToNow(task.due_date, { locale: dateLocales[locale] }) : t('task.noDueDate') }}
                                         </span>
                                     </div>
                                 </div>
@@ -46,11 +50,11 @@ const { open: openTaskModal } = useCreateTaskModal()
                     </NuxtLink>
                 </li>
                 <li v-if="!tasks?.length" class="text-sm text-muted-foreground text-center">
-                    No tasks found
+                    {{ t('task.noneFound') }}
                 </li>
             </ul>
             <Button variant="muted" class="w-full mt-4" :as-child="true">
-                <NuxtLink :href="`/workspaces/${route.params['workspaceId']}/tasks`">Show All</NuxtLink>
+                <NuxtLink :href="`/workspaces/${route.params['workspaceId']}/tasks`">{{ t('task.showAll') }}</NuxtLink>
             </Button>
         </div>
     </div>

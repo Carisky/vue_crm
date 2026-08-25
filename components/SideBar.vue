@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
+const { t } = useAppI18n()
 
 const profileHref = computed(() => {
   const workspaceId = route.params['workspaceId'] ?? route.query['workspace_id']
@@ -29,7 +30,7 @@ const profileHref = computed(() => {
         size="16px"
         class="size-4 text-sidebar-foreground/85"
       />
-      Profile settings
+      {{ t('nav.profileSettings') }}
     </NuxtLink>
   </div>
     <DottedSeparator class="my-4 h-fit" direction="horizontal" />

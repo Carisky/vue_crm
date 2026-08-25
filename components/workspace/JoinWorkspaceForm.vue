@@ -5,6 +5,7 @@ import { toast } from 'vue-sonner';
 const { workspaceId, name, inviteCode } = defineProps<{ workspaceId: string; name?: string; inviteCode: string }>()
 
 const queryClient = useQueryClient()
+const { t } = useAppI18n()
 
 const { isPending, mutate } = useMutation({
     mutationFn: async () => {
@@ -12,10 +13,10 @@ const { isPending, mutate } = useMutation({
         if (res.membership) {
             await queryClient.resetQueries({ queryKey: ['workspaces/all'] })
             await navigateTo(`/workspaces/${workspaceId}`)
-        } else toast.error('Failed to join workspace')
+        } else toast.error(t('workspace.joinFailed'))
     },
     onError: (error: any) => {
-        toast.error(error?.data?.statusMessage ?? 'Failed to join workspace')
+        toast.error(error?.data?.statusMessage ?? t('workspace.joinFailed'))
     }
 })
 
@@ -28,10 +29,10 @@ const handleJoin = () => {
     <Card class="size-full border-none shadow-none">
         <CardHeader class="px-7">
             <CardTitle class="text-xl font-bold">
-                Join workspace
+                {{ t('workspace.join') }}
             </CardTitle>
             <CardDescription>
-                You've been invited to join <strong>{{ name }}</strong> workspace
+                {{ t('workspace.invited', { name: name ?? '' }) }}
             </CardDescription>
         </CardHeader>
         <div class="px-7">
@@ -41,11 +42,11 @@ const handleJoin = () => {
             <div class="flex flex-col items-center justify-between gap-2 lg:flex-row">
                 <Button type="button" variant="secondary" size="lg" :disabled="isPending" :as-child="true"
                     class="w-full lg:w-fit">
-                    <NuxtLink href="/">Cancel</NuxtLink>
+                    <NuxtLink href="/">{{ t('common.cancel') }}</NuxtLink>
                 </Button>
                 <Button type="button" :disabled="isPending" @click="handleJoin" size="lg" class="w-full lg:w-44">
                     <Icon v-if="isPending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
-                    <span v-else>Join workspace</span>
+                    <span v-else>{{ t('workspace.join') }}</span>
                 </Button>
             </div>
         </CardContent>

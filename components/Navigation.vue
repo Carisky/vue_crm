@@ -1,33 +1,34 @@
 <script setup lang="ts">
 const route = useRoute()
+const { t } = useAppI18n()
 
 const routes = computed(() => [
     {
-        label: 'Home',
+        label: t('nav.home'),
         href: `/workspaces/${route.params['workspaceId']}`,
         icon: 'heroicons:home',
         iconActive: 'heroicons:home-solid'
     },
     {
-        label: 'My Tasks',
+        label: t('nav.myTasks'),
         href: `/workspaces/${route.params['workspaceId']}/tasks`,
         icon: 'heroicons:check-circle',
         iconActive: 'heroicons:check-circle-solid'
     },
     {
-        label: 'Messages',
+        label: t('nav.messages'),
         href: `/workspaces/${route.params['workspaceId']}/messages`,
         icon: 'heroicons:chat-bubble-left-right',
         iconActive: 'heroicons:chat-bubble-left-right-solid'
     },
     {
-        label: 'Settings',
+        label: t('nav.settings'),
         href: `/workspaces/${route.params['workspaceId']}/settings`,
         icon: 'heroicons:cog-6-tooth',
         iconActive: 'heroicons:cog-6-tooth-solid'
     },
     {
-        label: 'Members',
+        label: t('nav.members'),
         href: `/workspaces/${route.params['workspaceId']}/members`,
         icon: 'heroicons:users',
         iconActive: 'heroicons:users-solid'

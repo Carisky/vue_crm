@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { CalendarDate, type DateValue } from '@internationalized/date';
-import { format } from 'date-fns'
-
 import { cn } from '~/lib/utils';
 
-const { value, class: className = '', placeholder = 'Select date', onChange } = defineProps<{
+const { value, class: className = '', placeholder, onChange } = defineProps<{
     value: Date | undefined;
     class?: string;
     placeholder?: string;
     onChange?: (date: Date | undefined) => void;
 }>()
+const { locale, t } = useAppI18n()
+const formatDate = (date: Date) => new Intl.DateTimeFormat(locale.value, { dateStyle: 'long' }).format(date)
 
 const displayedDate = ref(value)
 const initialDate = value
@@ -30,12 +30,12 @@ const onSelect = (date: DateValue | undefined) => {
             <Button variant="outline" size="lg"
                 :class="cn('w-full text-left font-normal px-3 justify-start', !value && 'text-muted-foreground', className)">
                 <Icon name="lucide:calendar" class="size-4 mr-1" />
-                <template v-if="displayedDate">{{ format(displayedDate, 'PPP') }}</template>
-                <span v-else>{{ placeholder }}</span>
+                <template v-if="displayedDate">{{ formatDate(displayedDate) }}</template>
+                <span v-else>{{ placeholder ?? t('common.selectDate') }}</span>
             </Button>
         </PopoverTrigger>
         <PopoverContent class="w-auto p-0">
-            <Calendar :model-value="initialDate" :initial-focus="true" @update:model-value="onSelect" />
+            <Calendar :model-value="initialDate" :locale="locale" :initial-focus="true" @update:model-value="onSelect" />
         </PopoverContent>
     </Popover>
 </template>

@@ -5,6 +5,7 @@ import { toTypedSchema } from "@vee-validate/zod";
 import { toast } from 'vue-sonner';
 
 import { CreateTasksSchema } from '~/lib/schema/createTask';
+import { taskPriorityTranslationKeys, taskStatusTranslationKeys } from '~/lib/i18n';
 import {
     TASK_MEDIA_ACCEPT,
     deleteTaskMedia,
@@ -21,6 +22,7 @@ const { projectOptions, memberOptions, onCancel } = defineProps<{
 
 const route = useRoute()
 const { value: taskStatus } = useUrlQuery('create_task')
+const { t } = useAppI18n()
 const UNASSIGNED_VALUE = '__UNASSIGNED__'
 
 const currentProjectId = computed(() => {
@@ -121,7 +123,7 @@ const removeMedia = async (index: number) => {
     try {
         await deleteTaskMedia(removed.id)
     } catch (error) {
-        toast.error('Failed to delete media file')
+        toast.error(t('media.deleteFailed'))
     }
 }
 
@@ -135,10 +137,10 @@ const { isPending, mutate } = useMutation({
 
             // close form
             onCancel?.()
-            toast.success('Task created')
-        } else toast.error('Failed to create task')
+            toast.success(t('task.created'))
+        } else toast.error(t('task.createFailed'))
     },
-    onError: () => toast.error('Failed to create task')
+    onError: () => toast.error(t('task.createFailed'))
 })
 
 const handleSubmit = form.handleSubmit((values) => {
@@ -161,7 +163,7 @@ const handleSubmit = form.handleSubmit((values) => {
     <Card class="size-full border-none shadow-none gap-0 p-0">
         <CardHeader class="flex py-7">
             <CardTitle class="font-bold text-xl">
-                Create a new task
+                {{ t('task.createTitle') }}
             </CardTitle>
         </CardHeader>
         <div class="px-7">
@@ -176,16 +178,16 @@ const handleSubmit = form.handleSubmit((values) => {
                         </FormField>
                         <FormField v-slot="{ componentField }" name="name">
                             <FormItem>
-                                <FormLabel>Task Name</FormLabel>
+                                <FormLabel>{{ t('task.name') }}</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="Enter task name" v-bind="componentField" />
+                                    <Input :placeholder="t('task.namePlaceholder')" v-bind="componentField" />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
                         </FormField>
                         <FormField v-slot="{ componentField }" name="due_date">
                             <FormItem>
-                                <FormLabel>Due Date</FormLabel>
+                                <FormLabel>{{ t('task.dueDate') }}</FormLabel>
                                 <FormControl>
                                     <DatePicker :value="componentField.modelValue"
                                         :on-change="componentField.onChange" />
@@ -195,25 +197,25 @@ const handleSubmit = form.handleSubmit((values) => {
                         </FormField>
                         <FormField v-slot="{ componentField }" name="started_at">
                             <FormItem>
-                                <FormLabel>Task Started</FormLabel>
+                                <FormLabel>{{ t('task.started') }}</FormLabel>
                                 <FormControl>
                                     <DatePicker :value="componentField.modelValue"
-                                        :on-change="componentField.onChange" placeholder="Select start date" />
+                                        :on-change="componentField.onChange" :placeholder="t('task.startDatePlaceholder')" />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
                         </FormField>
                         <FormField v-slot="{ componentField }" name="description">
                             <FormItem>
-                                <FormLabel>Description</FormLabel>
+                                <FormLabel>{{ t('common.description') }}</FormLabel>
                                 <FormControl>
-                                    <Textarea placeholder="Add task details" v-bind="componentField" />
+                                    <Textarea :placeholder="t('task.descriptionPlaceholder')" v-bind="componentField" />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
                         </FormField>
                         <div class="space-y-2">
-                            <p class="text-sm font-medium text-muted-foreground">Media</p>
+                            <p class="text-sm font-medium text-muted-foreground">{{ t('common.media') }}</p>
                             <input
                                 ref="mediaInput"
                                 type="file"
@@ -237,7 +239,7 @@ const handleSubmit = form.handleSubmit((values) => {
                                         size="16px"
                                         class="size-4"
                                     />
-                                    <span v-else>Upload files</span>
+                                    <span v-else>{{ t('common.uploadFiles') }}</span>
                                 </Button>
                                 <p v-if="mediaUploadError" class="text-xs text-destructive">
                                     {{ mediaUploadError }}
@@ -266,18 +268,18 @@ const handleSubmit = form.handleSubmit((values) => {
                         </div>
                         <FormField v-slot="{ componentField }" name="assignee_id">
                             <FormItem>
-                                <FormLabel>Assignee</FormLabel>
+                                <FormLabel>{{ t('common.assignee') }}</FormLabel>
                                 <Select :default-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
                                         <SelectTrigger class="w-full">
-                                            <SelectValue placeholder="Select assignee"></SelectValue>
+                                            <SelectValue :placeholder="t('task.selectAssignee')"></SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
                                     <FormMessage />
                                     <SelectContent>
                                         <SelectItem :value="UNASSIGNED_VALUE">
-                                            Unassigned
+                                            {{ t('common.unassigned') }}
                                         </SelectItem>
                                         <SelectSeparator />
                                         <SelectItem v-for="assignee of memberOptions" :key="assignee.$id"
@@ -291,18 +293,18 @@ const handleSubmit = form.handleSubmit((values) => {
                         </FormField>
                         <FormField v-slot="{ componentField }" name="status">
                             <FormItem>
-                                <FormLabel>Status</FormLabel>
+                                <FormLabel>{{ t('common.status') }}</FormLabel>
                                 <Select :default-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
                                         <SelectTrigger class="w-full">
-                                            <SelectValue placeholder="Select status"></SelectValue>
+                                            <SelectValue :placeholder="t('task.selectStatus')"></SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
                                     <FormMessage />
                                     <SelectContent>
                                         <SelectItem v-for="[label, val] of statuses" :key="val" :value="val">
-                                            {{ label }}
+                                            {{ t(taskStatusTranslationKeys[val]) }}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -310,18 +312,18 @@ const handleSubmit = form.handleSubmit((values) => {
                         </FormField>
                         <FormField v-slot="{ componentField }" name="priority">
                             <FormItem>
-                                <FormLabel>Priority</FormLabel>
+                                <FormLabel>{{ t('common.priority') }}</FormLabel>
                                 <Select :default-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
                                         <SelectTrigger class="w-full">
-                                            <SelectValue placeholder="Select priority"></SelectValue>
+                                            <SelectValue :placeholder="t('task.selectPriority')"></SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
                                     <FormMessage />
                                     <SelectContent>
                                         <SelectItem v-for="[value, label] of priorities" :key="value" :value="value">
-                                            {{ label }}
+                                            {{ t(taskPriorityTranslationKeys[value]) }}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -329,12 +331,12 @@ const handleSubmit = form.handleSubmit((values) => {
                         </FormField>
                         <FormField v-slot="{ componentField }" name="project_id">
                             <FormItem>
-                                <FormLabel>Project</FormLabel>
+                                <FormLabel>{{ t('common.project') }}</FormLabel>
                                 <Select :model-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
                                         <SelectTrigger class="w-full min-w-0 overflow-hidden">
-                                            <SelectValue class="min-w-0 flex-1 overflow-hidden" placeholder="Select project">
+                                            <SelectValue class="min-w-0 flex-1 overflow-hidden" :placeholder="t('task.selectProject')">
                                                 <span v-if="selectedProjectName" class="block truncate"
                                                     :title="selectedProjectName">
                                                     {{ selectedProjectName }}
@@ -360,11 +362,11 @@ const handleSubmit = form.handleSubmit((values) => {
                     <DottedSeparator class="py-7" />
                     <div class="flex items-center justify-between gap-4">
                         <Button v-if="!!onCancel" type="button" variant="secondary" size="lg" @click="onCancel">
-                            Cancel
+                            {{ t('common.cancel') }}
                         </Button>
                         <Button type="submit" variant="primary" size="lg" class="ml-auto">
                             <Icon v-if="isPending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
-                            <span v-else>Create task</span>
+                            <span v-else>{{ t('task.create') }}</span>
                         </Button>
                     </div>
                 </fieldset>

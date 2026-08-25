@@ -15,6 +15,7 @@ const { data } = defineProps<{
         project_diff?: number;
     }
 }>()
+const { t } = useAppI18n()
 
 const {
     task_count,
@@ -34,28 +35,28 @@ const {
     <ScrollArea class="w-full border rounded-lg whitespace-nowrap shrink-0">
         <div class="w-full flex">
             <div class="flex flex-1 items-center min-w-56">
-                <AnalyticCard title="Total Tasks" :value="task_count" :variant="task_diff > 0 ? 'up' : 'down'"
+                <AnalyticCard :title="t('task.total')" :value="task_count" :variant="task_diff > 0 ? 'up' : 'down'"
                     :increase-value="task_diff" />
                 <DottedSeparator direction="vertical" />
             </div>
             <div class="flex flex-1 items-center min-w-56">
-                <AnalyticCard title="Assigned Tasks" :value="assigned_task_count"
+                <AnalyticCard :title="t('task.assigned')" :value="assigned_task_count"
                     :variant="assigned_task_diff > 0 ? 'up' : 'down'" :increase-value="assigned_task_diff" />
                 <DottedSeparator direction="vertical" />
             </div>
             <div class="flex flex-1 items-center min-w-56">
-                <AnalyticCard title="Completed Tasks" :value="completed_task_count"
+                <AnalyticCard :title="t('task.completed')" :value="completed_task_count"
                     :variant="completed_task_diff > 0 ? 'up' : 'down'" :increase-value="completed_task_diff" />
                 <DottedSeparator direction="vertical" />
             </div>
             <div class="flex flex-1 items-center min-w-56">
-                <AnalyticCard title="Overdue Tasks" :value="overdue_task_count"
+                <AnalyticCard :title="t('task.overdue')" :value="overdue_task_count"
                     :variant="overdue_task_diff > 0 ? 'up' : 'down'" :increase-value="overdue_task_diff" />
                 <DottedSeparator direction="vertical" />
             </div>
             <div v-if="incompleted_task_count != undefined && incompleted_task_diff != undefined"
                 class="flex flex-1 items-center min-w-56">
-                <AnalyticCard title="Incomplete Tasks" :value="incompleted_task_count"
+                <AnalyticCard :title="t('task.incomplete')" :value="incompleted_task_count"
                     :variant="incompleted_task_diff > 0 ? 'up' : 'down'" :increase-value="incompleted_task_diff" />
                 <DottedSeparator direction="vertical" />
             </div>

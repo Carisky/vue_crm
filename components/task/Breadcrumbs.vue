@@ -11,6 +11,7 @@ const route = useRoute()
 const { openModal } = useConfirmModal()
 
 const queryClient = useQueryClient()
+const { t } = useAppI18n()
 
 // Delete task
 const deleteTask = async () => {
@@ -18,17 +19,17 @@ const deleteTask = async () => {
         .then(async () => {
             await queryClient.invalidateQueries({ queryKey: ['tasks', route.params['workspaceId']] })
             await navigateTo(`/workspaces/${route.params['workspaceId']}/tasks`)
-            toast.success('Task deleted')
+            toast.success(t('task.deleted'))
         }).catch(() => {
-            toast.error('Failed to delete task')
+            toast.error(t('task.deleteFailed'))
         })
 }
 
 const showDeleteModal = () => {
     openModal(ConfirmModal, {
         onConfirm: deleteTask,
-        title: `Delete task "${task.name}"`,
-        message: 'This action cannot be undone.',
+        title: `${t('task.deleteTitle')} "${task.name}"`,
+        message: t('common.irreversible'),
         variant: 'destructive'
     })
 }
@@ -47,7 +48,7 @@ const showDeleteModal = () => {
             task.name }}</p>
         <Button @click="showDeleteModal" variant="destructive" size="sm" class="ml-auto">
             <Icon name="lucide:trash" class="size-4 lg:mr-1" />
-            <span class="hidden lg:block">Delete Task</span>
+            <span class="hidden lg:block">{{ t('task.deleteTitle') }}</span>
         </Button>
     </div>
 </template>

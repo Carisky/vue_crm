@@ -53,6 +53,7 @@ type InboxResponse = {
 const auth = useAuthStore();
 const route = useRoute();
 const queryClient = useQueryClient();
+const { t } = useAppI18n();
 
 const workspaceId = computed(() => String(route.params['workspaceId'] ?? ''));
 const search = ref('');
@@ -77,13 +78,13 @@ const { data: inbox, isFetching: isFetchingInbox } = useQuery<InboxResponse>({
 
 const conversations = computed(() => inbox.value?.conversations ?? []);
 
-const displayName = (person: Person) => person.name ?? person.email ?? 'Unknown';
+const displayName = (person: Person) => person.name ?? person.email ?? t('common.unknown');
 const conversationTitle = (conversation: InboxConversationPreview) => {
   const myId = auth.user?.id;
   const other =
     conversation.participants.find((p) => p.user.$id !== myId)?.user ??
     conversation.participants[0]?.user;
-  return other ? displayName(other) : 'Conversation';
+  return other ? displayName(other) : t('messages.conversation');
 };
 
 const filteredPeople = computed(() => {
@@ -109,7 +110,7 @@ const { mutateAsync: startDirect, isPending: isStarting } = useMutation({
       },
     );
   },
-  onError: () => toast.error('Failed to start chat'),
+  onError: () => toast.error(t('messages.startFailed')),
 });
 
 const startChat = async (person: Person) => {
@@ -164,11 +165,11 @@ if (import.meta.client) {
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
     <Card class="lg:col-span-1 border">
       <CardHeader>
-        <CardTitle class="text-lg">Start a chat</CardTitle>
-        <CardDescription>Find a teammate and send a message</CardDescription>
+        <CardTitle class="text-lg">{{ t('messages.startChat') }}</CardTitle>
+        <CardDescription>{{ t('messages.startChatDescription') }}</CardDescription>
       </CardHeader>
       <CardContent class="space-y-3">
-        <Input v-model="search" placeholder="Search by name or email" />
+        <Input v-model="search" :placeholder="t('messages.search')" />
 
         <div v-if="isFetchingPeople" class="py-8">
           <Loader class="h-24" />
@@ -176,7 +177,7 @@ if (import.meta.client) {
 
         <div v-else class="space-y-2">
           <div v-if="!filteredPeople.length" class="text-sm text-muted-foreground">
-            No matching people.
+            {{ t('messages.noMatchingPeople') }}
           </div>
 
           <button
@@ -195,7 +196,7 @@ if (import.meta.client) {
               </div>
             </div>
             <Button variant="secondary" size="xs">
-              Chat
+              {{ t('messages.chat') }}
             </Button>
           </button>
         </div>
@@ -204,8 +205,8 @@ if (import.meta.client) {
 
     <Card class="lg:col-span-2 border">
       <CardHeader>
-        <CardTitle class="text-lg">Conversations</CardTitle>
-        <CardDescription>Your recent direct messages</CardDescription>
+        <CardTitle class="text-lg">{{ t('messages.conversations') }}</CardTitle>
+        <CardDescription>{{ t('messages.recent') }}</CardDescription>
       </CardHeader>
       <CardContent class="space-y-2">
         <div v-if="isFetchingInbox" class="py-8">
@@ -213,7 +214,7 @@ if (import.meta.client) {
         </div>
 
         <div v-else-if="!conversations.length" class="text-sm text-muted-foreground">
-          No conversations yet.
+          {{ t('messages.noConversations') }}
         </div>
 
         <NuxtLink
@@ -231,7 +232,7 @@ if (import.meta.client) {
               {{ conv.last_message.body }}
             </p>
             <p v-else class="text-xs text-muted-foreground">
-              No messages yet
+              {{ t('messages.noMessages') }}
             </p>
           </div>
           <span

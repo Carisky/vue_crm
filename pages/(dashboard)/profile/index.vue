@@ -15,6 +15,7 @@ useHead({
 })
 
 const authStore = useAuthStore()
+const { t } = useAppI18n()
 const isSavingTheme = ref(false)
 const isSavingEmailNotifications = ref(false)
 
@@ -31,31 +32,31 @@ watch(
     },
 )
 
-const themeOptions: {
+const themeOptions = computed((): {
     value: ThemePreference
     title: string
     description: string
     badge: string
-}[] = [
+}[] => [
     {
         value: 'light',
-        title: 'Light',
-        description: 'Classic bright interface with clean, white surfaces.',
-        badge: 'Default',
+        title: t('profile.themeLight'),
+        description: t('profile.themeLightDescription'),
+        badge: t('profile.default'),
     },
     {
         value: 'dark',
-        title: 'Dark',
-        description: 'Low-light look with deep gray surfaces and muted tones.',
-        badge: 'Night mode',
+        title: t('profile.themeDark'),
+        description: t('profile.themeDarkDescription'),
+        badge: t('profile.nightMode'),
     },
     {
         value: 'japanese',
-        title: 'Japanese Sakura',
-        description: 'Soft pink accents paired with bark-brown elements.',
-        badge: 'Sakura',
+        title: t('profile.themeJapanese'),
+        description: t('profile.themeJapaneseDescription'),
+        badge: t('profile.sakura'),
     },
-]
+])
 
 const selectedTheme = ref<ThemePreference>(
     authStore.user?.themePreference ?? 'light',
@@ -89,10 +90,10 @@ const handleThemeChange = async (theme: ThemePreference) => {
         authStore.setUser(updatedUser)
         selectedTheme.value = updatedUser.themePreference
 
-        toast.success('Theme saved')
+        toast.success(t('profile.themeSaved'))
     } catch (error) {
         console.error(error)
-        toast.error('Failed to save theme')
+        toast.error(t('profile.themeSaveFailed'))
     } finally {
         isSavingTheme.value = false
     }
@@ -124,11 +125,11 @@ const handleEmailNotificationsChange = async (checked: boolean | 'indeterminate'
         authStore.setUser(updatedUser)
         emailNotificationsEnabled.value = updatedUser.emailNotificationsEnabled
 
-        toast.success('Email notification preference saved')
+        toast.success(t('profile.emailSaved'))
     } catch (error) {
         console.error(error)
         emailNotificationsEnabled.value = previousValue
-        toast.error('Failed to save email notification preference')
+        toast.error(t('profile.emailSaveFailed'))
     } finally {
         isSavingEmailNotifications.value = false
     }
@@ -139,8 +140,8 @@ const handleEmailNotificationsChange = async (checked: boolean | 'indeterminate'
     <div class="flex w-full max-w-3xl flex-col gap-6">
         <Card class="border">
             <CardHeader>
-                <CardTitle class="text-lg font-semibold">Theme</CardTitle>
-                <CardDescription>Choose an experience that suits your workflow.</CardDescription>
+                <CardTitle class="text-lg font-semibold">{{ t('profile.theme') }}</CardTitle>
+                <CardDescription>{{ t('profile.themeDescription') }}</CardDescription>
             </CardHeader>
             <CardContent>
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -170,14 +171,14 @@ const handleEmailNotificationsChange = async (checked: boolean | 'indeterminate'
                     </button>
                 </div>
                 <p class="mt-3 text-sm text-muted-foreground">
-                    Theme choice is saved to your profile and applied automatically on each login.
+                    {{ t('profile.themePersistence') }}
                 </p>
             </CardContent>
         </Card>
         <Card class="border">
             <CardHeader>
-                <CardTitle class="text-lg font-semibold">Email notifications</CardTitle>
-                <CardDescription>Control when the app can send you email updates.</CardDescription>
+                <CardTitle class="text-lg font-semibold">{{ t('profile.emailNotifications') }}</CardTitle>
+                <CardDescription>{{ t('profile.emailNotificationsDescription') }}</CardDescription>
             </CardHeader>
             <CardContent>
                 <div class="flex items-start gap-3">
@@ -188,10 +189,10 @@ const handleEmailNotificationsChange = async (checked: boolean | 'indeterminate'
                     />
                     <div class="grid gap-1">
                         <p class="text-sm font-medium text-foreground">
-                            Receive task updates by email
+                            {{ t('profile.receiveTaskUpdates') }}
                         </p>
                         <p class="text-xs text-muted-foreground">
-                            You will receive emails for new tasks and priority escalations.
+                            {{ t('profile.receiveTaskUpdatesDescription') }}
                         </p>
                     </div>
                 </div>

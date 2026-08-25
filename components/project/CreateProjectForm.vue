@@ -12,6 +12,7 @@ const { onCancel } = defineProps<{ onCancel?: () => void }>()
 
 const route = useRoute()
 const queryClient = useQueryClient()
+const { t } = useAppI18n()
 
 configure({
     validateOnBlur: false
@@ -61,10 +62,10 @@ const { isPending, mutate } = useMutation({
 
             // navigate to the newly created project
             await navigateTo(`/workspaces/${formData.workspace_id!}/projects/${(res.project as Project).$id}`)
-            toast.success('Project created')
-        } else toast.error('Failed to create project')
+            toast.success(t('project.created'))
+        } else toast.error(t('project.createFailed'))
     },
-    onError: () => toast.error('Failed to create project')
+    onError: () => toast.error(t('project.createFailed'))
 })
 
 const handleSubmit = form.handleSubmit((values) => mutate(values))
@@ -74,7 +75,7 @@ const handleSubmit = form.handleSubmit((values) => mutate(values))
     <Card class="size-full border-none shadow-none gap-0 p-0">
         <CardHeader class="flex py-7">
             <CardTitle class="font-bold text-xl">
-                Create a new project
+                {{ t('project.create') }}
             </CardTitle>
         </CardHeader>
         <div class="px-7">
@@ -89,9 +90,9 @@ const handleSubmit = form.handleSubmit((values) => mutate(values))
                         </FormField>
                         <FormField v-slot="{ componentField }" name="name">
                             <FormItem>
-                                <FormLabel>Project Name</FormLabel>
+                                <FormLabel>{{ t('project.name') }}</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="Enter project name" v-bind="componentField" />
+                                    <Input :placeholder="t('project.namePlaceholder')" v-bind="componentField" />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -109,17 +110,17 @@ const handleSubmit = form.handleSubmit((values) => mutate(values))
                                             </AvatarFallback>
                                         </Avatar>
                                         <div class="flex flex-col">
-                                            <p class="text-sm">Project Icon</p>
-                                            <p class="text-sm text-muted-foreground">JPG, PNG, SVG or JPEG, max 1MB</p>
+                                            <p class="text-sm">{{ t('project.icon') }}</p>
+                                            <p class="text-sm text-muted-foreground">{{ t('upload.imageHint') }}</p>
                                             <input type="file" accept=".jpg, .jpeg, .png, .svg" ref="fileInputRef"
                                                 class="hidden" v-bind="componentField" @change="onUploadImage" />
                                             <Button v-if="componentField.modelValue" type="button" variant="destructive"
                                                 size="xs" @click="removeImage" class="w-fit mt-2">
-                                                Remove image
+                                                {{ t('common.removeImage') }}
                                             </Button>
                                             <Button v-else type="button" variant="teritary" size="xs"
                                                 @click="fileInputRef?.click()" class="w-fit mt-2">
-                                                Upload image
+                                                {{ t('common.uploadImage') }}
                                             </Button>
                                         </div>
                                     </div>
@@ -131,10 +132,10 @@ const handleSubmit = form.handleSubmit((values) => mutate(values))
                     <DottedSeparator class="py-7" />
                     <div class="flex items-center justify-between gap-5">
                         <Button v-if="!!onCancel" type="button" variant="secondary" size="lg" @click="onCancel"
-                            class="w-24">Cancel</Button>
+                            class="w-24">{{ t('common.cancel') }}</Button>
                         <Button type="submit" variant="primary" size="lg" class="w-44 ml-auto">
                             <Icon v-if="isPending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
-                            <span v-else>Create project</span>
+                            <span v-else>{{ t('project.create') }}</span>
                         </Button>
                     </div>
                 </fieldset>

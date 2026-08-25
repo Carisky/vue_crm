@@ -6,6 +6,7 @@ import type { Workspace } from '~/lib/types';
 
 const route = useRoute()
 const requestFetch = useRequestFetch()
+const { t } = useAppI18n()
 
 const { data, isLoading } = useQuery<Workspace[]>
     ({
@@ -40,7 +41,7 @@ watch([() => route.params['workspaceId'], () => route.query['workspace_id'], dat
 <template>
     <div class="flex flex-col gap-y-2" data-tour="workspace-switcher" @click="workspaceSelectOpen = false">
         <div class="flex items-center justify-between text-sidebar-foreground/85">
-            <p class="text-xs uppercase">Workspaces</p>
+            <p class="text-xs uppercase">{{ t('nav.workspaces') }}</p>
             <button @click="open" class="flex items-center justify-center text-sidebar-foreground hover:text-sidebar-primary">
                 <Icon
                     v-if="isLoading && !data"
@@ -75,7 +76,7 @@ watch([() => route.params['workspaceId'], () => route.query['workspace_id'], dat
                     />
                     <span class="truncate">{{ selectedWorkspace.name }}</span>
                 </div>
-                <template v-else class="text-muted-foreground">No workspace selected</template>
+                <template v-else class="text-muted-foreground">{{ t('workspace.noneSelected') }}</template>
             </button>
             <SelectContent
                 v-if="data?.length"

@@ -29,6 +29,7 @@ const { task } = defineProps<{ task: FilteredTask }>();
 const queryClient = useQueryClient();
 const requestFetch = useRequestFetch();
 const queryKey = computed(() => ['task-comments', task.$id]);
+const { locale, t } = useAppI18n();
 
 const { data: comments, isFetching } = useQuery<TaskComment[]>({
   queryKey,
@@ -50,9 +51,9 @@ const { data: people } = useQuery<Person[]>({
   },
 });
 
-const displayName = (person: Person) => person.name ?? person.email ?? 'Unknown';
+const displayName = (person: Person) => person.name ?? person.email ?? t('common.unknown');
 const formatTimestamp = (value: string) =>
-  new Date(value).toLocaleString(undefined, {
+  new Date(value).toLocaleString(locale.value, {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
@@ -148,9 +149,9 @@ const { mutateAsync: createComment, isPending } = useMutation({
     mentionContext.value = null;
     await queryClient.invalidateQueries({ queryKey: queryKey.value });
     await queryClient.invalidateQueries({ queryKey: ['inbox', task.workspace_id] });
-    toast.success('Comment added');
+    toast.success(t('comments.added'));
   },
-  onError: () => toast.error('Failed to add comment'),
+  onError: () => toast.error(t('comments.addFailed')),
 });
 
 const submit = async () => {
@@ -164,7 +165,7 @@ const submit = async () => {
   <div class="flex flex-col gap-4 p-4 border rounded-lg lg:col-span-2">
     <div class="flex items-center justify-between">
       <p class="text-lg font-semibold">
-        Comments
+        {{ t('comments.title') }}
       </p>
       <span class="text-xs text-muted-foreground">
         {{ comments?.length ?? 0 }}
@@ -179,7 +180,7 @@ const submit = async () => {
         v-model="draft"
         rows="3"
         :disabled="isPending"
-        placeholder="Write a comment… Use @ to mention teammates. Use { /route/path/File.vue } to share file paths."
+        :placeholder="t('comments.placeholder')"
         @input="updateMentionContext"
         @click="updateMentionContext"
         @keyup="updateMentionContext"
@@ -207,7 +208,7 @@ const submit = async () => {
       <div class="flex items-center justify-end gap-2">
         <Button size="sm" :disabled="isPending || !draft.trim()" @click="submit">
           <Icon v-if="isPending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
-          <template v-else>Send</template>
+          <template v-else>{{ t('common.send') }}</template>
         </Button>
       </div>
     </div>
@@ -217,7 +218,7 @@ const submit = async () => {
     </div>
 
     <div v-else-if="!comments?.length" class="text-sm text-muted-foreground py-6 text-center">
-      No comments yet.
+      {{ t('comments.empty') }}
     </div>
 
     <ul v-else class="space-y-3">

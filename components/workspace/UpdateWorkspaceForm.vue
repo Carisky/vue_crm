@@ -20,6 +20,7 @@ const { data, isOwner, isAdmin, onSuccess, onCancel } = defineProps<{
 
 const queryClient = useQueryClient()
 const inviteOrigin = useRequestURL().origin
+const { t } = useAppI18n()
 
 configure({
     validateOnBlur: false
@@ -66,10 +67,10 @@ const { isPending, mutate } = useMutation({
                 onSuccess?.()
             ])
 
-            toast.success('Workspace updated')
-        } else toast.error('Failed to update workspace')
+            toast.success(t('workspace.updated'))
+        } else toast.error(t('workspace.updateFailed'))
     },
-    onError: () => toast.error('Failed to update workspace')
+    onError: () => toast.error(t('workspace.updateFailed'))
 })
 
 const handleSubmit = isAdmin ? form.handleSubmit((values) => mutate(values)) : () => null
@@ -87,7 +88,7 @@ let fullInviteLink = ref(buildWorkspaceInviteUrl(inviteOrigin, data.$id, data.in
 
 const handleCopyInviteLink = () => {
     window.navigator.clipboard.writeText(fullInviteLink.value)
-        .then(() => toast.success("Invite link copied"))
+        .then(() => toast.success(t('workspace.inviteCopied')))
 }
 
 const resetInviteCode = async () => {
@@ -96,17 +97,17 @@ const resetInviteCode = async () => {
     await $fetch(`/api/workspaces/${data.$id}/reset-invite-code`, { method: 'PATCH' }).then(async (res) => {
         fullInviteLink.value = buildWorkspaceInviteUrl(inviteOrigin, data.$id, res.inviteCode)
 
-        toast.success('Invite code changed')
+        toast.success(t('workspace.inviteChanged'))
     }).catch(() => {
-        toast.error('Failed to change invite code')
+        toast.error(t('workspace.inviteChangeFailed'))
     })
 }
 
 const showResetInviteCodeModal = () => {
     openModal(ConfirmModal, {
         onConfirm: resetInviteCode,
-        title: 'Reset invite link',
-        message: 'This will invalidate the current invite link.',
+        title: t('workspace.resetInvite'),
+        message: t('workspace.resetInviteWarning'),
         variant: 'destructive'
     })
 }
@@ -123,17 +124,17 @@ const deleteWorkspace = async () => {
         // redirect to homepage
         navigateTo('/', { replace: true })
 
-        toast.success('Workspace deleted')
+        toast.success(t('workspace.deleted'))
     }).catch(() => {
-        toast.error('Failed to delete workspace')
+        toast.error(t('workspace.deleteFailed'))
     })
 }
 
 const showDeleteModal = () => {
     openModal(ConfirmModal, {
         onConfirm: deleteWorkspace,
-        title: 'Delete workspace',
-        message: 'This action cannot be undone.',
+        title: t('workspace.delete'),
+        message: t('common.irreversible'),
         variant: 'destructive'
     })
 }
@@ -145,7 +146,7 @@ const showDeleteModal = () => {
             <CardHeader class="flex items-center gap-x-4 p-7 space-y-0">
                 <Button variant="secondary" size="sm" @click="handleCancel">
                     <Icon name="lucide:arrow-left" size="16px" class="size-4 mr-1" />
-                    Back
+                    {{ t('common.back') }}
                 </Button>
                 <CardTitle class="text-xl font-bold">
                     {{ data.name }}
@@ -160,9 +161,9 @@ const showDeleteModal = () => {
                         <div class="flex flex-col gap-y-4">
                             <FormField v-slot="{ componentField }" name="name">
                                 <FormItem>
-                                    <FormLabel>Workspace Name</FormLabel>
+                                    <FormLabel>{{ t('workspace.name') }}</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Enter workspace name" v-bind="componentField" />
+                                        <Input :placeholder="t('workspace.namePlaceholder')" v-bind="componentField" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -181,18 +182,17 @@ const showDeleteModal = () => {
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div class="flex flex-col">
-                                                <p class="text-sm">Workspace Icon</p>
-                                                <p class="text-sm text-muted-foreground">JPG, PNG, SVG or JPEG, max 1MB
-                                                </p>
+                                                <p class="text-sm">{{ t('workspace.icon') }}</p>
+                                                <p class="text-sm text-muted-foreground">{{ t('upload.imageHint') }}</p>
                                                 <input type="file" accept=".jpg, .jpeg, .png, .svg" ref="fileInputRef"
                                                     class="hidden" @change="onUploadImage" />
                                                 <Button v-if="image" type="button" variant="destructive" size="xs"
                                                     @click="removeImage" class="w-fit mt-2">
-                                                    Remove image
+                                                    {{ t('common.removeImage') }}
                                                 </Button>
                                                 <Button v-else type="button" variant="teritary" size="xs"
                                                     @click="fileInputRef?.click()" class="w-fit mt-2">
-                                                    Upload image
+                                                    {{ t('common.uploadImage') }}
                                                 </Button>
                                             </div>
                                         </div>
@@ -204,11 +204,11 @@ const showDeleteModal = () => {
                         <DottedSeparator class="py-7" />
                         <div class="flex items-center justify-between gap-5">
                             <Button v-if="!!onCancel" type="button" variant="secondary" size="lg" @click="onCancel"
-                                :disabled="isPending" class="w-24">Cancel</Button>
+                                :disabled="isPending" class="w-24">{{ t('common.cancel') }}</Button>
                             <Button type="submit" variant="primary" size="lg" :disabled="!isAdmin || isPending"
                                 class="w-24 ml-auto">
                                 <Icon v-if="isPending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
-                                <span v-else>Update</span>
+                                <span v-else>{{ t('common.update') }}</span>
                             </Button>
                         </div>
                     </fieldset>
@@ -219,9 +219,9 @@ const showDeleteModal = () => {
         <Card class="size-full border-none shadow-none gap-0 p-0">
             <CardContent class="py-7">
                 <div class="flex flex-col">
-                    <h3 class="font-bold">Invite Members</h3>
+                    <h3 class="font-bold">{{ t('workspace.inviteMembers') }}</h3>
                     <p class="text-sm text-muted-foreground">
-                        Use the invite link to add members to your workspace.
+                        {{ t('workspace.inviteDescription') }}
                     </p>
                     <div class="mt-4">
                         <div class="flex items-center gap-x-2">
@@ -235,7 +235,7 @@ const showDeleteModal = () => {
                     </div>
                     <DottedSeparator class="py-7" />
                     <Button type="button" variant="destructive" size="sm" :disabled="!isAdmin || isPending"
-                        @click="showResetInviteCodeModal" class="w-fit ml-auto">Reset invite link</Button>
+                        @click="showResetInviteCodeModal" class="w-fit ml-auto">{{ t('workspace.resetInvite') }}</Button>
                 </div>
             </CardContent>
         </Card>
@@ -243,13 +243,13 @@ const showDeleteModal = () => {
         <Card v-if="isOwner" class="size-full border-none shadow-none gap-0 p-0">
             <CardContent class="py-7">
                 <div class="flex flex-col">
-                    <h3 class="font-bold">Danger Zone</h3>
+                    <h3 class="font-bold">{{ t('common.dangerZone') }}</h3>
                     <p class="text-sm text-muted-foreground">
-                        Deleting a workspace is irreversible and will remove all associated data.
+                        {{ t('workspace.deleteWarning') }}
                     </p>
                     <DottedSeparator class="py-7" />
                     <Button type="button" variant="destructive" size="sm" :disabled="isPending" @click="showDeleteModal"
-                        class="w-fit ml-auto">Delete workspace</Button>
+                        class="w-fit ml-auto">{{ t('workspace.delete') }}</Button>
                 </div>
             </CardContent>
         </Card>

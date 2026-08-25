@@ -22,6 +22,7 @@ const workspaceId = computed(() => route.params['workspaceId']);
 const sheetOpen = ref(false);
 const queryClient = useQueryClient();
 const requestFetch = useRequestFetch();
+const { locale, t } = useAppI18n();
 const queryKey = computed(() => ['notifications', workspaceId.value ?? 'global']);
 
 const { data, isFetching } = useQuery({
@@ -42,7 +43,7 @@ const { data, isFetching } = useQuery({
 const unreadCount = computed(() => data.value?.unreadCount ?? 0);
 const notifications = computed(() => data.value?.notifications ?? []);
 const formatTimestamp = (value: string) =>
-  new Date(value).toLocaleString(undefined, {
+  new Date(value).toLocaleString(locale.value, {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
@@ -104,7 +105,7 @@ const handleNotificationClick = async (notification: Notification) => {
     <SheetContent side="right" class="w-[260px] sm:w-[340px] flex flex-col">
       <SheetHeader class="gap-2">
         <div class="flex items-center gap-2">
-          <SheetTitle>Notifications</SheetTitle>
+          <SheetTitle>{{ t('notifications.title') }}</SheetTitle>
           <Button
             variant="outline"
             size="xs"
@@ -112,16 +113,16 @@ const handleNotificationClick = async (notification: Notification) => {
             class="capitalize text-[11px]"
             @click="markAllRead"
           >
-            Mark all read
+            {{ t('notifications.markAllRead') }}
           </Button>
         </div>
-        <SheetDescription>Stay in sync with workspace activity</SheetDescription>
+        <SheetDescription>{{ t('notifications.description') }}</SheetDescription>
       </SheetHeader>
 
       <div class="mt-4 flex-1 overflow-y-auto pr-1 space-y-3">
         <Loader v-if="isFetching" class="h-24" />
         <div v-else-if="!notifications.length" class="text-sm text-muted-foreground">
-          No new notifications yet.
+          {{ t('notifications.empty') }}
         </div>
         <div v-else class="flex flex-col gap-2">
           <article
@@ -141,24 +142,24 @@ const handleNotificationClick = async (notification: Notification) => {
             <div class="flex-1 space-y-0.5 min-w-0">
               <div class="flex items-start justify-between gap-2">
                 <p class="text-sm font-semibold text-foreground leading-tight truncate">
-                  {{ notification.message ?? 'New update' }}
+                  {{ notification.message ?? t('notifications.newUpdate') }}
                 </p>
                 <Button
                   v-if="!notification.isRead"
                   variant="ghost"
                   size="icon"
                   class="h-7 w-7"
-                  title="Mark read"
+                  :title="t('notifications.markRead')"
                   @click.stop="markNotificationRead(notification)"
                 >
                   <Icon name="heroicons:check" size="16px" class="size-4 text-muted-foreground" />
                 </Button>
               </div>
               <p class="text-xs text-muted-foreground truncate">
-                {{ notification.projectName ?? 'Workspace' }}<span v-if="notification.taskName"> / {{ notification.taskName }}</span>
+                {{ notification.projectName ?? t('common.workspace') }}<span v-if="notification.taskName"> / {{ notification.taskName }}</span>
               </p>
               <p class="text-[11px] text-muted-foreground">
-                {{ notification.actorName ?? 'System' }} · {{ formatTimestamp(notification.createdAt) }}
+                {{ notification.actorName ?? t('common.system') }} · {{ formatTimestamp(notification.createdAt) }}
               </p>
             </div>
           </article>
@@ -167,7 +168,7 @@ const handleNotificationClick = async (notification: Notification) => {
 
       <SheetFooter class="mt-6">
         <span class="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          Workspace activity
+          {{ t('notifications.activity') }}
         </span>
       </SheetFooter>
     </SheetContent>

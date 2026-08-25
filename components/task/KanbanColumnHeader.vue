@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { cn } from '~/lib/utils';
+import { taskStatusTranslationKeys } from '~/lib/i18n';
+import { TaskStatus } from '~/lib/types';
 
 const { boardName, taskCount } = defineProps<{
     boardName: string;
@@ -15,6 +17,12 @@ const iconNames: Record<string, { name: string; color: string; }> = {
 }
 
 const { open } = useCreateTaskModal()
+const { t } = useAppI18n()
+const statusByBoardName: Record<string, TaskStatus> = Object.fromEntries(Object.entries(TaskStatus))
+const boardLabel = computed(() => {
+    const status = statusByBoardName[boardName]
+    return status ? t(taskStatusTranslationKeys[status]) : boardName
+})
 </script>
 
 <template>
@@ -22,7 +30,7 @@ const { open } = useCreateTaskModal()
         <div class="flex items-center gap-x-2">
             <Icon :name="iconNames[boardName].name" size="18px"
                 :class="cn('size-[18px]', iconNames[boardName].color)" />
-            <h2 class="text-sm font-medium">{{ boardName }}</h2>
+            <h2 class="text-sm font-medium">{{ boardLabel }}</h2>
             <div
                 class="size-5 flex items-center justify-center rounded-md bg-neutral-200 text-xs text-neutral-700 font-medium">
                 {{ taskCount }}</div>

@@ -14,6 +14,7 @@ const { open, title, variant = 'primary', closeModal, onConfirm, onClose, onCanc
 }>()
 
 const processing = ref(false)
+const { t } = useAppI18n()
 
 const handleCleanup = () => setTimeout(cleanup, 250) // wait for the modal to finish transitioning
 
@@ -50,12 +51,12 @@ const handleCancel = async () => {
                 </CardHeader>
                 <div class="pt-4 w-full flex flex-col items-center justify-end gap-x-2 gap-y-2 lg:flex-row">
                     <Button variant="outline" @click="handleCancel" :disabled="processing"
-                        class="w-full lg:w-auto">Cancel</Button>
+                        class="w-full lg:w-auto">{{ t('common.cancel') }}</Button>
                     <Button :variant="variant" @click="handleConfirm" :disabled="processing" class="w-full lg:w-24">
                         <template v-if="processing">
                             <Icon name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
                         </template>
-                        <template v-else>Confirm</template>
+                        <template v-else>{{ t('common.confirm') }}</template>
                     </Button>
                 </div>
             </CardContent>

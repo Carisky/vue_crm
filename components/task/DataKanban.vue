@@ -25,6 +25,7 @@ const props = defineProps<{
 
 const route = useRoute()
 const queryClient = useQueryClient()
+const { t } = useAppI18n()
 
 // Store all tasks' data
 const tasks: Ref<Record<string, FilteredTask | null>> = ref({})
@@ -60,10 +61,10 @@ const { mutate: updateTask } = useMutation({
             if (data.id && tasks.value[data.id])
                 onUpdateTask?.updateTaskSuccessSubsribers.map((onUpdate) => onUpdate?.(task))
 
-            toast.success('Task updated')
-        } else toast.error('Failed to update task')
+            toast.success(t('task.updated'))
+        } else toast.error(t('task.updateFailed'))
     },
-    onError: () => toast.error('Failed to update task')
+    onError: () => toast.error(t('task.updateFailed'))
 })
 
 // Update multiple dnded tasks
@@ -84,10 +85,10 @@ const { mutate: updateTasks } = useMutation({
             if (updatedData[0].id && tasks.value[updatedData[0].id])
                 onUpdateTask?.updateTaskSuccessSubsribers.map((onUpdate) => onUpdate?.(tasks.value[updatedData[0].id!]!))
 
-            toast.success('Tasks updated')
-        } else toast.error('Failed to update tasks')
+            toast.success(t('task.updated'))
+        } else toast.error(t('task.updateFailed'))
     },
-    onError: () => toast.error('Failed to update tasks')
+    onError: () => toast.error(t('task.updateFailed'))
 })
 
 // Check & update dnded tasks' new position & status

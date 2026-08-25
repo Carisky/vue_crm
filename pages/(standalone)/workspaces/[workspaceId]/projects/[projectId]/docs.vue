@@ -62,13 +62,14 @@ const projectId = computed(() => String(route.params['projectId'] ?? ''));
 
 // Avoid TS/Volar excessive recursion on typed Nitro route strings for $fetch.
 const apiFetch = $fetch as unknown as (<T>(url: string, options?: any) => Promise<T>);
+const { locale, t } = useAppI18n();
 
 useHead({
   title: 'Documentation',
 });
 
 const formatTimestamp = (value: string) =>
-  new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  new Date(value).toLocaleString(locale.value, { dateStyle: 'medium', timeStyle: 'short' });
 
 const docsKey = computed(() => ['project-docs', projectId.value]);
 const sectionsKey = computed(() => ['project-doc-sections', projectId.value]);
@@ -167,9 +168,9 @@ const { mutateAsync: createDoc, isPending: isCreatingDoc } = useMutation({
   onSuccess: async (doc) => {
     await queryClient.invalidateQueries({ queryKey: docsKey.value });
     activeDocId.value = doc.id;
-    toast.success('Saved');
+    toast.success(t('common.save'));
   },
-  onError: () => toast.error('Failed to save'),
+  onError: () => toast.error(t('docs.saveFailed')),
 });
 
 const { mutateAsync: updateDoc, isPending: isUpdatingDoc } = useMutation({
@@ -191,9 +192,9 @@ const { mutateAsync: updateDoc, isPending: isUpdatingDoc } = useMutation({
   onSuccess: async () => {
     await queryClient.invalidateQueries({ queryKey: docsKey.value });
     await queryClient.invalidateQueries({ queryKey: docKey.value });
-    toast.success('Saved');
+    toast.success(t('common.save'));
   },
-  onError: () => toast.error('Failed to save'),
+  onError: () => toast.error(t('docs.saveFailed')),
 });
 
 const isSavingDoc = computed(() => isCreatingDoc.value || isUpdatingDoc.value);
@@ -220,7 +221,7 @@ const { mutateAsync: setDocLock, isPending: isTogglingLock } = useMutation({
     await queryClient.invalidateQueries({ queryKey: docsKey.value });
     await queryClient.invalidateQueries({ queryKey: docKey.value });
   },
-  onError: () => toast.error('Failed to toggle lock'),
+  onError: () => toast.error(t('docs.toggleLockFailed')),
 });
 
 type BodySegment =
@@ -277,9 +278,9 @@ const { mutateAsync: createSection, isPending: isCreatingSection } = useMutation
     await queryClient.invalidateQueries({ queryKey: docsKey.value });
     await queryClient.invalidateQueries({ queryKey: sectionsKey.value });
     isSectionOpen.value = false;
-    toast.success('Section created');
+    toast.success(t('docs.newChapter'));
   },
-  onError: () => toast.error('Failed to create section'),
+  onError: () => toast.error(t('docs.createSectionFailed')),
 });
 
 const { mutateAsync: renameSection, isPending: isRenamingSection } = useMutation({
@@ -295,9 +296,9 @@ const { mutateAsync: renameSection, isPending: isRenamingSection } = useMutation
     await queryClient.invalidateQueries({ queryKey: docsKey.value });
     await queryClient.invalidateQueries({ queryKey: sectionsKey.value });
     isSectionOpen.value = false;
-    toast.success('Section saved');
+    toast.success(t('common.save'));
   },
-  onError: () => toast.error('Failed to rename section'),
+  onError: () => toast.error(t('docs.renameSectionFailed')),
 });
 
 const isSavingSection = computed(() => isCreatingSection.value || isRenamingSection.value);
@@ -379,9 +380,9 @@ const { mutateAsync: importNow, isPending: isImporting } = useMutation({
     await queryClient.invalidateQueries({ queryKey: docsKey.value });
     await queryClient.invalidateQueries({ queryKey: sectionsKey.value });
     isImportOpen.value = false;
-    toast.success('Imported');
+    toast.success(t('common.import'));
   },
-  onError: () => toast.error('Failed to import'),
+  onError: () => toast.error(t('docs.importFailed')),
 });
 
 watch(importMode, (mode) => {
@@ -392,22 +393,22 @@ watch(importMode, (mode) => {
 <template>
   <div class="flex items-start justify-between gap-3">
     <div class="space-y-1">
-      <h1 class="text-2xl font-semibold">Docs</h1>
+      <h1 class="text-2xl font-semibold">{{ t('header.docs') }}</h1>
       <NuxtLink
         :href="`/workspaces/${workspaceId}/projects/${projectId}`"
         class="text-sm text-muted-foreground hover:underline"
       >
-        Back to project
+        {{ t('docs.backToProject') }}
       </NuxtLink>
     </div>
     <div class="flex items-center gap-2">
       <Button variant="secondary" size="sm" @click="isImportOpen = true">
         <Icon name="lucide:arrow-left-right" size="16px" class="size-4 mr-1" />
-        Import
+        {{ t('common.import') }}
       </Button>
       <Button variant="secondary" size="sm" @click="openNewSection">
         <Icon name="lucide:folder-plus" size="16px" class="size-4 mr-1" />
-        Chapter
+        {{ t('docs.chapter') }}
       </Button>
     </div>
   </div>
@@ -423,12 +424,12 @@ watch(importMode, (mode) => {
       <CardHeader class="py-4">
         <div class="flex items-center justify-between gap-3">
           <div class="min-w-0">
-            <CardTitle class="text-base truncate">No Chapter</CardTitle>
-            <CardDescription>No Title</CardDescription>
+            <CardTitle class="text-base truncate">{{ t('docs.noChapter') }}</CardTitle>
+            <CardDescription>{{ t('docs.noTitle') }}</CardDescription>
           </div>
           <Button size="sm" @click="openNewDoc(null)">
             <Icon name="lucide:plus" size="16px" class="size-4 mr-1" />
-            Add
+            {{ t('docs.add') }}
           </Button>
         </div>
       </CardHeader>
@@ -451,7 +452,7 @@ watch(importMode, (mode) => {
               />
             </div>
             <p class="mt-1 text-[11px] text-muted-foreground">
-              Updated {{ formatTimestamp(doc.updatedAt) }}
+              {{ t('docs.updated', { date: formatTimestamp(doc.updatedAt) }) }}
             </p>
           </button>
         </div>
@@ -463,23 +464,23 @@ watch(importMode, (mode) => {
         <div class="flex items-center justify-between gap-3">
           <div class="min-w-0">
             <CardTitle class="text-base truncate">{{ section.title }}</CardTitle>
-            <CardDescription>List</CardDescription>
+            <CardDescription>{{ t('docs.list') }}</CardDescription>
           </div>
           <div class="flex items-center gap-2">
             <Button variant="secondary" size="sm" @click="openRenameSection(section)">
               <Icon name="lucide:pencil" size="16px" class="size-4 mr-1" />
-              Rename
+              {{ t('docs.rename') }}
             </Button>
             <Button size="sm" @click="openNewDoc(section.id)">
               <Icon name="lucide:plus" size="16px" class="size-4 mr-1" />
-              Add
+              {{ t('docs.add') }}
             </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent class="pt-0">
         <div v-if="!section.docs?.length" class="text-sm text-muted-foreground py-3">
-          Empty. Click “Add”.
+          {{ t('docs.sectionEmpty') }}
         </div>
         <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <button
@@ -499,7 +500,7 @@ watch(importMode, (mode) => {
               />
             </div>
             <p class="mt-1 text-[11px] text-muted-foreground">
-              Updated {{ formatTimestamp(doc.updatedAt) }}
+              {{ t('docs.updated', { date: formatTimestamp(doc.updatedAt) }) }}
             </p>
           </button>
         </div>
@@ -508,8 +509,8 @@ watch(importMode, (mode) => {
 
     <Card v-if="!sections.length && !unsectioned.length" class="border">
       <CardHeader>
-        <CardTitle class="text-lg">Empty at the moment</CardTitle>
-        <CardDescription>Create Chapter and add info.</CardDescription>
+        <CardTitle class="text-lg">{{ t('docs.emptyTitle') }}</CardTitle>
+        <CardDescription>{{ t('docs.emptyDescription') }}</CardDescription>
       </CardHeader>
     </Card>
   </div>
@@ -519,7 +520,7 @@ watch(importMode, (mode) => {
     <DialogContent class="sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle class="flex items-center justify-between gap-3">
-          <span>{{ activeDocId ? 'Card' : 'New Card' }}</span>
+          <span>{{ activeDocId ? t('docs.card') : t('docs.newCard') }}</span>
           <Button
             v-if="activeDocId"
             variant="secondary"
@@ -532,10 +533,10 @@ watch(importMode, (mode) => {
               size="16px"
               class="size-4 mr-1"
             />
-            {{ isLocked ? 'Unlock' : 'Lock' }}
+            {{ isLocked ? t('docs.unlock') : t('docs.lock') }}
           </Button>
         </DialogTitle>
-        <DialogDescription>Write / read / save</DialogDescription>
+        <DialogDescription>{{ t('docs.editorDescription') }}</DialogDescription>
       </DialogHeader>
 
       <div v-if="activeDocId && isFetchingDoc" class="py-10">
@@ -545,13 +546,13 @@ watch(importMode, (mode) => {
       <div v-else class="space-y-3">
         <div class="flex items-center justify-between gap-3">
           <p v-if="activeDoc?.updatedAt" class="text-[11px] text-muted-foreground">
-            Updated {{ formatTimestamp(activeDoc.updatedAt) }}
+            {{ t('docs.updated', { date: formatTimestamp(activeDoc.updatedAt) }) }}
           </p>
           <span
             v-if="isLocked"
             class="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest"
           >
-            Read-only
+            {{ t('docs.readOnly') }}
           </span>
         </div>
 
@@ -574,23 +575,23 @@ watch(importMode, (mode) => {
         </div>
 
         <template v-else>
-          <Input v-model="draftTitle" :disabled="isSavingDoc" placeholder="Title" />
-          <Textarea v-model="draftBody" :disabled="isSavingDoc" rows="12" placeholder="Info..." class="break-words" />
+          <Input v-model="draftTitle" :disabled="isSavingDoc" :placeholder="t('docs.titlePlaceholder')" />
+          <Textarea v-model="draftBody" :disabled="isSavingDoc" rows="12" :placeholder="t('docs.infoPlaceholder')" class="break-words" />
         </template>
 
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div class="space-y-1">
-            <p class="text-xs text-muted-foreground">Chapter</p>
+            <p class="text-xs text-muted-foreground">{{ t('docs.chapter') }}</p>
             <Select
               :model-value="activeSectionId ?? '__none__'"
               @update:model-value="setActiveSection"
               :disabled="isLocked"
             >
               <SelectTrigger class="w-full">
-                <SelectValue placeholder="No chapter" />
+                <SelectValue :placeholder="t('docs.noChapter')" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem :value="'__none__'">No Chapter</SelectItem>
+                <SelectItem :value="'__none__'">{{ t('docs.noChapter') }}</SelectItem>
                 <SelectItem v-for="s in (sectionsOnly ?? [])" :key="s.id" :value="s.id">
                   {{ s.title }}
                 </SelectItem>
@@ -602,7 +603,7 @@ watch(importMode, (mode) => {
 
         <div class="flex items-center justify-end gap-2">
           <Button variant="secondary" size="sm" :disabled="isSavingDoc" @click="isDocOpen = false">
-            Close
+            {{ t('docs.close') }}
           </Button>
           <Button
             size="sm"
@@ -610,7 +611,7 @@ watch(importMode, (mode) => {
             @click="saveDoc"
           >
             <Icon v-if="isSavingDoc" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
-            <template v-else>Save</template>
+            <template v-else>{{ t('common.save') }}</template>
           </Button>
         </div>
       </div>
@@ -621,19 +622,19 @@ watch(importMode, (mode) => {
   <Dialog v-model:open="isSectionOpen">
     <DialogContent class="sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>{{ activeSectionEditId ? 'Rename chapter' : 'New chapter' }}</DialogTitle>
-        <DialogDescription>Title, under which one will be placed list of info.</DialogDescription>
+        <DialogTitle>{{ activeSectionEditId ? t('docs.renameChapter') : t('docs.newChapter') }}</DialogTitle>
+        <DialogDescription>{{ t('docs.chapterDescription') }}</DialogDescription>
       </DialogHeader>
 
       <div class="space-y-3">
-        <Input v-model="sectionTitle" :disabled="isSavingSection" placeholder="Example: API Allegro Docs" />
+        <Input v-model="sectionTitle" :disabled="isSavingSection" :placeholder="t('docs.chapterPlaceholder')" />
         <div class="flex items-center justify-end gap-2">
           <Button variant="secondary" size="sm" :disabled="isSavingSection" @click="isSectionOpen = false">
-            Close
+            {{ t('docs.close') }}
           </Button>
           <Button size="sm" :disabled="isSavingSection || !sectionTitle.trim()" @click="saveSection">
             <Icon v-if="isSavingSection" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
-            <template v-else>Save</template>
+            <template v-else>{{ t('common.save') }}</template>
           </Button>
         </div>
       </div>
@@ -644,20 +645,20 @@ watch(importMode, (mode) => {
   <Dialog v-model:open="isImportOpen">
     <DialogContent class="sm:max-w-xl">
       <DialogHeader>
-        <DialogTitle>Import</DialogTitle>
-        <DialogDescription>Transfer whole chapter or 1 tile from another project.</DialogDescription>
+        <DialogTitle>{{ t('common.import') }}</DialogTitle>
+        <DialogDescription>{{ t('docs.importDescription') }}</DialogDescription>
       </DialogHeader>
 
       <div class="space-y-3">
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div class="space-y-1">
-            <p class="text-xs text-muted-foreground">Source project</p>
+            <p class="text-xs text-muted-foreground">{{ t('docs.sourceProject') }}</p>
             <Select
               :model-value="sourceProjectId ?? undefined"
               @update:model-value="(v) => (sourceProjectId = v ? String(v) : null)"
             >
               <SelectTrigger class="w-full">
-                <SelectValue placeholder="Select project" />
+                <SelectValue :placeholder="t('task.selectProject')" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem
@@ -672,28 +673,28 @@ watch(importMode, (mode) => {
           </div>
 
           <div class="space-y-1">
-            <p class="text-xs text-muted-foreground">Mode</p>
+            <p class="text-xs text-muted-foreground">{{ t('docs.mode') }}</p>
             <Select :model-value="importMode" @update:model-value="(v) => (importMode = v as any)">
               <SelectTrigger class="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="section">Section</SelectItem>
-                <SelectItem value="doc">Doc</SelectItem>
+                <SelectItem value="section">{{ t('docs.section') }}</SelectItem>
+                <SelectItem value="doc">{{ t('docs.doc') }}</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
         <div v-if="importMode === 'section'" class="space-y-1">
-          <p class="text-xs text-muted-foreground">Source section</p>
+          <p class="text-xs text-muted-foreground">{{ t('docs.sourceSection') }}</p>
           <Select
             :disabled="!sourceProjectId"
             :model-value="sourceSectionId ?? undefined"
             @update:model-value="(v) => (sourceSectionId = v ? String(v) : null)"
           >
             <SelectTrigger class="w-full">
-              <SelectValue placeholder="Select section" />
+              <SelectValue :placeholder="t('docs.selectSection')" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="s in (sourceSections ?? [])" :key="s.id" :value="s.id">
@@ -704,14 +705,14 @@ watch(importMode, (mode) => {
         </div>
 
         <div v-else class="space-y-1">
-          <p class="text-xs text-muted-foreground">Source doc</p>
+          <p class="text-xs text-muted-foreground">{{ t('docs.sourceDoc') }}</p>
             <Select
               :disabled="!sourceProjectId"
               :model-value="sourceDocId ?? undefined"
               @update:model-value="(v) => (sourceDocId = v ? String(v) : null)"
             >
             <SelectTrigger class="w-full">
-              <SelectValue placeholder="Select doc" />
+              <SelectValue :placeholder="t('docs.selectDoc')" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem
@@ -731,13 +732,13 @@ watch(importMode, (mode) => {
         </div>
 
         <div v-if="importMode === 'doc'" class="space-y-1">
-          <p class="text-xs text-muted-foreground">Target section</p>
+          <p class="text-xs text-muted-foreground">{{ t('docs.targetSection') }}</p>
           <Select
             :model-value="targetSectionId ?? undefined"
             @update:model-value="(v) => (targetSectionId = v ? String(v) : null)"
           >
             <SelectTrigger class="w-full">
-              <SelectValue placeholder="No chapter" />
+              <SelectValue :placeholder="t('docs.noChapter')" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="s in (sectionsOnly ?? [])" :key="s.id" :value="s.id">
@@ -749,7 +750,7 @@ watch(importMode, (mode) => {
 
         <div class="flex items-center justify-end gap-2">
           <Button variant="secondary" size="sm" :disabled="isImporting" @click="isImportOpen = false">
-            Close
+            {{ t('docs.close') }}
           </Button>
           <Button
             size="sm"
@@ -761,7 +762,7 @@ watch(importMode, (mode) => {
             @click="importNow"
           >
             <Icon v-if="isImporting" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
-            <template v-else>Import</template>
+            <template v-else>{{ t('common.import') }}</template>
           </Button>
         </div>
       </div>

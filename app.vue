@@ -4,10 +4,15 @@ import { useDragAndDrop } from "fluid-dnd/vue";
 import "vue-sonner/style.css";
 
 import useAuthStore from "./stores/auth";
-import type { ThemePreference } from "~/lib/types";
+import type { AppLocale, ThemePreference } from "~/lib/types";
 
 const authStore = useAuthStore();
 await authStore.init();
+const { locale } = useAppI18n();
+
+useHead(() => ({
+  htmlAttrs: { lang: locale.value as AppLocale },
+}));
 
 provide("useDragAndDrop", useDragAndDrop);
 

@@ -16,6 +16,7 @@ useHead({
 });
 
 const requestFetch = useRequestFetch();
+const { t } = useAppI18n();
 
 const { data, isFetching, isSuccess, suspense } = useQuery<Workspace[]>(
   {
@@ -58,10 +59,9 @@ watch(
   >
     <Card class="w-full max-w-3xl border shadow">
       <CardHeader>
-        <CardTitle class="text-xl font-bold">No workspaces yet</CardTitle>
+        <CardTitle class="text-xl font-bold">{{ t('workspace.empty.title') }}</CardTitle>
         <CardDescription>
-          You're not a member of any workspace right now. Use an invite link to join an
-          existing one or keep the creation form below handy for when you're ready.
+          {{ t('workspace.empty.description') }}
         </CardDescription>
       </CardHeader>
     </Card>

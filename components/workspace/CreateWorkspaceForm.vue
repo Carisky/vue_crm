@@ -11,6 +11,7 @@ import type { Workspace } from '~/lib/types';
 const { onCancel } = defineProps<{ onCancel?: () => void }>()
 
 const queryClient = useQueryClient()
+const { t } = useAppI18n()
 
 configure({
     validateOnBlur: false
@@ -56,10 +57,10 @@ const { isPending, mutate } = useMutation({
 
             // navigate to the newly created workspace
             await navigateTo(`/workspaces/${res.workspace.$id}`)
-            toast.success('Workspace created')
-        } else toast.error('Failed to create workspace')
+            toast.success(t('workspace.created'))
+        } else toast.error(t('workspace.createFailed'))
     },
-    onError: () => toast.error('Failed to create workspace')
+    onError: () => toast.error(t('workspace.createFailed'))
 })
 
 const handleSubmit = form.handleSubmit((values) => mutate(values))
@@ -69,7 +70,7 @@ const handleSubmit = form.handleSubmit((values) => mutate(values))
     <Card class="size-full border-none shadow-none gap-0 p-0">
         <CardHeader class="flex py-7">
             <CardTitle class="font-bold text-xl">
-                Create a new workspace
+                {{ t('workspace.create') }}
             </CardTitle>
         </CardHeader>
         <div class="px-7">
@@ -81,9 +82,9 @@ const handleSubmit = form.handleSubmit((values) => mutate(values))
                     <div class="flex flex-col gap-y-4">
                         <FormField v-slot="{ componentField }" name="name">
                             <FormItem>
-                                <FormLabel>Workspace Name</FormLabel>
+                                <FormLabel>{{ t('workspace.name') }}</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="Enter workspace name" v-bind="componentField" />
+                                    <Input :placeholder="t('workspace.namePlaceholder')" v-bind="componentField" />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -101,17 +102,17 @@ const handleSubmit = form.handleSubmit((values) => mutate(values))
                                             </AvatarFallback>
                                         </Avatar>
                                         <div class="flex flex-col">
-                                            <p class="text-sm">Workspace Icon</p>
-                                            <p class="text-sm text-muted-foreground">JPG, PNG, SVG or JPEG, max 1MB</p>
+                                            <p class="text-sm">{{ t('workspace.icon') }}</p>
+                                            <p class="text-sm text-muted-foreground">{{ t('upload.imageHint') }}</p>
                                             <input type="file" accept=".jpg, .jpeg, .png, .svg" ref="fileInputRef"
                                                 class="hidden" v-bind="componentField" @change="onUploadImage" />
                                             <Button v-if="componentField.modelValue" type="button" variant="destructive"
                                                 size="xs" @click="removeImage" class="w-fit mt-2">
-                                                Remove image
+                                                {{ t('common.removeImage') }}
                                             </Button>
                                             <Button v-else type="button" variant="teritary" size="xs"
                                                 @click="fileInputRef?.click()" class="w-fit mt-2">
-                                                Upload image
+                                                {{ t('common.uploadImage') }}
                                             </Button>
                                         </div>
                                     </div>
@@ -123,10 +124,10 @@ const handleSubmit = form.handleSubmit((values) => mutate(values))
                     <DottedSeparator class="py-7" />
                     <div class="flex items-center justify-between gap-5">
                         <Button v-if="!!onCancel" type="button" variant="secondary" size="lg" @click="onCancel"
-                            class="w-24">Cancel</Button>
+                            class="w-24">{{ t('common.cancel') }}</Button>
                         <Button type="submit" variant="primary" size="lg" class="w-44 ml-auto">
                             <Icon v-if="isPending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
-                            <span v-else>Create workspace</span>
+                            <span v-else>{{ t('workspace.create') }}</span>
                         </Button>
                     </div>
                 </fieldset>

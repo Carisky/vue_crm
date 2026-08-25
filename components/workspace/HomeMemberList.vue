@@ -14,6 +14,7 @@ const { members } = defineProps<{
 }>()
 
 const route = useRoute()
+const { t } = useAppI18n()
 </script>
 
 <template>
@@ -21,7 +22,7 @@ const route = useRoute()
         <div class="bg-card border border-border rounded-lg p-4 text-card-foreground">
             <div class="flex items-center justify-between">
                 <p class="text-lg font-semibold">
-                    Members ({{ members.length }})
+                    {{ t('nav.members') }} ({{ members.length }})
                 </p>
                 <Button variant="secondary" size="icon" :as-child="true">
                     <NuxtLink :href="`/workspaces/${route.params['workspaceId']}/members`">
@@ -43,7 +44,7 @@ const route = useRoute()
                     </Card>
                 </li>
                 <li v-if="!members?.length" class="text-sm text-muted-foreground text-center">
-                    No members found
+                    {{ t('members.noneFound') }}
                 </li>
             </ul>
         </div>

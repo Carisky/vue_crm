@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const open = ref(false)
+const { t } = useAppI18n()
 
 const router = useRouter()
 
@@ -16,7 +17,7 @@ onUnmounted(() => {
 <template>
     <Sheet :open="open" :modal="false" @update:open="(isOpen) => open = isOpen">
         <SheetTrigger :as-child="true">
-            <Button variant="secondary" class="lg:hidden" data-tour="mobile-navigation" aria-label="Open navigation">
+            <Button variant="secondary" class="lg:hidden" data-tour="mobile-navigation" :aria-label="t('nav.openNavigation')">
                 <Icon name="lucide:menu" size="16px" class="size-4 text-card-foreground" />
             </Button>
         </SheetTrigger>

@@ -3,12 +3,14 @@ import { useQuery } from '@tanstack/vue-query';
 import type { AcceptableValue } from 'reka-ui';
 
 import { TaskStatus, type Project, type WorkspaceMember } from '~/lib/types';
+import { taskStatusTranslationKeys } from '~/lib/i18n';
 
 const { projectId, assigneeId } = defineProps<{ projectId?: string; assigneeId?: string; }>()
 
 const route = useRoute()
 const requestFetch = useRequestFetch()
 const { value: filterValues, setQueryValue } = useTaskFilterQueries()
+const { t } = useAppI18n()
 
 const statusOptions = Object.entries(TaskStatus)
 
@@ -72,14 +74,14 @@ const handleStartDateChange = (val: Date | undefined) => {
             <SelectTrigger class="w-full h-8 lg:w-auto">
                 <div class="flex items-center pr-2">
                     <Icon name="lucide:list-check" size="16px" class="size-4 mr-1" />
-                    <SelectValue placeholder="All statuses"></SelectValue>
+                    <SelectValue :placeholder="t('task.allStatuses')"></SelectValue>
                 </div>
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="all">{{ t('task.allStatuses') }}</SelectItem>
                 <SelectSeparator />
                 <SelectItem v-for="[label, val] of statusOptions" :key="val" :value="val">
-                    {{ label }}
+                    {{ t(taskStatusTranslationKeys[val]) }}
                 </SelectItem>
             </SelectContent>
         </Select>
@@ -87,11 +89,11 @@ const handleStartDateChange = (val: Date | undefined) => {
             <SelectTrigger class="w-full h-8 lg:w-auto">
                 <div class="flex items-center pr-2">
                     <Icon name="lucide:user" size="16px" class="size-4 mr-1" />
-                    <SelectValue placeholder="All assignees"></SelectValue>
+                    <SelectValue :placeholder="t('task.allAssignees')"></SelectValue>
                 </div>
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="all">All assignees</SelectItem>
+                <SelectItem value="all">{{ t('task.allAssignees') }}</SelectItem>
                 <SelectSeparator />
                 <SelectItem v-for="member of memberOptions" :key="member.$id" :value="member.$id">
                     {{ member.name }}
@@ -102,20 +104,20 @@ const handleStartDateChange = (val: Date | undefined) => {
             <SelectTrigger class="w-full h-8 lg:w-auto">
                 <div class="flex items-center pr-2">
                     <Icon name="lucide:folder" size="16px" class="size-4 mr-1" />
-                    <SelectValue placeholder="All projects"></SelectValue>
+                    <SelectValue :placeholder="t('task.allProjects')"></SelectValue>
                 </div>
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="all">All projects</SelectItem>
+                <SelectItem value="all">{{ t('task.allProjects') }}</SelectItem>
                 <SelectSeparator />
                 <SelectItem v-for="project of projectOptions" :key="project.$id" :value="project.$id">
                     {{ project.name }}
                 </SelectItem>
             </SelectContent>
         </Select>
-        <DatePicker :value="initialDueDate" :on-change="handleDueDateChange" placeholder="Due Date"
+        <DatePicker :value="initialDueDate" :on-change="handleDueDateChange" :placeholder="t('task.dueDate')"
             class="h-12 w-full lg:w-auto" />
-        <DatePicker :value="initialStartDate" :on-change="handleStartDateChange" placeholder="Start Date"
+        <DatePicker :value="initialStartDate" :on-change="handleStartDateChange" :placeholder="t('task.started')"
             class="h-12 w-full lg:w-auto" />
     </div>
 </template>

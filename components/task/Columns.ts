@@ -1,21 +1,12 @@
 ﻿import { type ColumnDef } from "@tanstack/vue-table";
-import { format } from "date-fns";
 import { ArrowUpDownIcon } from "lucide-vue-next";
 
-import { TaskPriority, TaskStatus, taskPriorityLabels, type FilteredTask, type Project } from "~/lib/types";
+import { taskPriorityTranslationKeys, taskStatusTranslationKeys, type TranslationKey } from "~/lib/i18n";
+import { TaskPriority, TaskStatus, type AppLocale, type FilteredTask, type Project } from "~/lib/types";
 import { Badge, Button, Icon, ProjectAvatar } from "#components";
 import MemberAvatar from "../workspace/member/MemberAvatar.vue";
 import Actions from "./Actions.vue";
 
-const statuses = Object.entries(TaskStatus).reduce(
-  (acc, [label, value]) => {
-    acc[value] = label;
-    return acc;
-  },
-  {} as Record<string, string>,
-);
-
-const priorityLabels = taskPriorityLabels;
 const priorityOrder: Record<TaskPriority, number> = {
   [TaskPriority["Very Low"]]: 1,
   [TaskPriority.Low]: 2,
@@ -24,13 +15,16 @@ const priorityOrder: Record<TaskPriority, number> = {
   [TaskPriority["Real Time"]]: 5,
 };
 
-export const columns: ColumnDef<FilteredTask>[] = [
+export const createColumns = (
+  t: (key: TranslationKey) => string,
+  locale: AppLocale,
+): ColumnDef<FilteredTask>[] => [
   {
     accessorKey: "name",
     size: 240,
     minSize: 180,
     meta: {
-      label: "Task name",
+      label: t("task.name"),
       headerClass: "w-[240px]",
       cellClass: "whitespace-normal",
     },
@@ -41,7 +35,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
           variant: "ghost",
           onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
         },
-        () => ["Task name", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+        () => [t("task.name"), h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
       );
     },
     cell: ({ row }) =>
@@ -55,7 +49,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
     size: 200,
     minSize: 160,
     meta: {
-      label: "Project",
+      label: t("common.project"),
       headerClass: "w-[200px]",
       cellClass: "whitespace-nowrap",
     },
@@ -66,7 +60,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
           variant: "ghost",
           onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
         },
-        () => ["Project", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+        () => [t("common.project"), h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
       );
     },
     cell: ({ row }) => {
@@ -76,11 +70,11 @@ export const columns: ColumnDef<FilteredTask>[] = [
         { class: "flex items-center gap-x-2 text-sm font-medium" },
         [
           h(ProjectAvatar, {
-            name: project?.name ?? "No project",
+            name: project?.name ?? t("task.noProject"),
             class: "size-6",
             image: (project?.image_url ?? undefined) as string | undefined,
           }),
-          h("p", { class: "line-clamp-1" }, project?.name ?? "No project"),
+          h("p", { class: "line-clamp-1" }, project?.name ?? t("task.noProject")),
         ],
       );
     },
@@ -90,7 +84,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
     size: 170,
     minSize: 140,
     meta: {
-      label: "Assignee",
+      label: t("common.assignee"),
       headerClass: "w-[170px]",
       cellClass: "whitespace-nowrap",
     },
@@ -101,7 +95,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
           variant: "ghost",
           onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
         },
-        () => ["Assignee", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+        () => [t("common.assignee"), h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
       );
     },
     cell: ({ row }) => {
@@ -127,7 +121,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
     size: 120,
     minSize: 110,
     meta: {
-      label: "Started At",
+      label: t("task.startedAt"),
       headerClass: "w-[120px]",
       cellClass: "whitespace-nowrap",
     },
@@ -138,24 +132,24 @@ export const columns: ColumnDef<FilteredTask>[] = [
           variant: "ghost",
           onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
         },
-        () => ["Started At", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+        () => [t("task.startedAt"), h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
       );
     },
     cell: ({ row }) => {
       const startedAt = row.getValue("started_at") as string | null;
       if (!startedAt) {
-        return h("span", { class: "text-sm text-muted-foreground" }, "Not started");
+        return h("span", { class: "text-sm text-muted-foreground" }, t("task.notStarted"));
       }
 
       const parsedDate = new Date(startedAt);
       if (Number.isNaN(parsedDate.getTime())) {
-        return h("span", { class: "text-sm text-muted-foreground" }, "Invalid date");
+        return h("span", { class: "text-sm text-muted-foreground" }, t("task.invalidDate"));
       }
 
       return h(
         "span",
         { class: "text-sm font-medium" },
-        format(parsedDate, "MMM d"),
+        new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(parsedDate),
       );
     },
   },
@@ -164,7 +158,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
     size: 140,
     minSize: 120,
     meta: {
-      label: "Status",
+      label: t("common.status"),
       headerClass: "w-[140px]",
       cellClass: "whitespace-nowrap",
     },
@@ -175,7 +169,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
           variant: "ghost",
           onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
         },
-        () => ["Status", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+        () => [t("common.status"), h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
       );
     },
     cell: ({ row }) => {
@@ -183,7 +177,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
       return h(
         "div",
         { class: "flex items-center gap-x-2 text-sm font-medium" },
-        h(Badge, { variant: status }, () => statuses[status]),
+        h(Badge, { variant: status }, () => t(taskStatusTranslationKeys[status])),
       );
     },
   },
@@ -197,7 +191,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
       return (priorityOrder[a] ?? 0) - (priorityOrder[b] ?? 0);
     },
     meta: {
-      label: "Priority",
+      label: t("common.priority"),
       headerClass: "w-[120px]",
       cellClass: "whitespace-nowrap",
     },
@@ -208,7 +202,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
           variant: "ghost",
           onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
         },
-        () => ["Priority", h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+        () => [t("common.priority"), h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
       );
     },
     cell: ({ row }) => {
@@ -216,7 +210,7 @@ export const columns: ColumnDef<FilteredTask>[] = [
       return h(
         "div",
         { class: "flex items-center gap-x-2 text-sm font-medium" },
-        h(Badge, { variant: priority }, () => priorityLabels[priority]),
+        h(Badge, { variant: priority }, () => t(taskPriorityTranslationKeys[priority])),
       );
     },
   },

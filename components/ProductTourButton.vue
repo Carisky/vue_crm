@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const route = useRoute();
 const { start } = useProductTour();
+const { t } = useAppI18n();
 
 async function launchTour() {
   const workspaceId =
@@ -22,8 +23,8 @@ async function launchTour() {
     variant="ghost"
     size="icon"
     data-tour="restart"
-    aria-label="Start app guide"
-    title="App guide"
+    :aria-label="t('tour.startLabel')"
+    :title="t('tour.label')"
     @click="launchTour"
   >
     <Icon

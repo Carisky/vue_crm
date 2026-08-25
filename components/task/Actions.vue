@@ -13,6 +13,7 @@ const { taskId, name, projectId } = defineProps<{
 const route = useRoute()
 const { openModal } = useConfirmModal()
 const { open: openUpdateTaskModal } = useUpdateTaskModal()
+const { t } = useAppI18n()
 
 const onDeleteTask: DeleteTaskInject | undefined = inject('delete-task-inject')
 
@@ -25,17 +26,17 @@ const deleteTask = async () => {
             await Promise.all(
                 (onDeleteTask?.deleteTaskSuccessSubsribers ?? []).map((onDelete) => onDelete?.(taskId))
             )
-            toast.success('Task deleted')
+            toast.success(t('task.deleted'))
         }).catch(() => {
-            toast.error('Failed to delete task')
+            toast.error(t('task.deleteFailed'))
         })
 }
 
 const showDeleteModal = () => {
     openModal(ConfirmModal, {
         onConfirm: deleteTask,
-        title: `Delete task "${name}"`,
-        message: 'This action cannot be undone.',
+        title: `${t('task.deleteTitle')} "${name}"`,
+        message: t('common.irreversible'),
         variant: 'destructive'
     })
 }
@@ -52,24 +53,24 @@ const showDeleteModal = () => {
                     <NuxtLink :href="`/workspaces/${route.params['workspaceId']}/tasks/${taskId}`"
                         class="font-medium p-[10px]">
                         <Icon name="lucide:external-link" class="size-4 mr-1 stroke-2" />
-                        Task Details
+                        {{ t('task.details') }}
                     </NuxtLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem v-if="currentProject !== projectId" :as-child="true">
                     <NuxtLink :href="`/workspaces/${route.params['workspaceId']}/projects/${projectId}`"
                         class="font-medium p-[10px]">
                         <Icon name="lucide:external-link" class="size-4 mr-1 stroke-2" />
-                        Open Project
+                        {{ t('task.openProject') }}
                     </NuxtLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem @select="openUpdateTaskModal(taskId)" class="font-medium p-[10px]">
                     <Icon name="lucide:pencil" class="size-4 mr-1 stroke-2" />
-                    Edit Task
+                    {{ t('task.editTask') }}
                 </DropdownMenuItem>
                 <DropdownMenuItem @select="showDeleteModal"
                     class="font-medium text-amber-700 p-[10px] focus:text-amber-700">
                     <Icon name="lucide:trash" class="size-4 mr-1 stroke-2" />
-                    Delete Task
+                    {{ t('task.deleteTitle') }}
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

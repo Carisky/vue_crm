@@ -1,3 +1,9 @@
+import type { AppLocale } from "./locales";
+import type { ThemePreference } from "./preferences";
+
+export { appLocales, type AppLocale } from "./locales";
+export { themePreferences, type ThemePreference } from "./preferences";
+
 export type MemberRole = "admin" | "member";
 
 export enum TaskStatus {
@@ -24,9 +30,6 @@ export const taskPriorityLabels: Record<TaskPriority, string> = {
   [TaskPriority["Real Time"]]: "Real time",
 };
 
-export const themePreferences = ["light", "dark", "japanese"] as const;
-export type ThemePreference = (typeof themePreferences)[number];
-
 export type ApiUser = {
   id: string;
   name: string | null;
@@ -34,6 +37,7 @@ export type ApiUser = {
   avatarUrl: string | null;
   monthlyWorkloadTargetHours: number | null;
   themePreference: ThemePreference;
+  locale: AppLocale;
   emailNotificationsEnabled: boolean;
 };
 

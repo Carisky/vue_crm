@@ -10,6 +10,7 @@ const user = {
   avatarUrl: null,
   monthlyWorkloadTargetHours: null,
   themePreference: "light" as const,
+  locale: "en" as const,
   emailNotificationsEnabled: true,
 };
 

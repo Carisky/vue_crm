@@ -8,6 +8,7 @@ import { SignInSchema } from '~/lib/schema/auth'
 
 const queryClient = useQueryClient()
 const route = useRoute()
+const { t } = useAppI18n()
 
 function getRedirectPath(): string {
     const redirect = route.query.redirect
@@ -19,11 +20,11 @@ function getRedirectPath(): string {
 
 onMounted(() => {
     const status = route.query.verified
-    if (route.query.registered === '1') toast.success('Check your email to verify the account.')
-    if (route.query.reset === 'success') toast.success('Password changed. You can sign in now.')
-    if (status === 'success') toast.success('Email verified. You can sign in now.')
-    if (status === 'expired') toast.error('This verification link has expired.')
-    if (status === 'invalid') toast.error('This verification link is invalid.')
+    if (route.query.registered === '1') toast.success(t('auth.verifyCheckEmail'))
+    if (route.query.reset === 'success') toast.success(t('auth.passwordChangedSignIn'))
+    if (status === 'success') toast.success(t('auth.emailVerified'))
+    if (status === 'expired') toast.error(t('auth.verificationExpired'))
+    if (status === 'invalid') toast.error(t('auth.verificationInvalid'))
 })
 
 // Sign in with email & password
@@ -41,9 +42,9 @@ const { isPending, mutate } = useMutation({
         if (res.ok) {
             await queryClient.refetchQueries({ queryKey: ['auth/me'] })
             await navigateTo(getRedirectPath())
-        } else toast.error('Failed to sign in')
+        } else toast.error(t('auth.signInFailed'))
     },
-    onError: (error: any) => toast.error(error?.data?.statusMessage ?? 'Failed to sign in')
+    onError: (error: any) => toast.error(error?.data?.statusMessage ?? t('auth.signInFailed'))
 })
 
 const handleSignIn = form.handleSubmit((values) => mutate(values))
@@ -52,7 +53,7 @@ const handleSignIn = form.handleSubmit((values) => mutate(values))
 <template>
     <Card class="size-full md:w-[487px] border-none shadow-none py-0 gap-0">
         <CardHeader class="flex items-center justify-center text-center p-7">
-            <CardTitle class="text-2xl">Welcome back!</CardTitle>
+            <CardTitle class="text-2xl">{{ t('auth.welcome') }}</CardTitle>
         </CardHeader>
         <div class="px-7">
             <DottedSeparator />
@@ -63,7 +64,7 @@ const handleSignIn = form.handleSubmit((values) => mutate(values))
                     <FormField v-slot="{ componentField }" name="email">
                         <FormItem>
                             <FormControl>
-                                <Input type="email" placeholder="Enter email address" v-bind="componentField" />
+                                <Input type="email" :placeholder="t('auth.emailPlaceholder')" v-bind="componentField" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -71,18 +72,18 @@ const handleSignIn = form.handleSubmit((values) => mutate(values))
                     <FormField v-slot="{ componentField }" name="password">
                         <FormItem>
                             <FormControl>
-                                <Input type="password" minlength="8" maxlength="256" placeholder="Enter password"
+                                <Input type="password" minlength="8" maxlength="256" :placeholder="t('auth.passwordPlaceholder')"
                                     v-bind="componentField" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     </FormField>
                     <div class="text-right">
-                        <NuxtLink href="/forgot-password" class="text-sm text-blue-700">Forgot password?</NuxtLink>
+                        <NuxtLink href="/forgot-password" class="text-sm text-blue-700">{{ t('auth.forgotPassword') }}</NuxtLink>
                     </div>
                     <Button type="submit" size="lg" class="w-full">
                         <Icon v-if="isPending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
-                        <span v-else>Sign in</span>
+                        <span v-else>{{ t('auth.signIn') }}</span>
                     </Button>
                 </fieldset>
             </form>
@@ -92,7 +93,7 @@ const handleSignIn = form.handleSubmit((values) => mutate(values))
         </div>
         <CardContent class="flex items-center justify-center p-7">
             <p>
-                Don't have an account? <NuxtLink href="/sign-up"><span class="text-blue-700">Sign up</span></NuxtLink>
+                {{ t('auth.noAccount') }} <NuxtLink href="/sign-up"><span class="text-blue-700">{{ t('auth.signUp') }}</span></NuxtLink>
             </p>
         </CardContent>
     </Card>

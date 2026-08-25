@@ -3,7 +3,7 @@ import { isSameDay } from 'date-fns'
 import { useQueryClient } from '@tanstack/vue-query'
 
 import type { CreateTaskInject, DeleteTaskInject, FilteredTask, UpdateTaskInject } from '~/lib/types'
-import { columns } from './Columns'
+import { createColumns } from './Columns'
 
 const { projectId, assigneeId } = defineProps<{ projectId?: string; assigneeId?: string; }>()
 
@@ -11,6 +11,8 @@ const route = useRoute()
 const queryClient = useQueryClient()
 const requestFetch = useRequestFetch()
 const { open } = useCreateTaskModal()
+const { locale, t } = useAppI18n()
+const columns = computed(() => createColumns(t, locale.value))
 const {
     value: view,
     setQueryValue: setView,
@@ -178,15 +180,15 @@ onUnmounted(() => {
             <div class="flex flex-col gap-y-2 items-center justify-between lg:flex-row">
                 <TabsList class="w-full lg:w-auto">
                     <TabsTrigger value="table" class="h-8 w-full lg:w-auto">
-                        Table
+                        {{ t('task.table') }}
                     </TabsTrigger>
                     <TabsTrigger value="kanban" class="h-8 w-full lg:w-auto">
-                        Kanban
+                        {{ t('task.kanban') }}
                     </TabsTrigger>
                 </TabsList>
                 <Button size="sm" @click="open()" class="w-full lg:w-auto">
                     <Icon name="lucide:plus" size="16px" class="size-4" />
-                    New
+                    {{ t('task.new') }}
                 </Button>
             </div>
             <DottedSeparator class="my-4" />

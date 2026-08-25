@@ -48,6 +48,7 @@ const auth = useAuthStore();
 const route = useRoute();
 const queryClient = useQueryClient();
 const requestFetch = useRequestFetch();
+const { locale, t } = useAppI18n();
 
 const workspaceId = computed(() => String(route.params['workspaceId'] ?? ''));
 const conversationId = computed(() => String(route.params['conversationId'] ?? ''));
@@ -65,7 +66,7 @@ const { data, isFetching } = useQuery<ConversationResponse>({
 const messages = computed(() => data.value?.messages ?? []);
 const participants = computed(() => data.value?.conversation.participants ?? []);
 
-const displayName = (person: Person) => person.name ?? person.email ?? 'Unknown';
+const displayName = (person: Person) => person.name ?? person.email ?? t('common.unknown');
 const otherParticipant = computed(() => {
   const myId = auth.user?.id;
   return participants.value.find((p) => p.user.$id !== myId)?.user ?? null;
@@ -77,7 +78,7 @@ const otherLastReadAt = computed(() => {
 });
 
 const formatTimestamp = (value: string) =>
-  new Date(value).toLocaleString(undefined, {
+  new Date(value).toLocaleString(locale.value, {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
@@ -123,7 +124,7 @@ const { mutateAsync: sendMessage } = useMutation({
       `/api/messages/conversations/${conversationId.value}/messages`,
       { method: 'POST', body: { body } },
     ),
-  onError: () => toast.error('Failed to send message'),
+  onError: () => toast.error(t('messages.sendFailed')),
 });
 
 const handleSend = async () => {
@@ -154,10 +155,10 @@ const isMine = (msg: ConversationMessage) => msg.sender.$id === auth.user?.id;
 const deliveryStatus = (msg: ConversationMessage) => {
   if (!isMine(msg)) return null;
   const otherRead = otherLastReadAt.value;
-  if (!otherRead) return 'Sended';
+  if (!otherRead) return t('messages.sent');
   return new Date(otherRead).getTime() >= new Date(msg.createdAt).getTime()
-    ? 'Read'
-    : 'Sended';
+    ? t('messages.read')
+    : t('messages.sent');
 };
 
 if (import.meta.client) {
@@ -246,19 +247,19 @@ if (import.meta.client) {
     <div class="flex items-start justify-between gap-3">
       <div class="space-y-1">
         <h1 class="text-2xl font-semibold">
-          {{ otherParticipant ? displayName(otherParticipant) : 'Conversation' }}
+          {{ otherParticipant ? displayName(otherParticipant) : t('messages.conversation') }}
         </h1>
         <NuxtLink
           :href="`/workspaces/${workspaceId}/messages`"
           class="text-sm text-muted-foreground hover:underline"
         >
-          Back to messages
+          {{ t('messages.back') }}
         </NuxtLink>
       </div>
       <Button as-child variant="secondary" size="sm">
         <NuxtLink :href="`/workspaces/${workspaceId}/messages`">
           <Icon name="heroicons:chat-bubble-left-right" size="16px" class="size-4 mr-1" />
-          All chats
+          {{ t('messages.allChats') }}
         </NuxtLink>
       </Button>
     </div>
@@ -273,7 +274,7 @@ if (import.meta.client) {
             <Loader v-if="isFetching" class="h-24" />
 
             <div v-else-if="!messages.length" class="text-sm text-muted-foreground py-12 text-center">
-              No messages yet. Say hi.
+              {{ t('messages.emptySayHi') }}
             </div>
 
             <div v-else class="space-y-3">
@@ -307,14 +308,14 @@ if (import.meta.client) {
             <Textarea
               v-model="messageBox"
               rows="2"
-              placeholder="Write a message… (Enter to send, Shift+Enter for newline)"
+              :placeholder="t('messages.write')"
               class="min-h-[44px]"
               :disabled="isSending"
               @keydown="handleKeydown"
             />
             <Button size="sm" class="h-10" :disabled="isSending || !messageBox.trim()" @click="handleSend">
               <Icon v-if="isSending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
-              <template v-else>Send</template>
+              <template v-else>{{ t('common.send') }}</template>
             </Button>
           </div>
         </CardContent>

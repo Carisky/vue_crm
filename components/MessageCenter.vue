@@ -70,6 +70,7 @@ const router = useRouter();
 const queryClient = useQueryClient();
 const auth = useAuthStore();
 const requestFetch = useRequestFetch();
+const { locale, t } = useAppI18n();
 
 const workspaceId = computed(() => route.params['workspaceId']);
 const sheetOpen = ref(false);
@@ -100,17 +101,17 @@ const mentions = computed(() => data.value?.mentions ?? []);
 const conversations = computed(() => data.value?.conversations ?? []);
 
 const displayName = (user: InboxConversationParticipant['user']) =>
-  user.name ?? user.email ?? 'Unknown';
+  user.name ?? user.email ?? t('common.unknown');
 const conversationTitle = (conversation: InboxConversationPreview) => {
   const myId = auth.user?.id;
   const other =
     conversation.participants.find((p) => p.user.$id !== myId)?.user ??
     conversation.participants[0]?.user;
-  return other ? displayName(other) : 'Conversation';
+  return other ? displayName(other) : t('messages.conversation');
 };
 
 const formatTimestamp = (value: string) =>
-  new Date(value).toLocaleString(undefined, {
+  new Date(value).toLocaleString(locale.value, {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
@@ -205,7 +206,7 @@ if (import.meta.client) {
     <SheetContent side="right" class="w-[280px] sm:w-[380px] flex flex-col">
       <SheetHeader class="gap-2">
         <div class="flex items-center gap-2">
-          <SheetTitle>Messages</SheetTitle>
+          <SheetTitle>{{ t('messages.title') }}</SheetTitle>
           <Button
             variant="outline"
             size="xs"
@@ -213,10 +214,10 @@ if (import.meta.client) {
             class="capitalize text-[11px]"
             @click="markAllMentionsRead"
           >
-            Mark mentions read
+            {{ t('messages.markMentionsRead') }}
           </Button>
         </div>
-        <SheetDescription>Direct chats and @mentions</SheetDescription>
+        <SheetDescription>{{ t('messages.description') }}</SheetDescription>
       </SheetHeader>
 
       <div class="mt-4 flex-1 overflow-y-auto pr-1 space-y-5">
@@ -225,7 +226,7 @@ if (import.meta.client) {
         <section v-else class="space-y-2">
           <div class="flex items-center justify-between">
             <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Mentions
+              {{ t('messages.mentions') }}
             </p>
             <NuxtLink
               v-if="workspaceId"
@@ -233,12 +234,12 @@ if (import.meta.client) {
               class="text-[11px] font-semibold text-primary hover:underline"
               @click="sheetOpen = false"
             >
-              Open
+              {{ t('common.open') }}
             </NuxtLink>
           </div>
 
           <div v-if="!mentions.length" class="text-sm text-muted-foreground">
-            No mentions yet.
+            {{ t('messages.noMentions') }}
           </div>
 
           <button
@@ -257,10 +258,10 @@ if (import.meta.client) {
             </span>
             <div class="flex-1 space-y-0.5">
               <p class="text-sm font-semibold leading-tight">
-                {{ mention.taskName ? `You were mentioned in ${mention.taskName}` : 'You were mentioned' }}
+                {{ mention.taskName ? t('messages.mentionedTask', { task: mention.taskName }) : t('messages.mentioned') }}
               </p>
               <p class="text-xs text-muted-foreground">
-                {{ mention.actorName ?? 'Someone' }} · {{ formatTimestamp(mention.createdAt) }}
+                {{ mention.actorName ?? t('common.someone') }} · {{ formatTimestamp(mention.createdAt) }}
               </p>
             </div>
           </button>
@@ -268,11 +269,11 @@ if (import.meta.client) {
 
         <section v-if="!isFetching" class="space-y-2">
           <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Chats
+            {{ t('messages.chats') }}
           </p>
 
           <div v-if="!conversations.length" class="text-sm text-muted-foreground">
-            No chats yet. Start one from the Messages page.
+            {{ t('messages.noChats') }}
           </div>
 
           <button
@@ -305,7 +306,7 @@ if (import.meta.client) {
                 {{ conv.last_message.body }}
               </p>
               <p v-else class="text-xs text-muted-foreground">
-                No messages yet
+                {{ t('messages.noMessages') }}
               </p>
             </div>
           </button>
@@ -314,7 +315,7 @@ if (import.meta.client) {
 
       <SheetFooter class="mt-6">
         <span class="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          Inbox
+          {{ t('messages.inbox') }}
         </span>
       </SheetFooter>
     </SheetContent>

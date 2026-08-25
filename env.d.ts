@@ -7,6 +7,7 @@ export type CurrentUser = {
   avatarUrl: string | null;
   monthlyWorkloadTargetHours: number | null;
   themePreference: string;
+  locale: string;
   emailNotificationsEnabled: boolean;
 };
 

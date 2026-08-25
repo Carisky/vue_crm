@@ -4,6 +4,7 @@ import type { Project } from '~/lib/types';
 const { projects } = defineProps<{ projects: Project[] }>()
 
 const { open: openProjectModal } = useCreateProjectModal()
+const { t } = useAppI18n()
 </script>
 
 <template>
@@ -11,7 +12,7 @@ const { open: openProjectModal } = useCreateProjectModal()
         <div class="bg-card border border-border rounded-lg p-4 text-card-foreground">
             <div class="flex items-center justify-between">
                 <p class="text-lg font-semibold">
-                    Projects ({{ projects.length }})
+                    {{ t('nav.projects') }} ({{ projects.length }})
                 </p>
                 <Button variant="secondary" size="icon" @click="openProjectModal">
                     <Icon name="lucide:plus" size="16px" class="size-4 text-muted-foreground" />
@@ -35,7 +36,7 @@ const { open: openProjectModal } = useCreateProjectModal()
                     </NuxtLink>
                 </li>
                 <li v-if="!projects?.length" class="text-sm text-muted-foreground text-center">
-                    No projects found
+                    {{ t('project.noneFound') }}
                 </li>
             </ul>
         </div>

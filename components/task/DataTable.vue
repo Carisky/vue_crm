@@ -34,6 +34,7 @@ const props = defineProps<{
     columnSizingKey?: string
     columnSizingWorkspaceId?: string
 }>()
+const { t } = useAppI18n()
 
 const sorting = ref<SortingState>([])
 const columnFilters = ref<ColumnFiltersState>([])
@@ -222,7 +223,7 @@ const handleToggleColumnVisibility = (columnId: string) => {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" class="w-56">
-                    <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+                    <DropdownMenuLabel>{{ t('task.visibleColumns') }}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuCheckboxItem
                         v-for="column in toggleableColumns"
@@ -253,7 +254,7 @@ const handleToggleColumnVisibility = (columnId: string) => {
                                 v-if="header.column.getCanResize()"
                                 class="absolute right-0 top-0 h-full w-3 cursor-col-resize select-none touch-none bg-transparent after:absolute after:right-0 after:top-0 after:h-full after:w-px after:bg-border/70 after:content-[''] hover:bg-primary/10 hover:after:bg-border"
                                 :class="header.column.getIsResizing() ? 'bg-primary/20 after:bg-primary/50' : undefined"
-                                title="Resize column"
+                                :title="t('task.visibleColumns')"
                                 @mousedown="header.getResizeHandler()($event)"
                                 @touchstart.prevent="header.getResizeHandler()($event)"
                             />
@@ -280,7 +281,7 @@ const handleToggleColumnVisibility = (columnId: string) => {
                     <template v-else>
                         <TableRow>
                             <TableCell :colspan="table.getVisibleLeafColumns().length" class="h-24 text-center">
-                                No results.
+                                {{ t('common.noResults') }}
                             </TableCell>
                         </TableRow>
                     </template>
@@ -289,10 +290,10 @@ const handleToggleColumnVisibility = (columnId: string) => {
         </div>
         <div class="flex items-center justify-end py-4 space-x-2">
             <Button variant="secondary" size="sm" :disabled="!table.getCanPreviousPage()" @click="table.previousPage()">
-                Previous
+                {{ t('common.previous') }}
             </Button>
             <Button variant="secondary" size="sm" :disabled="!table.getCanNextPage()" @click="table.nextPage()">
-                Next
+                {{ t('common.next') }}
             </Button>
         </div>
     </div>
