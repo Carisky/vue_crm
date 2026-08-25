@@ -21,7 +21,11 @@ export type MediaContentResponse = {
   headers: Record<string, string>;
 };
 
-function dispositionFor(media: MediaContentMetadata): ContentDisposition {
+function dispositionFor(
+  media: MediaContentMetadata,
+  forceDownload = false,
+): ContentDisposition {
+  if (forceDownload) return "attachment";
   return media.kind === "document" || media.mime === "image/svg+xml"
     ? "attachment"
     : "inline";
@@ -30,12 +34,16 @@ function dispositionFor(media: MediaContentMetadata): ContentDisposition {
 export function buildMediaContentResponse(
   media: MediaContentMetadata,
   rangeHeader?: string,
+  options: { forceDownload?: boolean } = {},
 ): MediaContentResponse {
   const range = parseSingleRange(rangeHeader, media.size);
   const contentLength = range ? range.end - range.start + 1 : media.size;
   const headers: Record<string, string> = {
     "Content-Type": media.mime,
-    "Content-Disposition": buildContentDisposition(dispositionFor(media), media.name),
+    "Content-Disposition": buildContentDisposition(
+      dispositionFor(media, options.forceDownload),
+      media.name,
+    ),
     "Content-Length": String(contentLength),
     "X-Content-Type-Options": "nosniff",
     "Cache-Control": "private, no-store",

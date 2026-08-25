@@ -9,6 +9,10 @@ import { SignInSchema } from '~/lib/schema/auth'
 const queryClient = useQueryClient()
 const route = useRoute()
 const { t } = useAppI18n()
+const isProtectedDownload = computed(() => {
+    const redirect = route.query.redirect
+    return typeof redirect === 'string' && redirect.startsWith('/downloads/')
+})
 
 function getRedirectPath(): string {
     const redirect = route.query.redirect
@@ -52,8 +56,13 @@ const handleSignIn = form.handleSubmit((values) => mutate(values))
 
 <template>
     <Card class="size-full md:w-[487px] border-none shadow-none py-0 gap-0">
-        <CardHeader class="flex items-center justify-center text-center p-7">
-            <CardTitle class="text-2xl">{{ t('auth.welcome') }}</CardTitle>
+        <CardHeader class="flex flex-col items-center justify-center text-center p-7">
+            <CardTitle class="text-2xl">
+                {{ isProtectedDownload ? t('auth.downloadTitle') : t('auth.welcome') }}
+            </CardTitle>
+            <CardDescription v-if="isProtectedDownload" class="mt-2 max-w-sm">
+                {{ t('auth.downloadDescription') }}
+            </CardDescription>
         </CardHeader>
         <div class="px-7">
             <DottedSeparator />

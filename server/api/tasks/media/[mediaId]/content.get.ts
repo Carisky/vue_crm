@@ -33,6 +33,7 @@ export default defineEventHandler(async (event) => {
 
   const query = getQuery(event);
   const variantId = typeof query.variant_id === "string" ? query.variant_id : undefined;
+  const forceDownload = query.download === "1" || query.download === "true";
 
   let media;
   try {
@@ -102,6 +103,7 @@ export default defineEventHandler(async (event) => {
     response = buildMediaContentResponse(
       { ...media, size: object.size },
       getHeader(event, "range"),
+      { forceDownload },
     );
   } catch (error) {
     if (error instanceof RangeNotSatisfiableError) {

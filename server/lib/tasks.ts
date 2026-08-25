@@ -5,7 +5,11 @@ import { Prisma, TaskPriority, TaskStatus } from "@prisma/client";
 import { CreateTasksSchema } from "~/lib/schema/createTask";
 import prisma from "./prisma";
 import { requireUser, requireWorkspaceMembership } from "./permissions";
-import { getTaskPriorityLabel, sendTaskNotificationEmails } from "./email";
+import {
+  getTaskPriorityLabel,
+  sendTaskMediaUploadedEmails,
+  sendTaskNotificationEmails,
+} from "./email";
 import { serializeTask } from "./serializers";
 import { broadcastTaskEvent } from "./task-events";
 import { assertAndAttachPendingMedia } from "./task-media-service";
@@ -112,6 +116,9 @@ export async function updateTask(
     },
   });
   const finalUpdatedTask = updatedTaskWithMedia ?? updatedTask;
+  const attachedMediaIds = new Set(params.data.media_ids ?? []);
+  const newlyAttachedMedia =
+    updatedTaskWithMedia?.media.filter((media) => attachedMediaIds.has(media.id)) ?? [];
 
   const priorityChangedToUrgent =
     params.data.priority &&
@@ -176,6 +183,45 @@ export async function updateTask(
           recipients: workspaceMembers.map((member) => member.user),
         });
       }
+    }
+  }
+
+  if (newlyAttachedMedia.length) {
+    const [workspace, workspaceMembers] = await Promise.all([
+      prisma.workspace.findUnique({ where: { id: finalUpdatedTask.workspaceId } }),
+      prisma.member.findMany({
+        where: {
+          workspaceId: finalUpdatedTask.workspaceId,
+          userId: { not: user.id },
+        },
+        select: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              emailNotificationsEnabled: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    if (workspace && workspaceMembers.length) {
+      await sendTaskMediaUploadedEmails(event, {
+        task: {
+          id: finalUpdatedTask.id,
+          name: finalUpdatedTask.name,
+          workspaceId: finalUpdatedTask.workspaceId,
+        },
+        project: finalUpdatedTask.project
+          ? { name: finalUpdatedTask.project.name }
+          : null,
+        workspace: { name: workspace.name },
+        actor: { name: user.name ?? null, email: user.email },
+        recipients: workspaceMembers.map((member) => member.user),
+        media: newlyAttachedMedia,
+      });
     }
   }
 

@@ -62,6 +62,14 @@ test("uses an attachment disposition for documents and SVG", () => {
   }
 });
 
+test("forces an attachment disposition for an email download", () => {
+  const response = buildMediaContentResponse(image, undefined, {
+    forceDownload: true,
+  });
+
+  assert.match(response.headers["Content-Disposition"], /^attachment;/);
+});
+
 test("surfaces invalid ranges so the route can respond with 416", () => {
   assert.throws(() => buildMediaContentResponse(image, "bytes=100-100"));
 });

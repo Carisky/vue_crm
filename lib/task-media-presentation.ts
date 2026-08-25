@@ -7,6 +7,14 @@ export function mediaContentUrl(mediaId: string, variantId?: string): string {
     : path;
 }
 
+export function mediaDownloadPagePath(mediaId: string): string {
+  return `/downloads/${encodeURIComponent(mediaId)}`;
+}
+
+export function mediaDownloadContentUrl(mediaId: string): string {
+  return `${mediaContentUrl(mediaId)}?download=1`;
+}
+
 export function formatMediaSize(size: number): string {
   if (!Number.isFinite(size) || size < 0) return "Unknown size";
   if (size < 1024) return `${size} B`;

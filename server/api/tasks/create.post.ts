@@ -7,7 +7,10 @@ import {
   requireWorkspaceMembership,
 } from "~/server/lib/permissions";
 import { serializeTask } from "~/server/lib/serializers";
-import { sendTaskNotificationEmails } from "~/server/lib/email";
+import {
+  sendTaskMediaUploadedEmails,
+  sendTaskNotificationEmails,
+} from "~/server/lib/email";
 import { broadcastTaskEvent } from "~/server/lib/task-events";
 import { assertAndAttachPendingMedia } from "~/server/lib/task-media-service";
 
@@ -117,6 +120,9 @@ export default defineEventHandler(async (event) => {
   });
 
   const finalTask = taskWithMedia ?? task;
+  const attachedMediaIds = new Set(data.media_ids ?? []);
+  const newlyAttachedMedia =
+    taskWithMedia?.media.filter((media) => attachedMediaIds.has(media.id)) ?? [];
 
   const workspaceMembers = await prisma.member.findMany({
     where: {
@@ -166,6 +172,21 @@ export default defineEventHandler(async (event) => {
       actor: { name: user.name ?? null, email: user.email },
       recipients: workspaceMembers.map((member) => member.user),
     });
+
+    if (newlyAttachedMedia.length) {
+      await sendTaskMediaUploadedEmails(event, {
+        task: {
+          id: task.id,
+          name: task.name,
+          workspaceId: task.workspaceId,
+        },
+        project: project ? { name: project.name } : null,
+        workspace: { name: workspace.name },
+        actor: { name: user.name ?? null, email: user.email },
+        recipients: workspaceMembers.map((member) => member.user),
+        media: newlyAttachedMedia,
+      });
+    }
   }
 
   try {
