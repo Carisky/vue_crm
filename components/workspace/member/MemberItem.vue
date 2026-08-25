@@ -114,15 +114,16 @@ const openRemoveMemberModal = () => {
 </script>
 
 <template>
-    <div class="flex flex-1 flex-col gap-3">
-        <div class="flex items-start justify-between gap-4">
-            <div class="flex items-center gap-4">
-                <WorkspaceMemberAvatar :name="displayName" class="size-10" fallback-class="text-lg" />
-                <div>
-                    <p class="text-sm font-semibold">{{ displayName }}</p>
-                    <p class="text-xs text-muted-foreground">{{ data.email }}</p>
-                </div>
+    <div class="flex min-w-0 items-center gap-3">
+        <div class="flex min-w-0 flex-1 items-center gap-3">
+            <WorkspaceMemberAvatar :name="displayName" class="size-10 shrink-0" fallback-class="text-lg" />
+            <div class="min-w-0">
+                <p class="truncate text-sm font-semibold">{{ displayName }}</p>
+                <p class="truncate text-xs text-muted-foreground">{{ data.email }}</p>
             </div>
+        </div>
+
+        <div class="flex shrink-0 items-center gap-1.5">
             <div class="flex items-center gap-1 opacity-55 capitalize">
                 <Badge v-if="data.role === MEMBER_ROLE.admin" class="text-[10px]">
                     {{ data.role }}
@@ -131,29 +132,30 @@ const openRemoveMemberModal = () => {
                     {{ t('members.you') }}
                 </Badge>
             </div>
+
+            <DropdownMenu v-if="currentUserCanControl">
+                <DropdownMenuTrigger :as-child="true">
+                    <Button variant="ghost" size="icon" class="size-8 shrink-0">
+                        <Icon v-if="isDeleting || isUpdatingRole" name="svg-spinners:8-dots-rotate" size="16px"
+                            class="size-4 text-muted-foreground" />
+                        <Icon v-else name="heroicons:ellipsis-vertical-16-solid" size="16px"
+                            class="size-4 text-muted-foreground" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="bottom" align="end">
+                    <DropdownMenuItem v-if="canUpgradeOtherMembers" class="font-medium" @select="changeMemberRole">
+                        {{ t('members.setAdmin') }}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem v-if="canDowngradeOtherMembers" class="font-medium" @select="changeMemberRole">
+                        {{ t('members.setMember') }}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem v-if="canBeRemoved" @select="openRemoveMemberModal"
+                        class="font-medium text-amber-700">
+                        <span v-if="isSelf">{{ t('members.leave') }}</span>
+                        <span v-else>{{ t('members.removeNamed', { name: displayName }) }}</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     </div>
-    <DropdownMenu v-if="currentUserCanControl">
-        <DropdownMenuTrigger :as-child="true">
-            <Button variant="secondary" size="icon" class="ml-auto">
-                <Icon v-if="isDeleting || isUpdatingRole" name="svg-spinners:8-dots-rotate" size="16px"
-                    class="size-4 text-muted-foreground" />
-                <Icon v-else name="heroicons:ellipsis-vertical-16-solid" size="16px"
-                    class="size-4 text-muted-foreground" />
-            </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="bottom" align="end">
-            <DropdownMenuItem v-if="canUpgradeOtherMembers" class="font-medium" @select="changeMemberRole">
-                {{ t('members.setAdmin') }}
-            </DropdownMenuItem>
-            <DropdownMenuItem v-if="canDowngradeOtherMembers" class="font-medium" @select="changeMemberRole">
-                {{ t('members.setMember') }}
-            </DropdownMenuItem>
-            <DropdownMenuItem v-if="canBeRemoved" @select="openRemoveMemberModal"
-                class="font-medium text-amber-700">
-                <span v-if="isSelf">{{ t('members.leave') }}</span>
-                <span v-else>{{ t('members.removeNamed', { name: displayName }) }}</span>
-            </DropdownMenuItem>
-        </DropdownMenuContent>
-    </DropdownMenu>
 </template>

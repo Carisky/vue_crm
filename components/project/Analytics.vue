@@ -29,38 +29,29 @@ const {
     overdue_task_count,
     overdue_task_diff
 } = data
+
+const hasIncompleteStats = computed(
+    () => incompleted_task_count !== undefined && incompleted_task_diff !== undefined,
+)
 </script>
 
 <template>
-    <ScrollArea class="w-full border rounded-lg whitespace-nowrap shrink-0">
-        <div class="w-full flex">
-            <div class="flex flex-1 items-center min-w-56">
-                <AnalyticCard :title="t('task.total')" :value="task_count" :variant="task_diff > 0 ? 'up' : 'down'"
-                    :increase-value="task_diff" />
-                <DottedSeparator direction="vertical" />
-            </div>
-            <div class="flex flex-1 items-center min-w-56">
-                <AnalyticCard :title="t('task.assigned')" :value="assigned_task_count"
-                    :variant="assigned_task_diff > 0 ? 'up' : 'down'" :increase-value="assigned_task_diff" />
-                <DottedSeparator direction="vertical" />
-            </div>
-            <div class="flex flex-1 items-center min-w-56">
-                <AnalyticCard :title="t('task.completed')" :value="completed_task_count"
-                    :variant="completed_task_diff > 0 ? 'up' : 'down'" :increase-value="completed_task_diff" />
-                <DottedSeparator direction="vertical" />
-            </div>
-            <div class="flex flex-1 items-center min-w-56">
-                <AnalyticCard :title="t('task.overdue')" :value="overdue_task_count"
-                    :variant="overdue_task_diff > 0 ? 'up' : 'down'" :increase-value="overdue_task_diff" />
-                <DottedSeparator direction="vertical" />
-            </div>
-            <div v-if="incompleted_task_count != undefined && incompleted_task_diff != undefined"
-                class="flex flex-1 items-center min-w-56">
-                <AnalyticCard :title="t('task.incomplete')" :value="incompleted_task_count"
-                    :variant="incompleted_task_diff > 0 ? 'up' : 'down'" :increase-value="incompleted_task_diff" />
-                <DottedSeparator direction="vertical" />
-            </div>
+    <div class="w-full shrink-0 overflow-x-auto rounded-lg border bg-card">
+        <div
+            class="grid min-w-[720px] divide-x divide-border"
+            :class="hasIncompleteStats ? 'grid-cols-5' : 'grid-cols-4'"
+        >
+            <AnalyticCard :title="t('task.total')" :value="task_count" :variant="task_diff > 0 ? 'up' : 'down'"
+                :increase-value="task_diff" />
+            <AnalyticCard :title="t('task.assigned')" :value="assigned_task_count"
+                :variant="assigned_task_diff > 0 ? 'up' : 'down'" :increase-value="assigned_task_diff" />
+            <AnalyticCard :title="t('task.completed')" :value="completed_task_count"
+                :variant="completed_task_diff > 0 ? 'up' : 'down'" :increase-value="completed_task_diff" />
+            <AnalyticCard :title="t('task.overdue')" :value="overdue_task_count"
+                :variant="overdue_task_diff > 0 ? 'up' : 'down'" :increase-value="overdue_task_diff" />
+            <AnalyticCard v-if="hasIncompleteStats" :title="t('task.incomplete')"
+                :value="incompleted_task_count ?? 0" :variant="(incompleted_task_diff ?? 0) > 0 ? 'up' : 'down'"
+                :increase-value="incompleted_task_diff ?? 0" />
         </div>
-        <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+    </div>
 </template>
