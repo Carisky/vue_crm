@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ResponsiveModal } from '#components';
+import { ResponsiveModal } from "#components";
 
-const { isOpen, open, close } = useCreateTaskModal()
+const { isOpen, open, close } = useCreateTaskModal();
 
 const onModalOpenUpdate = (isOpen: boolean) => {
-    if (isOpen) open()
-    else close()
-}
+  if (isOpen) open();
+  else close();
+};
 </script>
 
 <template>
-    <ResponsiveModal :open="isOpen" @open-update="onModalOpenUpdate">
-        <TaskCreateTaskFormWrapper :on-cancel="close" />
-    </ResponsiveModal>
+  <ResponsiveModal :open="isOpen" @open-update="onModalOpenUpdate">
+    <TaskCreateTaskFormWrapper v-if="isOpen" :on-cancel="close" />
+  </ResponsiveModal>
 </template>

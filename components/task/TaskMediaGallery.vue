@@ -20,7 +20,7 @@ import {
   mediaContentUrl,
   mediaIconName,
 } from "~/lib/task-media-presentation";
-import type { TaskMedia } from "~/lib/types";
+import type { FilteredTask, TaskMedia } from "~/lib/types";
 
 const props = defineProps<{
   media: TaskMedia[];
@@ -154,12 +154,16 @@ const handleMediaChange = async (event: Event) => {
         mediaUploadProgress.value = percent;
       },
     );
-    await $fetch(`/api/tasks/${props.taskId}`, {
-      method: "PATCH",
-      body: { media_ids: upload.files.map((file) => file.id) },
-    });
-    await refetchTask();
-    toast.success(t('media.uploaded'));
+    const response = await $fetch<{ task: FilteredTask | null }>(
+      `/api/tasks/${props.taskId}`,
+      {
+        method: "PATCH",
+        body: { media_ids: upload.files.map((file) => file.id) },
+      },
+    );
+    if (!response.task) throw new Error("Task update returned no task");
+    queryClient.setQueryData(["task", props.taskId], response.task);
+    toast.success(t("media.uploaded"));
   } catch {
     mediaUploadError.value = "Failed to upload media";
   } finally {
@@ -175,10 +179,10 @@ const handleDelete = async () => {
   try {
     await deleteTaskMedia(media.id);
     await refetchTask();
-    toast.success(t('media.deleted'));
+    toast.success(t("media.deleted"));
     confirmDeleteMedia.value = null;
   } catch {
-    toast.error(t('media.deleteFailed'));
+    toast.error(t("media.deleteFailed"));
   } finally {
     isDeletingMedia.value = false;
   }
@@ -189,7 +193,7 @@ const handleDelete = async () => {
   <div class="rounded-lg border p-4">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p class="text-lg font-semibold">{{ t('common.media') }}</p>
+        <p class="text-lg font-semibold">{{ t("common.media") }}</p>
         <p class="text-xs text-muted-foreground">
           {{ props.media.length }} file<span v-if="props.media.length !== 1"
             >s</span
@@ -214,7 +218,7 @@ const handleDelete = async () => {
             v-if="isUploadingMedia"
             name="svg-spinners:3-dots-rotating"
             size="16px"
-          /><span v-else>{{ t('common.uploadFiles') }}</span></Button
+          /><span v-else>{{ t("common.uploadFiles") }}</span></Button
         >
       </div>
     </div>
@@ -279,7 +283,7 @@ const handleDelete = async () => {
           :href="contentUrl(item)"
           class="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline"
           download
-          >{{ t('common.download') }} <Icon name="lucide:download" size="14px"
+          >{{ t("common.download") }} <Icon name="lucide:download" size="14px"
         /></a>
       </article>
     </div>
@@ -337,7 +341,8 @@ const handleDelete = async () => {
         :href="previewUrl"
         class="inline-flex w-fit items-center gap-1 text-sm text-primary hover:underline"
         download
-        >{{ t('common.download') }} <Icon name="lucide:download" size="14px" /></a></DialogContent
+        >{{ t("common.download") }}
+        <Icon name="lucide:download" size="14px" /></a></DialogContent
   ></Dialog>
   <Dialog
     :open="Boolean(confirmDeleteMedia)"
@@ -347,7 +352,7 @@ const handleDelete = async () => {
       }
     "
     ><DialogContent v-if="confirmDeleteMedia" class="sm:max-w-md"
-      ><DialogTitle>{{ t('media.deleteTitle') }}</DialogTitle
+      ><DialogTitle>{{ t("media.deleteTitle") }}</DialogTitle
       ><DialogDescription>{{ confirmDeleteMedia.name }}</DialogDescription>
       <div class="flex justify-end gap-2">
         <Button
@@ -355,13 +360,13 @@ const handleDelete = async () => {
           variant="secondary"
           :disabled="isDeletingMedia"
           @click="confirmDeleteMedia = null"
-          >{{ t('common.cancel') }}</Button
+          >{{ t("common.cancel") }}</Button
         ><Button
           type="button"
           variant="destructive"
           :disabled="isDeletingMedia"
           @click="handleDelete"
-          >{{ t('common.delete') }}</Button
+          >{{ t("common.delete") }}</Button
         >
       </div></DialogContent
     ></Dialog

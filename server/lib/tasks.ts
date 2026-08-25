@@ -72,8 +72,7 @@ export async function updateTask(
 
   if (params.data.name) updateData.name = params.data.name;
   if (params.data.project_id) updateData.projectId = params.data.project_id;
-  if (params.data.status)
-    updateData.status = params.data.status as TaskStatus;
+  if (params.data.status) updateData.status = params.data.status as TaskStatus;
   if (params.data.priority)
     updateData.priority = params.data.priority as TaskPriority;
   if (Object.prototype.hasOwnProperty.call(params.data, "due_date"))
@@ -87,13 +86,9 @@ export async function updateTask(
   if (Object.prototype.hasOwnProperty.call(params.data, "started_at"))
     updateData.startedAt = params.data.started_at ?? null;
   const updatedTask = await prisma.$transaction(async (tx) => {
-    const transactionTask = await tx.task.update({
+    await tx.task.update({
       where: { id: taskId },
       data: updateData,
-      include: {
-        project: true,
-        assignee: true,
-      },
     });
 
     await assertAndAttachPendingMedia({
@@ -104,21 +99,21 @@ export async function updateTask(
       db: tx,
     });
 
-    return transactionTask;
+    return tx.task.findUniqueOrThrow({
+      where: { id: taskId },
+      include: {
+        project: true,
+        assignee: true,
+        media: { include: { variants: true } },
+      },
+    });
   });
 
-  const updatedTaskWithMedia = await prisma.task.findUnique({
-    where: { id: taskId },
-    include: {
-      project: true,
-      assignee: true,
-      media: { include: { variants: true } },
-    },
-  });
-  const finalUpdatedTask = updatedTaskWithMedia ?? updatedTask;
+  const finalUpdatedTask = updatedTask;
   const attachedMediaIds = new Set(params.data.media_ids ?? []);
-  const newlyAttachedMedia =
-    updatedTaskWithMedia?.media.filter((media) => attachedMediaIds.has(media.id)) ?? [];
+  const newlyAttachedMedia = updatedTask.media.filter((media) =>
+    attachedMediaIds.has(media.id),
+  );
 
   const priorityChangedToUrgent =
     params.data.priority &&
@@ -126,9 +121,10 @@ export async function updateTask(
       params.data.priority === TaskPriority.REAL_TIME) &&
     params.data.priority !== task.priority;
 
-  if (priorityChangedToUrgent && updatedTask) {
-    const actor = event.context.user;
-    if (actor) {
+  if (priorityChangedToUrgent) {
+    try {
+      const actor = event.context.user;
+      if (!actor) throw new Error("Task update actor is missing");
       const [workspace, workspaceMembers] = await Promise.all([
         prisma.workspace.findUnique({ where: { id: updatedTask.workspaceId } }),
         prisma.member.findMany({
@@ -183,56 +179,71 @@ export async function updateTask(
           recipients: workspaceMembers.map((member) => member.user),
         });
       }
+    } catch (error) {
+      console.error("[tasks] Failed to send priority notifications", {
+        taskId: updatedTask.id,
+        error,
+      });
     }
   }
 
   if (newlyAttachedMedia.length) {
-    const [workspace, workspaceMembers] = await Promise.all([
-      prisma.workspace.findUnique({ where: { id: finalUpdatedTask.workspaceId } }),
-      prisma.member.findMany({
-        where: {
-          workspaceId: finalUpdatedTask.workspaceId,
-          userId: { not: user.id },
-        },
-        select: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              emailNotificationsEnabled: true,
+    try {
+      const [workspace, workspaceMembers] = await Promise.all([
+        prisma.workspace.findUnique({
+          where: { id: finalUpdatedTask.workspaceId },
+        }),
+        prisma.member.findMany({
+          where: {
+            workspaceId: finalUpdatedTask.workspaceId,
+            userId: { not: user.id },
+          },
+          select: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                emailNotificationsEnabled: true,
+              },
             },
           },
-        },
-      }),
-    ]);
+        }),
+      ]);
 
-    if (workspace && workspaceMembers.length) {
-      await sendTaskMediaUploadedEmails(event, {
-        task: {
-          id: finalUpdatedTask.id,
-          name: finalUpdatedTask.name,
-          workspaceId: finalUpdatedTask.workspaceId,
-        },
-        project: finalUpdatedTask.project
-          ? { name: finalUpdatedTask.project.name }
-          : null,
-        workspace: { name: workspace.name },
-        actor: { name: user.name ?? null, email: user.email },
-        recipients: workspaceMembers.map((member) => member.user),
-        media: newlyAttachedMedia,
+      if (workspace && workspaceMembers.length) {
+        await sendTaskMediaUploadedEmails(event, {
+          task: {
+            id: finalUpdatedTask.id,
+            name: finalUpdatedTask.name,
+            workspaceId: finalUpdatedTask.workspaceId,
+          },
+          project: finalUpdatedTask.project
+            ? { name: finalUpdatedTask.project.name }
+            : null,
+          workspace: { name: workspace.name },
+          actor: { name: user.name ?? null, email: user.email },
+          recipients: workspaceMembers.map((member) => member.user),
+          media: newlyAttachedMedia,
+        });
+      }
+    } catch (error) {
+      console.error("[tasks] Failed to send media upload emails", {
+        taskId: finalUpdatedTask.id,
+        mediaIds: newlyAttachedMedia.map((media) => media.id),
+        error,
       });
     }
   }
 
   try {
-      if (finalUpdatedTask) {
-        broadcastTaskEvent(finalUpdatedTask.workspaceId, {
-          type: "TASK_UPDATED",
-          workspaceId: finalUpdatedTask.workspaceId,
-          task: serializeTask(finalUpdatedTask),
-        });
-      }
+    if (finalUpdatedTask) {
+      broadcastTaskEvent(finalUpdatedTask.workspaceId, {
+        type: "TASK_UPDATED",
+        workspaceId: finalUpdatedTask.workspaceId,
+        task: serializeTask(finalUpdatedTask),
+      });
+    }
   } catch {
     // ignore realtime errors
   }

@@ -40,7 +40,10 @@ onMounted(async () => {
   const downloadUrl = mediaDownloadContentUrl(mediaId.value);
 
   try {
-    await $fetch.raw(downloadUrl, { method: "HEAD" });
+    await $fetch.raw(downloadUrl, {
+      method: "GET",
+      headers: { Range: "bytes=0-0" },
+    });
 
     const link = document.createElement("a");
     link.href = downloadUrl;
@@ -71,7 +74,9 @@ onMounted(async () => {
     <Card class="w-full max-w-md text-center">
       <CardHeader>
         <CardTitle>
-          {{ state === "started" ? t("download.started") : t("download.failed") }}
+          {{
+            state === "started" ? t("download.started") : t("download.failed")
+          }}
         </CardTitle>
         <CardDescription>
           {{

@@ -90,8 +90,7 @@ export default defineEventHandler(async (event) => {
         assigneeId: assigneeId ?? undefined,
         description: data.description,
         position,
-        startedAt:
-          data.started_at === undefined ? undefined : data.started_at,
+        startedAt: data.started_at === undefined ? undefined : data.started_at,
       },
       include: {
         project: true,
@@ -107,86 +106,92 @@ export default defineEventHandler(async (event) => {
       db: tx,
     });
 
-    return createdTask;
+    return tx.task.findUniqueOrThrow({
+      where: { id: createdTask.id },
+      include: {
+        project: true,
+        assignee: true,
+        media: { include: { variants: true } },
+      },
+    });
   });
 
-  const taskWithMedia = await prisma.task.findUnique({
-    where: { id: task.id },
-    include: {
-      project: true,
-      assignee: true,
-      media: { include: { variants: true } },
-    },
-  });
-
-  const finalTask = taskWithMedia ?? task;
+  const finalTask = task;
   const attachedMediaIds = new Set(data.media_ids ?? []);
-  const newlyAttachedMedia =
-    taskWithMedia?.media.filter((media) => attachedMediaIds.has(media.id)) ?? [];
+  const newlyAttachedMedia = task.media.filter((media) =>
+    attachedMediaIds.has(media.id),
+  );
 
-  const workspaceMembers = await prisma.member.findMany({
-    where: {
-      workspaceId: data.workspace_id,
-      userId: { not: user.id },
-    },
-    select: {
-      userId: true,
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          emailNotificationsEnabled: true,
+  try {
+    const workspaceMembers = await prisma.member.findMany({
+      where: {
+        workspaceId: data.workspace_id,
+        userId: { not: user.id },
+      },
+      select: {
+        userId: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            emailNotificationsEnabled: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  if (workspaceMembers.length) {
-    const notificationMessage = `New task "${task.name}" in ${
-      project?.name ?? "workspace"
-    }`;
-    await prisma.notification.createMany({
-      data: workspaceMembers.map((member) => ({
-        userId: member.userId,
-        workspaceId: data.workspace_id,
-        taskId: task.id,
-        projectId: task.projectId,
-        actorId: user.id,
+    if (workspaceMembers.length) {
+      const notificationMessage = `New task "${task.name}" in ${
+        project?.name ?? "workspace"
+      }`;
+      await prisma.notification.createMany({
+        data: workspaceMembers.map((member) => ({
+          userId: member.userId,
+          workspaceId: data.workspace_id,
+          taskId: task.id,
+          projectId: task.projectId,
+          actorId: user.id,
+          type: "TASK_CREATED",
+          message: notificationMessage,
+        })),
+      });
+
+      await sendTaskNotificationEmails(event, {
         type: "TASK_CREATED",
-        message: notificationMessage,
-      })),
-    });
-
-    await sendTaskNotificationEmails(event, {
-      type: "TASK_CREATED",
-      task: {
-        id: task.id,
-        name: task.name,
-        status: task.status,
-        priority: task.priority,
-        workspaceId: task.workspaceId,
-      },
-      project: project ? { name: project.name } : null,
-      workspace: { name: workspace.name },
-      actor: { name: user.name ?? null, email: user.email },
-      recipients: workspaceMembers.map((member) => member.user),
-    });
-
-    if (newlyAttachedMedia.length) {
-      await sendTaskMediaUploadedEmails(event, {
         task: {
           id: task.id,
           name: task.name,
+          status: task.status,
+          priority: task.priority,
           workspaceId: task.workspaceId,
         },
         project: project ? { name: project.name } : null,
         workspace: { name: workspace.name },
         actor: { name: user.name ?? null, email: user.email },
         recipients: workspaceMembers.map((member) => member.user),
-        media: newlyAttachedMedia,
       });
+
+      if (newlyAttachedMedia.length) {
+        await sendTaskMediaUploadedEmails(event, {
+          task: {
+            id: task.id,
+            name: task.name,
+            workspaceId: task.workspaceId,
+          },
+          project: project ? { name: project.name } : null,
+          workspace: { name: workspace.name },
+          actor: { name: user.name ?? null, email: user.email },
+          recipients: workspaceMembers.map((member) => member.user),
+          media: newlyAttachedMedia,
+        });
+      }
     }
+  } catch (error) {
+    console.error("[tasks] Failed to send task creation notifications", {
+      taskId: task.id,
+      error,
+    });
   }
 
   try {
