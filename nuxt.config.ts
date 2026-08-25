@@ -4,6 +4,9 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2025-05-15",
   devtools: { enabled: true },
+  // Server sourcemaps are enabled by default and noticeably increase Nitro's
+  // peak memory usage. Production runs do not consume them.
+  sourcemap: false,
 
   app: {
     head: {
@@ -26,6 +29,11 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
   ],
   nitro: {
+    output: {
+      // Deployment builds use a staging directory so a failed/OOM build
+      // cannot destroy the last working server bundle.
+      dir: process.env.NITRO_OUTPUT_DIR || ".output",
+    },
     externals: {
       // Prisma 7's generated CommonJS entry imports `.prisma/client`, which
       // Nitro's file tracer treats as an invalid package specifier. The app is

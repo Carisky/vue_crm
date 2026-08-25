@@ -1,5 +1,7 @@
 # Nuxt dev/build outputs
 .output
+.output-build
+.output-previous
 .maintenance/
 /.data/
 .worktrees/

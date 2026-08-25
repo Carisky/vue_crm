@@ -6,6 +6,19 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 pid_file="$root_dir/.output/server.pid"
 log_file="$root_dir/.output/server.log"
 entry_file="$root_dir/.output/server/index.mjs"
+staging_dir="$root_dir/.output-build"
+backup_dir="$root_dir/.output-previous"
+
+remove_deployment_dir() {
+  local target="$1"
+  case "$target" in
+    "$staging_dir"|"$backup_dir") rm -rf -- "$target" ;;
+    *)
+      echo "Refusing to remove unexpected deployment directory: $target"
+      return 1
+      ;;
+  esac
+}
 
 process_is_running() {
   local pid="$1"
@@ -106,11 +119,56 @@ stop_server() {
 }
 
 rebuild_server() {
-  (
-    cd "$root_dir"
-    npx prisma generate
-    npm run build
-  )
+  local running_pid
+  local build_status
+
+  if running_pid="$(get_running_pid)"; then
+    echo "Application is still running with PID $running_pid."
+    echo "Enable maintenance mode before rebuilding: npm run maintenance:run"
+    return 1
+  fi
+
+  cd "$root_dir"
+  npx prisma generate
+
+  remove_deployment_dir "$staging_dir"
+
+  set +e
+  NITRO_OUTPUT_DIR="$staging_dir" npm run build
+  build_status=$?
+  set -e
+
+  if [[ "$build_status" -ne 0 ]]; then
+    echo "Build failed with exit code $build_status. The previous .output was not changed."
+    if [[ "$build_status" -eq 137 ]]; then
+      echo "The build was killed by the OS, usually because the server ran out of memory."
+      echo "Add or increase swap, then run npm run server:rebuild again."
+    fi
+    remove_deployment_dir "$staging_dir"
+    return "$build_status"
+  fi
+
+  if [[ ! -f "$staging_dir/server/index.mjs" ]]; then
+    echo "Build completed without $staging_dir/server/index.mjs. The previous .output was not changed."
+    remove_deployment_dir "$staging_dir"
+    return 1
+  fi
+
+  remove_deployment_dir "$backup_dir"
+  if [[ -d "$root_dir/.output" ]]; then
+    mv -- "$root_dir/.output" "$backup_dir"
+  fi
+
+  if ! mv -- "$staging_dir" "$root_dir/.output"; then
+    echo "Could not activate the new build. Restoring the previous .output."
+    if [[ -d "$backup_dir" ]]; then
+      mv -- "$backup_dir" "$root_dir/.output"
+    fi
+    return 1
+  fi
+
+  remove_deployment_dir "$backup_dir"
+  echo "New build activated at $root_dir/.output"
 }
 
 status_server() {
