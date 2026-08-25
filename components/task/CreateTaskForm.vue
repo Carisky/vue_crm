@@ -23,6 +23,20 @@ const route = useRoute()
 const { value: taskStatus } = useUrlQuery('create_task')
 const UNASSIGNED_VALUE = '__UNASSIGNED__'
 
+const currentProjectId = computed(() => {
+    const projectId = route.params['projectId']
+    const value = Array.isArray(projectId) ? projectId[0] : projectId
+
+    return value ? String(value) : undefined
+})
+
+const getDefaultProjectId = () => {
+    const routeProjectId = currentProjectId.value
+
+    return projectOptions.find((project) => project.$id === routeProjectId)?.$id
+        ?? projectOptions[0]?.$id
+}
+
 const uploadedMedia = ref<PendingMedia[]>([])
 const isUploadingMedia = ref(false)
 const mediaUploadProgress = ref(0)
@@ -48,7 +62,7 @@ const form = useForm({
         status: initialTaskStatus.value ?? TaskStatus.Todo,
         priority: TaskPriority.Medium,
         assignee_id: UNASSIGNED_VALUE,
-        project_id: projectOptions[0]?.$id,
+        project_id: getDefaultProjectId(),
         description: '',
         started_at: undefined,
     }
@@ -56,13 +70,16 @@ const form = useForm({
 
 const statuses = Object.entries(TaskStatus)
 const priorities = Object.entries(taskPriorityLabels) as [TaskPriority, string][]
+const selectedProjectName = computed(() =>
+    projectOptions.find((project) => project.$id === form.values.project_id)?.name,
+)
 
 watch(
-    () => projectOptions,
-    (projects) => {
-        const currentProject = form.values.project_id
-        if (!currentProject && projects.length) {
-            form.setFieldValue('project_id', projects[0].$id)
+    [currentProjectId, () => projectOptions],
+    () => {
+        const defaultProjectId = getDefaultProjectId()
+        if (defaultProjectId && form.values.project_id !== defaultProjectId) {
+            form.setFieldValue('project_id', defaultProjectId)
         }
     },
     { immediate: true },
@@ -313,20 +330,27 @@ const handleSubmit = form.handleSubmit((values) => {
                         <FormField v-slot="{ componentField }" name="project_id">
                             <FormItem>
                                 <FormLabel>Project</FormLabel>
-                                <Select :default-value="componentField.modelValue"
+                                <Select :model-value="componentField.modelValue"
                                     @update:model-value="componentField.onChange">
                                     <FormControl>
-                                        <SelectTrigger class="w-full">
-                                            <SelectValue placeholder="Select project"></SelectValue>
+                                        <SelectTrigger class="w-full min-w-0 overflow-hidden">
+                                            <SelectValue class="min-w-0 flex-1 overflow-hidden" placeholder="Select project">
+                                                <span v-if="selectedProjectName" class="block truncate"
+                                                    :title="selectedProjectName">
+                                                    {{ selectedProjectName }}
+                                                </span>
+                                            </SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
                                     <FormMessage />
-                                    <SelectContent>
+                                    <SelectContent class="max-w-[var(--reka-select-trigger-width)]">
                                         <SelectItem v-for="project of projectOptions" :key="project.$id"
-                                            :value="project.$id">
+                                            :value="project.$id" class="min-w-0 overflow-hidden">
                                             <ProjectAvatar :name="project.name" :image="project.image_url"
                                                 class="size-6" />
-                                            {{ project.name }}
+                                            <span class="min-w-0 flex-1 truncate" :title="project.name">
+                                                {{ project.name }}
+                                            </span>
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
