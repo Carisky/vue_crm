@@ -106,7 +106,11 @@ stop_server() {
 }
 
 rebuild_server() {
-  (cd "$root_dir" && npm run build)
+  (
+    cd "$root_dir"
+    npx prisma generate
+    npm run build
+  )
 }
 
 status_server() {
