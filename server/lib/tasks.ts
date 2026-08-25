@@ -55,6 +55,41 @@ export async function updateTask(
     }
   }
 
+  if (params.data.assignee_group_id) {
+    const group = await prisma.workspaceGroup.findFirst({
+      where: {
+        id: params.data.assignee_group_id,
+        workspaceId: task.workspaceId,
+      },
+      select: { id: true },
+    });
+    if (!group) {
+      if (options?.skipErrors) return null;
+      throw createError({ status: 400, statusText: "Unauthorized group" });
+    }
+  }
+
+  const assigneeTouched = Object.prototype.hasOwnProperty.call(
+    params.data,
+    "assignee_id",
+  );
+  const groupTouched = Object.prototype.hasOwnProperty.call(
+    params.data,
+    "assignee_group_id",
+  );
+  if (
+    assigneeTouched &&
+    groupTouched &&
+    params.data.assignee_id &&
+    params.data.assignee_group_id
+  ) {
+    if (options?.skipErrors) return null;
+    throw createError({
+      status: 400,
+      statusText: "A task can be assigned to a user or a group, not both",
+    });
+  }
+
   if (params.data.project_id) {
     const project = await prisma.project.findUnique({
       where: { id: params.data.project_id },
@@ -77,8 +112,14 @@ export async function updateTask(
     updateData.priority = params.data.priority as TaskPriority;
   if (Object.prototype.hasOwnProperty.call(params.data, "due_date"))
     updateData.dueDate = params.data.due_date as Date | null;
-  if (Object.prototype.hasOwnProperty.call(params.data, "assignee_id"))
+  if (assigneeTouched) {
     updateData.assigneeId = params.data.assignee_id ?? null;
+    if (!groupTouched) updateData.assigneeGroupId = null;
+  }
+  if (groupTouched) {
+    updateData.assigneeGroupId = params.data.assignee_group_id ?? null;
+    if (!assigneeTouched) updateData.assigneeId = null;
+  }
   if (params.data.description !== undefined)
     updateData.description = params.data.description;
   if (params.data.position !== undefined)
@@ -104,6 +145,7 @@ export async function updateTask(
       include: {
         project: true,
         assignee: true,
+        assigneeGroup: { include: { members: true } },
         media: { include: { variants: true } },
       },
     });

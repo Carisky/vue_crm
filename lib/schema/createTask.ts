@@ -27,25 +27,34 @@ const optionalStartedAtField = z
   .optional()
   .nullable();
 
-export const CreateTasksSchema = z.object({
-  name: z.preprocess(
-    (value) => (typeof value === "string" ? normalizePastedText(value) : value),
-    z.string().trim().min(1, "Required"),
-  ),
-  workspace_id: z.string().trim().min(1, "Required"),
-  project_id: z.string().trim().min(1, "Required"),
-  status: z.nativeEnum(TaskStatus, { required_error: "Required" }),
-  priority: z.nativeEnum(TaskPriority, { required_error: "Required" }),
-  due_date: optionalDueDateField,
-  assignee_id: z.string().trim().min(1, "Required").optional().nullable(),
-  description: z
-    .preprocess(
+export const CreateTasksSchema = z
+  .object({
+    name: z.preprocess(
       (value) =>
         typeof value === "string" ? normalizePastedText(value) : value,
-      z.string(),
-    )
-    .optional(),
-  started_at: optionalStartedAtField,
-  media_ids: z.array(z.string().trim().min(1)).max(10).optional(),
-  position: z.number().optional(),
-}).strict();
+      z.string().trim().min(1, "Required"),
+    ),
+    workspace_id: z.string().trim().min(1, "Required"),
+    project_id: z.string().trim().min(1, "Required"),
+    status: z.nativeEnum(TaskStatus, { required_error: "Required" }),
+    priority: z.nativeEnum(TaskPriority, { required_error: "Required" }),
+    due_date: optionalDueDateField,
+    assignee_id: z.string().trim().min(1, "Required").optional().nullable(),
+    assignee_group_id: z
+      .string()
+      .trim()
+      .min(1, "Required")
+      .optional()
+      .nullable(),
+    description: z
+      .preprocess(
+        (value) =>
+          typeof value === "string" ? normalizePastedText(value) : value,
+        z.string(),
+      )
+      .optional(),
+    started_at: optionalStartedAtField,
+    media_ids: z.array(z.string().trim().min(1)).max(10).optional(),
+    position: z.number().optional(),
+  })
+  .strict();

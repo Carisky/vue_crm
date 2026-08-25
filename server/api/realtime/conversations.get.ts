@@ -37,7 +37,11 @@ export default defineEventHandler(async (event) => {
   await ensureWorkspaceAccess(event, participant.conversation.workspaceId);
 
   const stream = createEventStream(event);
-  const unregister = registerConversationEventStream(conversation_id, stream);
+  const unregister = registerConversationEventStream(
+    conversation_id,
+    user.id,
+    stream,
+  );
 
   const sendPromise = stream.send();
 
@@ -54,4 +58,3 @@ export default defineEventHandler(async (event) => {
   await stream.push({ event: "ping", data: Date.now().toString() });
   return sendPromise;
 });
-

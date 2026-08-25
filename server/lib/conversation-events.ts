@@ -8,6 +8,12 @@ type ConversationEventStreamMessage = {
 type ConversationEventStream = {
   push: (message: ConversationEventStreamMessage) => Promise<void>;
   onClosed: (cb: () => void) => void;
+  close: () => Promise<void>;
+};
+
+type ConversationStreamEntry = {
+  userId: string;
+  stream: ConversationEventStream;
 };
 
 export type ConversationRealtimeEvent =
@@ -24,7 +30,10 @@ export type ConversationRealtimeEvent =
     };
 
 const globalState = globalThis as typeof globalThis & {
-  __conversationEventStreams?: Map<string, Map<string, ConversationEventStream>>;
+  __conversationEventStreams?: Map<
+    string,
+    Map<string, ConversationStreamEntry>
+  >;
 };
 
 function shouldDebug() {
@@ -43,18 +52,19 @@ function getConversationStreams(conversationId: string) {
   const allStreams = globalState.__conversationEventStreams;
   const conversationStreams = allStreams.get(conversationId);
   if (conversationStreams) return conversationStreams;
-  const created = new Map<string, ConversationEventStream>();
+  const created = new Map<string, ConversationStreamEntry>();
   allStreams.set(conversationId, created);
   return created;
 }
 
 export function registerConversationEventStream(
   conversationId: string,
+  userId: string,
   stream: ConversationEventStream,
 ) {
   const streams = getConversationStreams(conversationId);
   const id = createClientId();
-  streams.set(id, stream);
+  streams.set(id, { userId, stream });
   if (shouldDebug()) {
     console.log("[realtime] conversation stream registered", {
       conversationId,
@@ -95,8 +105,31 @@ export function broadcastConversationEvent(
   if (!streams?.size) return;
 
   const data = JSON.stringify(payload);
-  for (const stream of streams.values()) {
-    stream.push({ event: "conversation", data }).catch(() => {});
+  for (const entry of streams.values()) {
+    entry.stream.push({ event: "conversation", data }).catch(() => {});
   }
 }
 
+export async function revokeConversationAccess(
+  conversationId: string,
+  userIds: string[],
+) {
+  const streams = globalState.__conversationEventStreams?.get(conversationId);
+  if (!streams?.size || !userIds.length) return;
+
+  const revoked = new Set(userIds);
+  const closing: Promise<void>[] = [];
+  for (const [id, entry] of streams) {
+    if (!revoked.has(entry.userId)) continue;
+    streams.delete(id);
+    closing.push(
+      entry.stream
+        .push({ event: "access-revoked", data: conversationId })
+        .catch(() => {})
+        .then(() => entry.stream.close().catch(() => {})),
+    );
+  }
+  if (!streams.size)
+    globalState.__conversationEventStreams?.delete(conversationId);
+  await Promise.all(closing);
+}

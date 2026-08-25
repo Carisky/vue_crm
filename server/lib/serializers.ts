@@ -10,6 +10,7 @@ import type {
   TaskMediaVariant,
   User,
   Workspace,
+  WorkspaceGroup,
 } from "@prisma/client";
 
 import { mediaKindFromMime, type MediaKind } from "./storage/file-policy.ts";
@@ -73,6 +74,9 @@ export function serializeTask(
   task: Task & {
     project?: Project | null;
     assignee?: User | null;
+    assigneeGroup?:
+      | (WorkspaceGroup & { members?: { userId: string }[] })
+      | null;
     media?: (TaskMedia & { variants?: TaskMediaVariant[] })[] | null;
   },
 ) {
@@ -82,6 +86,7 @@ export function serializeTask(
     workspace_id: task.workspaceId,
     project_id: task.projectId,
     assignee_id: task.assigneeId,
+    assignee_group_id: task.assigneeGroupId,
     status: task.status,
     priority: task.priority,
     due_date: task.dueDate,
@@ -95,6 +100,16 @@ export function serializeTask(
           $id: task.assignee.id,
           name: task.assignee.name,
           email: task.assignee.email,
+        }
+      : null,
+    assignee_group: task.assigneeGroup
+      ? {
+          $id: task.assigneeGroup.id,
+          name: task.assigneeGroup.name,
+          color: task.assigneeGroup.color,
+          member_ids: (task.assigneeGroup.members ?? []).map(
+            (member) => member.userId,
+          ),
         }
       : null,
     started_at: task.startedAt ? task.startedAt.toISOString() : null,
@@ -113,6 +128,27 @@ export function serializeMember(
     membership_id: membership.id,
     role: membership.role === "ADMIN" ? "admin" : "member",
     is_owner: membership.userId === ownerId,
+  };
+}
+
+export function serializeWorkspaceGroup(
+  group: WorkspaceGroup & {
+    members?: { user: User }[];
+    conversation?: { id: string } | null;
+  },
+) {
+  return {
+    $id: group.id,
+    workspace_id: group.workspaceId,
+    name: group.name,
+    description: group.description,
+    color: group.color,
+    conversation_id: group.conversation?.id ?? null,
+    members: (group.members ?? []).map((member) =>
+      serializeWorkspaceUser(member.user),
+    ),
+    createdAt: group.createdAt.toISOString(),
+    updatedAt: group.updatedAt.toISOString(),
   };
 }
 

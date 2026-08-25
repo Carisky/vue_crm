@@ -1,47 +1,57 @@
 <script setup lang="ts">
-import { cn } from '~/lib/utils';
-import { TaskStatus, type Project } from '~/lib/types';
+import { cn } from "~/lib/utils";
+import { TaskStatus, type Project } from "~/lib/types";
 
-const {
-    title,
-    status,
-    project,
-    assignee
-} = defineProps<{
-    title: string;
-    status: string;
-    project: Project | null;
-    assignee: {
-        $id: string;
-        name: string | null;
-        email: string;
-    } | null;
-
-}>()
+const { title, status, project, assignee, assigneeGroup } = defineProps<{
+  title: string;
+  status: string;
+  project: Project | null;
+  assignee: {
+    $id: string;
+    name: string | null;
+    email: string;
+  } | null;
+  assigneeGroup: {
+    $id: string;
+    name: string;
+    color: string | null;
+    member_ids: string[];
+  } | null;
+}>();
 
 const colorMap: Record<TaskStatus, string> = {
-    [TaskStatus.Backlog]: 'border-l-pink-500',
-    [TaskStatus.Todo]: 'border-l-red-500',
-    [TaskStatus['In Progress']]: 'border-l-yellow-500',
-    [TaskStatus['In Review']]: 'border-l-blue-500',
-    [TaskStatus.Done]: 'border-l-emerald-500',
-}
+  [TaskStatus.Backlog]: "border-l-pink-500",
+  [TaskStatus.Todo]: "border-l-red-500",
+  [TaskStatus["In Progress"]]: "border-l-yellow-500",
+  [TaskStatus["In Review"]]: "border-l-blue-500",
+  [TaskStatus.Done]: "border-l-emerald-500",
+};
 </script>
 
 <template>
-    <div class="block px-2">
-        <div
-            :class="cn(
-                'p-1.5 text-xs bg-card text-card-foreground border border-border border-l-4 flex flex-col gap-y-1.5 rounded-md cursor-pointer transition hover:opacity-75',
-                colorMap[status as TaskStatus],
-            )"
-        >
-            <p>{{ title }}</p>
-            <div class="flex items-center gap-x-1">
-                <WorkspaceMemberAvatar :name="assignee?.name ?? ''" />
-                <div class="size-1 rounded-full bg-neutral-300"></div>
-                <ProjectAvatar :name="project?.name ?? ''" :image="project?.image_url ?? undefined" />
-            </div>
-        </div>
+  <div class="block px-2">
+    <div
+      :class="
+        cn(
+          'flex cursor-pointer flex-col gap-y-1.5 rounded-md border border-l-4 border-border bg-card p-1.5 text-xs text-card-foreground transition hover:opacity-75',
+          colorMap[status as TaskStatus],
+        )
+      "
+    >
+      <p>{{ title }}</p>
+      <div class="flex items-center gap-x-1">
+        <WorkspaceGroupAvatar
+          v-if="assigneeGroup"
+          :name="assigneeGroup.name"
+          :color="assigneeGroup.color"
+        />
+        <WorkspaceMemberAvatar v-else :name="assignee?.name ?? ''" />
+        <div class="size-1 rounded-full bg-neutral-300"></div>
+        <ProjectAvatar
+          :name="project?.name ?? ''"
+          :image="project?.image_url ?? undefined"
+        />
+      </div>
     </div>
+  </div>
 </template>

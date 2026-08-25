@@ -3,6 +3,7 @@ import { MemberRole } from "@prisma/client";
 import { InviteCodeSchema } from "~/lib/schema/inviteCode";
 import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
+import { ensureWorkspaceGeneralConversation } from "~/server/lib/workspace-channels";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -28,12 +29,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ status: 400, statusText: "Invalid invite code" });
   }
 
-  const membership = await prisma.member.create({
-    data: {
-      workspaceId,
-      userId: user.id,
-      role: MemberRole.MEMBER,
-    },
+  const membership = await prisma.$transaction(async (tx) => {
+    const created = await tx.member.create({
+      data: {
+        workspaceId,
+        userId: user.id,
+        role: MemberRole.MEMBER,
+      },
+    });
+    await ensureWorkspaceGeneralConversation(workspaceId, tx);
+    return created;
   });
 
   return { membership };

@@ -41,6 +41,9 @@ export default defineEventHandler(async (event) => {
     conversation: {
       id: participant.conversation.id,
       workspace_id: participant.conversation.workspaceId,
+      type: participant.conversation.type,
+      name: participant.conversation.name,
+      group_id: participant.conversation.groupId,
       participants: participant.conversation.participants.map(
         serializeConversationParticipant,
       ),
@@ -52,4 +55,3 @@ export default defineEventHandler(async (event) => {
     messages: messages.map(serializeConversationMessage),
   };
 });
-

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { ConversationType } from "@prisma/client";
 import prisma from "~/server/lib/prisma";
 import { ensureWorkspaceAccess } from "~/server/lib/workspace";
 import { requireUser } from "~/server/lib/permissions";
@@ -46,6 +47,7 @@ export default defineEventHandler(async (event) => {
   const existing = await prisma.conversation.findFirst({
     where: {
       workspaceId,
+      type: ConversationType.DIRECT,
       AND: [
         { participants: { some: { userId: user.id } } },
         { participants: { some: { userId: otherUserId } } },
@@ -69,6 +71,7 @@ export default defineEventHandler(async (event) => {
   const created = await prisma.conversation.create({
     data: {
       workspaceId,
+      type: ConversationType.DIRECT,
       participants: {
         create: [
           { userId: user.id, lastReadAt: now },
@@ -81,4 +84,3 @@ export default defineEventHandler(async (event) => {
 
   return { conversation_id: created.id };
 });
-

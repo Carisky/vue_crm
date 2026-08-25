@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
-import { toast } from 'vue-sonner';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
+import { toast } from "vue-sonner";
 
-import authenticatedPageProtectMiddleware from '~/middleware/page-protect/authenticatedPage';
-import useAuthStore from '~/stores/auth';
+import authenticatedPageProtectMiddleware from "~/middleware/page-protect/authenticatedPage";
+import useAuthStore from "~/stores/auth";
 
 definePageMeta({
-  layout: 'dashboard',
+  layout: "dashboard",
   middleware: [authenticatedPageProtectMiddleware],
 });
 
-useHead({ title: 'Chat' });
+useHead({ title: "Chat" });
 
 type Person = {
   $id: string;
@@ -37,6 +37,9 @@ type ConversationResponse = {
   conversation: {
     id: string;
     workspace_id: string;
+    type: "DIRECT" | "WORKSPACE" | "GROUP";
+    name: string | null;
+    group_id: string | null;
     participants: ConversationParticipant[];
     my_last_read_at: string | null;
     updatedAt: string;
@@ -50,9 +53,11 @@ const queryClient = useQueryClient();
 const requestFetch = useRequestFetch();
 const { locale, t } = useAppI18n();
 
-const workspaceId = computed(() => String(route.params['workspaceId'] ?? ''));
-const conversationId = computed(() => String(route.params['conversationId'] ?? ''));
-const queryKey = computed(() => ['conversation', conversationId.value]);
+const workspaceId = computed(() => String(route.params["workspaceId"] ?? ""));
+const conversationId = computed(() =>
+  String(route.params["conversationId"] ?? ""),
+);
+const queryKey = computed(() => ["conversation", conversationId.value]);
 
 const { data, isFetching } = useQuery<ConversationResponse>({
   queryKey,
@@ -64,26 +69,42 @@ const { data, isFetching } = useQuery<ConversationResponse>({
 });
 
 const messages = computed(() => data.value?.messages ?? []);
-const participants = computed(() => data.value?.conversation.participants ?? []);
+const participants = computed(
+  () => data.value?.conversation.participants ?? [],
+);
 
-const displayName = (person: Person) => person.name ?? person.email ?? t('common.unknown');
+const displayName = (person: Person) =>
+  person.name ?? person.email ?? t("common.unknown");
 const otherParticipant = computed(() => {
   const myId = auth.user?.id;
   return participants.value.find((p) => p.user.$id !== myId)?.user ?? null;
 });
 
+const conversationTitle = computed(() => {
+  const conversation = data.value?.conversation;
+  if (!conversation) return t("messages.conversation");
+  if (conversation.type === "WORKSPACE") return t("messages.general");
+  if (conversation.type === "GROUP")
+    return conversation.name ?? t("groups.group");
+  return otherParticipant.value
+    ? displayName(otherParticipant.value)
+    : t("messages.conversation");
+});
+
 const otherLastReadAt = computed(() => {
   const myId = auth.user?.id;
-  return participants.value.find((p) => p.user.$id !== myId)?.lastReadAt ?? null;
+  return (
+    participants.value.find((p) => p.user.$id !== myId)?.lastReadAt ?? null
+  );
 });
 
 const formatTimestamp = (value: string) =>
   new Date(value).toLocaleString(locale.value, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+    dateStyle: "medium",
+    timeStyle: "short",
   });
 
-const messageBox = ref('');
+const messageBox = ref("");
 const isSending = ref(false);
 const listEl = ref<HTMLElement | null>(null);
 
@@ -103,10 +124,13 @@ watch(
 );
 
 const markRead = async () => {
-  await $fetch(`/api/messages/conversations/${conversationId.value}/mark-read`, {
-    method: 'PATCH',
-  });
-  queryClient.invalidateQueries({ queryKey: ['inbox', workspaceId.value] });
+  await $fetch(
+    `/api/messages/conversations/${conversationId.value}/mark-read`,
+    {
+      method: "PATCH",
+    },
+  );
+  queryClient.invalidateQueries({ queryKey: ["inbox", workspaceId.value] });
 };
 
 watch(
@@ -122,9 +146,9 @@ const { mutateAsync: sendMessage } = useMutation({
   mutationFn: async (body: string) =>
     await $fetch<{ message: ConversationMessage }>(
       `/api/messages/conversations/${conversationId.value}/messages`,
-      { method: 'POST', body: { body } },
+      { method: "POST", body: { body } },
     ),
-  onError: () => toast.error(t('messages.sendFailed')),
+  onError: () => toast.error(t("messages.sendFailed")),
 });
 
 const handleSend = async () => {
@@ -134,9 +158,9 @@ const handleSend = async () => {
   isSending.value = true;
   try {
     await sendMessage(body);
-    messageBox.value = '';
+    messageBox.value = "";
     await queryClient.refetchQueries({ queryKey: queryKey.value });
-    queryClient.invalidateQueries({ queryKey: ['inbox', workspaceId.value] });
+    queryClient.invalidateQueries({ queryKey: ["inbox", workspaceId.value] });
     await markRead();
   } finally {
     isSending.value = false;
@@ -144,7 +168,7 @@ const handleSend = async () => {
 };
 
 const handleKeydown = async (evt: KeyboardEvent) => {
-  if (evt.key !== 'Enter') return;
+  if (evt.key !== "Enter") return;
   if (evt.shiftKey) return;
   evt.preventDefault();
   await handleSend();
@@ -154,11 +178,12 @@ const isMine = (msg: ConversationMessage) => msg.sender.$id === auth.user?.id;
 
 const deliveryStatus = (msg: ConversationMessage) => {
   if (!isMine(msg)) return null;
+  if (data.value?.conversation.type !== "DIRECT") return t("messages.sent");
   const otherRead = otherLastReadAt.value;
-  if (!otherRead) return t('messages.sent');
+  if (!otherRead) return t("messages.sent");
   return new Date(otherRead).getTime() >= new Date(msg.createdAt).getTime()
-    ? t('messages.read')
-    : t('messages.sent');
+    ? t("messages.read")
+    : t("messages.sent");
 };
 
 if (import.meta.client) {
@@ -179,65 +204,94 @@ if (import.meta.client) {
     close();
     if (!id) return;
 
-    source = new EventSource(`/api/realtime/conversations?conversation_id=${encodeURIComponent(id)}`);
+    source = new EventSource(
+      `/api/realtime/conversations?conversation_id=${encodeURIComponent(id)}`,
+    );
 
     source.onopen = () => {
       reconnectAttempt = 0;
     };
 
-    source.addEventListener('conversation', async (evt) => {
+    source.addEventListener("conversation", async (evt) => {
       try {
         const parsed = JSON.parse((evt as MessageEvent).data) as
-          | { type: 'MESSAGE_CREATED'; conversationId: string; message: ConversationMessage }
-          | { type: 'READ_UPDATED'; conversationId: string; userId: string; lastReadAt: string };
-
-        if (parsed.type === 'MESSAGE_CREATED') {
-          queryClient.setQueryData<ConversationResponse>(queryKey.value, (current) => {
-            if (!current) return current;
-            if (current.messages.some((m) => m.id === parsed.message.id)) return current;
-            return {
-              ...current,
-              messages: [...current.messages, parsed.message],
-              conversation: {
-                ...current.conversation,
-                updatedAt: new Date().toISOString(),
-              },
+          | {
+              type: "MESSAGE_CREATED";
+              conversationId: string;
+              message: ConversationMessage;
+            }
+          | {
+              type: "READ_UPDATED";
+              conversationId: string;
+              userId: string;
+              lastReadAt: string;
             };
-          });
 
-          queryClient.invalidateQueries({ queryKey: ['inbox', workspaceId.value] });
+        if (parsed.type === "MESSAGE_CREATED") {
+          queryClient.setQueryData<ConversationResponse>(
+            queryKey.value,
+            (current) => {
+              if (!current) return current;
+              if (current.messages.some((m) => m.id === parsed.message.id))
+                return current;
+              return {
+                ...current,
+                messages: [...current.messages, parsed.message],
+                conversation: {
+                  ...current.conversation,
+                  updatedAt: new Date().toISOString(),
+                },
+              };
+            },
+          );
+
+          queryClient.invalidateQueries({
+            queryKey: ["inbox", workspaceId.value],
+          });
           if (parsed.message.sender.$id !== auth.user?.id) {
             await markRead();
           }
-        } else if (parsed.type === 'READ_UPDATED') {
-          queryClient.setQueryData<ConversationResponse>(queryKey.value, (current) => {
-            if (!current) return current;
-            return {
-              ...current,
-              conversation: {
-                ...current.conversation,
-                participants: current.conversation.participants.map((p) =>
-                  p.user.$id === parsed.userId ? { ...p, lastReadAt: parsed.lastReadAt } : p,
-                ),
-              },
-            };
-          });
+        } else if (parsed.type === "READ_UPDATED") {
+          queryClient.setQueryData<ConversationResponse>(
+            queryKey.value,
+            (current) => {
+              if (!current) return current;
+              return {
+                ...current,
+                conversation: {
+                  ...current.conversation,
+                  participants: current.conversation.participants.map((p) =>
+                    p.user.$id === parsed.userId
+                      ? { ...p, lastReadAt: parsed.lastReadAt }
+                      : p,
+                  ),
+                },
+              };
+            },
+          );
         }
       } catch {
         // ignore malformed events
       }
     });
 
+    source.addEventListener("access-revoked", async () => {
+      close();
+      queryClient.invalidateQueries({ queryKey: ["inbox", workspaceId.value] });
+      toast.error(t("messages.accessRevoked"));
+      await navigateTo(`/workspaces/${workspaceId.value}/messages`);
+    });
+
     source.onerror = () => {
       close();
-      const delay = Math.min(30_000, 500 * (2 ** reconnectAttempt));
+      const delay = Math.min(30_000, 500 * 2 ** reconnectAttempt);
       reconnectAttempt += 1;
       reconnectTimer = setTimeout(() => connect(id), delay);
     };
   };
 
   onMounted(() => connect(conversationId.value));
-  watch(conversationId, (id) => connect(String(id ?? '')));
+  watch(conversationId, (id) => connect(String(id ?? "")));
   onUnmounted(close);
 }
 </script>
@@ -247,19 +301,29 @@ if (import.meta.client) {
     <div class="flex items-start justify-between gap-3">
       <div class="space-y-1">
         <h1 class="text-2xl font-semibold">
-          {{ otherParticipant ? displayName(otherParticipant) : t('messages.conversation') }}
+          {{ conversationTitle }}
         </h1>
+        <p
+          v-if="data?.conversation.type !== 'DIRECT'"
+          class="text-xs text-muted-foreground"
+        >
+          {{ t("messages.participantCount", { count: participants.length }) }}
+        </p>
         <NuxtLink
           :href="`/workspaces/${workspaceId}/messages`"
           class="text-sm text-muted-foreground hover:underline"
         >
-          {{ t('messages.back') }}
+          {{ t("messages.back") }}
         </NuxtLink>
       </div>
       <Button as-child variant="secondary" size="sm">
         <NuxtLink :href="`/workspaces/${workspaceId}/messages`">
-          <Icon name="heroicons:chat-bubble-left-right" size="16px" class="size-4 mr-1" />
-          {{ t('messages.allChats') }}
+          <Icon
+            name="heroicons:chat-bubble-left-right"
+            size="16px"
+            class="mr-1 size-4"
+          />
+          {{ t("messages.allChats") }}
         </NuxtLink>
       </Button>
     </div>
@@ -269,12 +333,15 @@ if (import.meta.client) {
         <CardContent class="p-0">
           <div
             ref="listEl"
-            class="h-[520px] overflow-y-auto px-4 py-4 space-y-3"
+            class="h-[520px] space-y-3 overflow-y-auto px-4 py-4"
           >
             <Loader v-if="isFetching" class="h-24" />
 
-            <div v-else-if="!messages.length" class="text-sm text-muted-foreground py-12 text-center">
-              {{ t('messages.emptySayHi') }}
+            <div
+              v-else-if="!messages.length"
+              class="py-12 text-center text-sm text-muted-foreground"
+            >
+              {{ t("messages.emptySayHi") }}
             </div>
 
             <div v-else class="space-y-3">
@@ -285,26 +352,40 @@ if (import.meta.client) {
                 :class="isMine(msg) ? 'justify-end' : 'justify-start'"
               >
                 <div v-if="!isMine(msg)" class="pt-1">
-                  <WorkspaceMemberAvatar :name="displayName(msg.sender)" class="size-7" fallback-class="text-xs" />
+                  <WorkspaceMemberAvatar
+                    :name="displayName(msg.sender)"
+                    class="size-7"
+                    fallback-class="text-xs"
+                  />
                 </div>
                 <div
                   class="max-w-[78%] rounded-2xl border px-3 py-2"
-                  :class="isMine(msg) ? 'bg-primary text-primary-foreground border-primary/60' : 'bg-background'"
+                  :class="
+                    isMine(msg)
+                      ? 'border-primary/60 bg-primary text-primary-foreground'
+                      : 'bg-background'
+                  "
                 >
                   <p class="text-sm whitespace-pre-wrap">{{ msg.body }}</p>
                   <p
                     class="mt-1 text-[10px]"
-                    :class="isMine(msg) ? 'text-primary-foreground/80' : 'text-muted-foreground'"
+                    :class="
+                      isMine(msg)
+                        ? 'text-primary-foreground/80'
+                        : 'text-muted-foreground'
+                    "
                   >
                     {{ formatTimestamp(msg.createdAt) }}
-                    <template v-if="isMine(msg)"> · {{ deliveryStatus(msg) }}</template>
+                    <template v-if="isMine(msg)">
+                      · {{ deliveryStatus(msg) }}</template
+                    >
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="border-t px-4 py-3 flex items-end gap-3">
+          <div class="flex items-end gap-3 border-t px-4 py-3">
             <Textarea
               v-model="messageBox"
               rows="2"
@@ -313,9 +394,19 @@ if (import.meta.client) {
               :disabled="isSending"
               @keydown="handleKeydown"
             />
-            <Button size="sm" class="h-10" :disabled="isSending || !messageBox.trim()" @click="handleSend">
-              <Icon v-if="isSending" name="svg-spinners:8-dots-rotate" size="16px" class="size-4" />
-              <template v-else>{{ t('common.send') }}</template>
+            <Button
+              size="sm"
+              class="h-10"
+              :disabled="isSending || !messageBox.trim()"
+              @click="handleSend"
+            >
+              <Icon
+                v-if="isSending"
+                name="svg-spinners:8-dots-rotate"
+                size="16px"
+                class="size-4"
+              />
+              <template v-else>{{ t("common.send") }}</template>
             </Button>
           </div>
         </CardContent>

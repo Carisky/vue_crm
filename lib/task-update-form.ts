@@ -1,6 +1,10 @@
-import type { FilteredTask } from "~/lib/types";
+import type { FilteredTask } from "./types.ts";
+import {
+  taskAssigneeValue,
+  UNASSIGNED_TASK_ASSIGNEE,
+} from "./task-assignee.ts";
 
-export const UNASSIGNED_TASK_ASSIGNEE = "__UNASSIGNED__";
+export { UNASSIGNED_TASK_ASSIGNEE } from "./task-assignee.ts";
 
 export function buildUpdateTaskInitialValues(task: FilteredTask) {
   return {
@@ -9,7 +13,10 @@ export function buildUpdateTaskInitialValues(task: FilteredTask) {
     status: task.status,
     priority: task.priority,
     due_date: task.due_date ? new Date(task.due_date) : undefined,
-    assignee_id: task.assignee_id ?? UNASSIGNED_TASK_ASSIGNEE,
+    assignee_id: taskAssigneeValue({
+      userId: task.assignee_id,
+      groupId: task.assignee_group_id,
+    }),
     description: task.description ?? "",
     started_at: task.started_at ? new Date(task.started_at) : undefined,
     position: task.position,

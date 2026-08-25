@@ -1,6 +1,8 @@
 import { canRemoveWorkspaceMember } from "~/server/lib/member-removal-policy";
 import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
+import { revokeConversationAccess } from "~/server/lib/conversation-events";
+import { broadcastInboxEvent } from "~/server/lib/inbox-events";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -52,7 +54,42 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  await prisma.member.delete({ where: { id: membershipToDelete.id } });
+  const conversationParticipants =
+    await prisma.conversationParticipant.findMany({
+      where: {
+        userId: membershipToDelete.userId,
+        conversation: { workspaceId: membershipToDelete.workspaceId },
+      },
+      select: { conversationId: true },
+    });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.workspaceGroupMember.deleteMany({
+      where: {
+        userId: membershipToDelete.userId,
+        group: { workspaceId: membershipToDelete.workspaceId },
+      },
+    });
+    await tx.conversationParticipant.deleteMany({
+      where: {
+        userId: membershipToDelete.userId,
+        conversation: { workspaceId: membershipToDelete.workspaceId },
+      },
+    });
+    await tx.member.delete({ where: { id: membershipToDelete.id } });
+  });
+
+  await Promise.all(
+    conversationParticipants.map((participant) =>
+      revokeConversationAccess(participant.conversationId, [
+        membershipToDelete.userId,
+      ]),
+    ),
+  );
+  broadcastInboxEvent(membershipToDelete.workspaceId, {
+    type: "INBOX_UPDATED",
+    workspaceId: membershipToDelete.workspaceId,
+  });
 
   return { ok: true };
 });

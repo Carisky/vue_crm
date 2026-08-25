@@ -36,6 +36,18 @@ export default defineEventHandler(async (event) => {
     typeof data.assignee_id === "string" && data.assignee_id.trim().length
       ? data.assignee_id.trim()
       : null;
+  const assigneeGroupId =
+    typeof data.assignee_group_id === "string" &&
+    data.assignee_group_id.trim().length
+      ? data.assignee_group_id.trim()
+      : null;
+
+  if (assigneeId && assigneeGroupId) {
+    throw createError({
+      status: 400,
+      statusText: "A task can be assigned to a user or a group, not both",
+    });
+  }
 
   if (assigneeId) {
     const assigneeMembership = await prisma.member.findFirst({
@@ -46,6 +58,16 @@ export default defineEventHandler(async (event) => {
     });
     if (!assigneeMembership) {
       throw createError({ status: 400, statusText: "Unauthorized assignee" });
+    }
+  }
+
+  if (assigneeGroupId) {
+    const group = await prisma.workspaceGroup.findFirst({
+      where: { id: assigneeGroupId, workspaceId: data.workspace_id },
+      select: { id: true },
+    });
+    if (!group) {
+      throw createError({ status: 400, statusText: "Unauthorized group" });
     }
   }
 
@@ -88,6 +110,7 @@ export default defineEventHandler(async (event) => {
         priority: data.priority as TaskPriority,
         dueDate: data.due_date ?? null,
         assigneeId: assigneeId ?? undefined,
+        assigneeGroupId: assigneeGroupId ?? undefined,
         description: data.description,
         position,
         startedAt: data.started_at === undefined ? undefined : data.started_at,
@@ -95,6 +118,7 @@ export default defineEventHandler(async (event) => {
       include: {
         project: true,
         assignee: true,
+        assigneeGroup: { include: { members: true } },
       },
     });
 
@@ -111,6 +135,7 @@ export default defineEventHandler(async (event) => {
       include: {
         project: true,
         assignee: true,
+        assigneeGroup: { include: { members: true } },
         media: { include: { variants: true } },
       },
     });

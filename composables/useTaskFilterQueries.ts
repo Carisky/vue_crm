@@ -4,6 +4,7 @@ export const useTaskFilterQueries = () => {
     status: parseAsString,
     search: parseAsString,
     assignee_id: parseAsString,
+    group_id: parseAsString,
     due_date: parseAsString,
     started_at: parseAsString,
   });

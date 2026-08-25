@@ -1,8 +1,18 @@
 ﻿import { type ColumnDef } from "@tanstack/vue-table";
 import { ArrowUpDownIcon } from "lucide-vue-next";
 
-import { taskPriorityTranslationKeys, taskStatusTranslationKeys, type TranslationKey } from "~/lib/i18n";
-import { TaskPriority, TaskStatus, type AppLocale, type FilteredTask, type Project } from "~/lib/types";
+import {
+  taskPriorityTranslationKeys,
+  taskStatusTranslationKeys,
+  type TranslationKey,
+} from "~/lib/i18n";
+import {
+  TaskPriority,
+  TaskStatus,
+  type AppLocale,
+  type FilteredTask,
+  type Project,
+} from "~/lib/types";
 import { Badge, Button, Icon, ProjectAvatar } from "#components";
 import MemberAvatar from "../workspace/member/MemberAvatar.vue";
 import Actions from "./Actions.vue";
@@ -60,7 +70,10 @@ export const createColumns = (
           variant: "ghost",
           onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
         },
-        () => [t("common.project"), h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+        () => [
+          t("common.project"),
+          h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" }),
+        ],
       );
     },
     cell: ({ row }) => {
@@ -74,7 +87,11 @@ export const createColumns = (
             class: "size-6",
             image: (project?.image_url ?? undefined) as string | undefined,
           }),
-          h("p", { class: "line-clamp-1" }, project?.name ?? t("task.noProject")),
+          h(
+            "p",
+            { class: "line-clamp-1" },
+            project?.name ?? t("task.noProject"),
+          ),
         ],
       );
     },
@@ -95,23 +112,41 @@ export const createColumns = (
           variant: "ghost",
           onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
         },
-        () => [t("common.assignee"), h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+        () => [
+          t("common.assignee"),
+          h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" }),
+        ],
       );
     },
     cell: ({ row }) => {
       const assignee = row.getValue("assignee") as
         | FilteredTask["assignee"]
         | null;
+      const group = row.original.assignee_group;
       return h(
         "div",
         { class: "flex items-center gap-x-2 text-sm font-medium" },
         [
-          h(MemberAvatar, {
-            name: assignee?.name ?? undefined,
-            class: "size-6",
-            fallbackClass: "text-xs",
-          }),
-          h("p", { class: "line-clamp-1" }, assignee?.name ?? ""),
+          group
+            ? h(
+                "span",
+                {
+                  class:
+                    "inline-flex size-6 items-center justify-center rounded text-xs font-semibold text-white",
+                  style: { backgroundColor: group.color ?? "#64748b" },
+                },
+                group.name.charAt(0).toUpperCase(),
+              )
+            : h(MemberAvatar, {
+                name: assignee?.name ?? undefined,
+                class: "size-6",
+                fallbackClass: "text-xs",
+              }),
+          h(
+            "p",
+            { class: "line-clamp-1" },
+            group?.name ?? assignee?.name ?? "",
+          ),
         ],
       );
     },
@@ -132,24 +167,38 @@ export const createColumns = (
           variant: "ghost",
           onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
         },
-        () => [t("task.startedAt"), h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+        () => [
+          t("task.startedAt"),
+          h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" }),
+        ],
       );
     },
     cell: ({ row }) => {
       const startedAt = row.getValue("started_at") as string | null;
       if (!startedAt) {
-        return h("span", { class: "text-sm text-muted-foreground" }, t("task.notStarted"));
+        return h(
+          "span",
+          { class: "text-sm text-muted-foreground" },
+          t("task.notStarted"),
+        );
       }
 
       const parsedDate = new Date(startedAt);
       if (Number.isNaN(parsedDate.getTime())) {
-        return h("span", { class: "text-sm text-muted-foreground" }, t("task.invalidDate"));
+        return h(
+          "span",
+          { class: "text-sm text-muted-foreground" },
+          t("task.invalidDate"),
+        );
       }
 
       return h(
         "span",
         { class: "text-sm font-medium" },
-        new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(parsedDate),
+        new Intl.DateTimeFormat(locale, {
+          month: "short",
+          day: "numeric",
+        }).format(parsedDate),
       );
     },
   },
@@ -169,7 +218,10 @@ export const createColumns = (
           variant: "ghost",
           onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
         },
-        () => [t("common.status"), h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+        () => [
+          t("common.status"),
+          h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" }),
+        ],
       );
     },
     cell: ({ row }) => {
@@ -177,7 +229,9 @@ export const createColumns = (
       return h(
         "div",
         { class: "flex items-center gap-x-2 text-sm font-medium" },
-        h(Badge, { variant: status }, () => t(taskStatusTranslationKeys[status])),
+        h(Badge, { variant: status }, () =>
+          t(taskStatusTranslationKeys[status]),
+        ),
       );
     },
   },
@@ -202,7 +256,10 @@ export const createColumns = (
           variant: "ghost",
           onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
         },
-        () => [t("common.priority"), h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" })],
+        () => [
+          t("common.priority"),
+          h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" }),
+        ],
       );
     },
     cell: ({ row }) => {
@@ -210,7 +267,9 @@ export const createColumns = (
       return h(
         "div",
         { class: "flex items-center gap-x-2 text-sm font-medium" },
-        h(Badge, { variant: priority }, () => t(taskPriorityTranslationKeys[priority])),
+        h(Badge, { variant: priority }, () =>
+          t(taskPriorityTranslationKeys[priority]),
+        ),
       );
     },
   },

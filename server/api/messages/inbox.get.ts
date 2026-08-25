@@ -5,6 +5,7 @@ import {
   serializeConversationMessage,
   serializeConversationParticipant,
 } from "~/server/lib/serializers";
+import { ensureWorkspaceGeneralConversation } from "~/server/lib/workspace-channels";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -15,6 +16,7 @@ export default defineEventHandler(async (event) => {
   }
 
   await ensureWorkspaceAccess(event, workspace_id);
+  await ensureWorkspaceGeneralConversation(workspace_id);
 
   const mentionNotifications = await prisma.notification.findMany({
     where: {
@@ -105,6 +107,9 @@ export default defineEventHandler(async (event) => {
   const conversations = myConversations.map((entry) => ({
     id: entry.conversationId,
     workspace_id: entry.conversation.workspaceId,
+    type: entry.conversation.type,
+    name: entry.conversation.name,
+    group_id: entry.conversation.groupId,
     participants: entry.conversation.participants.map(
       serializeConversationParticipant,
     ),
@@ -128,4 +133,3 @@ export default defineEventHandler(async (event) => {
     unreadCount: unreadMentionsCount + unreadChatsCount,
   };
 });
-

@@ -14,6 +14,8 @@ export default defineEventHandler(async (event) => {
     workspace_id,
     project_id,
     assignee_id,
+    group_id,
+    mine,
     status,
     search,
     due_date,
@@ -35,6 +37,15 @@ export default defineEventHandler(async (event) => {
   }
   if (assignee_id && typeof assignee_id === "string") {
     where.assigneeId = assignee_id;
+  }
+  if (group_id && typeof group_id === "string") {
+    where.assigneeGroupId = group_id;
+  }
+  if (mine === "1" || mine === "true") {
+    where.OR = [
+      { assigneeId: user.id },
+      { assigneeGroup: { members: { some: { userId: user.id } } } },
+    ];
   }
   if (status && typeof status === "string") {
     if (!Object.values(TaskStatus).includes(status as TaskStatus)) {
@@ -70,6 +81,7 @@ export default defineEventHandler(async (event) => {
     include: {
       project: true,
       assignee: true,
+      assigneeGroup: { include: { members: true } },
       media: { include: { variants: true } },
     },
   });

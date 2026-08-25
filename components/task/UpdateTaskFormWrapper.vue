@@ -2,7 +2,12 @@
 import { useQuery } from "@tanstack/vue-query";
 
 import UpdateTaskForm from "./UpdateTaskForm.vue";
-import type { FilteredTask, Project, WorkspaceMember } from "~/lib/types";
+import type {
+  FilteredTask,
+  Project,
+  WorkspaceGroup,
+  WorkspaceMember,
+} from "~/lib/types";
 
 const { onCancel } = defineProps<{ onCancel?: () => void }>();
 
@@ -45,9 +50,28 @@ const { data: members, isLoading: isLoadingMembers } = useQuery<
   staleTime: Infinity,
 });
 
+const { data: groups, isLoading: isLoadingGroups } = useQuery<WorkspaceGroup[]>(
+  {
+    queryKey: computed(() => [
+      "workspace-groups",
+      String(route.params["workspaceId"] ?? ""),
+    ]),
+    queryFn: async () => {
+      const data = await requestFetch<{ groups: WorkspaceGroup[] }>(
+        `/api/workspaces/${route.params["workspaceId"]}/groups`,
+      );
+      return data.groups ?? [];
+    },
+    staleTime: Infinity,
+  },
+);
+
 const isLoading = computed(
   () =>
-    isLoadingTask.value || isLoadingProjects.value || isLoadingMembers.value,
+    isLoadingTask.value ||
+    isLoadingProjects.value ||
+    isLoadingMembers.value ||
+    isLoadingGroups.value,
 );
 
 const projectOptions = computed(
@@ -61,6 +85,10 @@ const projectOptions = computed(
 const memberOptions = computed(
   () =>
     members.value?.map(({ $id, name }) => ({ $id, name: name ?? "" })) ?? [],
+);
+const groupOptions = computed(
+  () =>
+    groups.value?.map(({ $id, name, color }) => ({ $id, name, color })) ?? [],
 );
 </script>
 
@@ -79,6 +107,7 @@ const memberOptions = computed(
       :initial-values="task"
       :project-options="projectOptions"
       :member-options="memberOptions"
+      :group-options="groupOptions"
       :on-cancel="onCancel"
     />
   </div>

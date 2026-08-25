@@ -8,6 +8,7 @@ import { requireUser } from "~/server/lib/permissions";
 import { generateWorkspaceInviteCode } from "~/server/lib/invite";
 import { normalizeImageInput } from "~/server/lib/images";
 import { serializeWorkspace } from "~/server/lib/serializers";
+import { ensureWorkspaceGeneralConversation } from "~/server/lib/workspace-channels";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -43,19 +44,23 @@ export default defineEventHandler(async (event) => {
     generateWorkspaceInviteCode(),
   ]);
 
-  const workspace = await prisma.workspace.create({
-    data: {
-      name: params.data.name,
-      ownerId: user.id,
-      inviteCode,
-      imageUrl,
-      members: {
-        create: {
-          role: MemberRole.ADMIN,
-          userId: user.id,
+  const workspace = await prisma.$transaction(async (tx) => {
+    const created = await tx.workspace.create({
+      data: {
+        name: params.data.name,
+        ownerId: user.id,
+        inviteCode,
+        imageUrl,
+        members: {
+          create: {
+            role: MemberRole.ADMIN,
+            userId: user.id,
+          },
         },
       },
-    },
+    });
+    await ensureWorkspaceGeneralConversation(created.id, tx);
+    return created;
   });
 
   return { workspace: serializeWorkspace(workspace) };

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useQuery, useQueryClient } from '@tanstack/vue-query';
-import { Icon } from '#components';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useQuery, useQueryClient } from "@tanstack/vue-query";
+import { Icon } from "#components";
 import {
   Button,
   Loader,
@@ -12,8 +12,8 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '#components';
-import useAuthStore from '~/stores/auth';
+} from "#components";
+import useAuthStore from "~/stores/auth";
 
 type InboxMention = {
   id: string;
@@ -43,7 +43,7 @@ type InboxConversationParticipant = {
 type InboxConversationMessage = {
   id: string;
   conversation_id: string;
-  sender: InboxConversationParticipant['user'];
+  sender: InboxConversationParticipant["user"];
   body: string;
   createdAt: string;
 };
@@ -51,6 +51,9 @@ type InboxConversationMessage = {
 type InboxConversationPreview = {
   id: string;
   workspace_id: string;
+  type: "DIRECT" | "WORKSPACE" | "GROUP";
+  name: string | null;
+  group_id: string | null;
   participants: InboxConversationParticipant[];
   last_message: InboxConversationMessage | null;
   unread_count: number;
@@ -72,9 +75,9 @@ const auth = useAuthStore();
 const requestFetch = useRequestFetch();
 const { locale, t } = useAppI18n();
 
-const workspaceId = computed(() => route.params['workspaceId']);
+const workspaceId = computed(() => route.params["workspaceId"]);
 const sheetOpen = ref(false);
-const queryKey = computed(() => ['inbox', workspaceId.value ?? 'global']);
+const queryKey = computed(() => ["inbox", workspaceId.value ?? "global"]);
 
 const { data, isFetching } = useQuery({
   queryKey,
@@ -100,25 +103,28 @@ const unreadCount = computed(() => data.value?.unreadCount ?? 0);
 const mentions = computed(() => data.value?.mentions ?? []);
 const conversations = computed(() => data.value?.conversations ?? []);
 
-const displayName = (user: InboxConversationParticipant['user']) =>
-  user.name ?? user.email ?? t('common.unknown');
+const displayName = (user: InboxConversationParticipant["user"]) =>
+  user.name ?? user.email ?? t("common.unknown");
 const conversationTitle = (conversation: InboxConversationPreview) => {
+  if (conversation.type === "WORKSPACE") return t("messages.general");
+  if (conversation.type === "GROUP")
+    return conversation.name ?? t("groups.group");
   const myId = auth.user?.id;
   const other =
     conversation.participants.find((p) => p.user.$id !== myId)?.user ??
     conversation.participants[0]?.user;
-  return other ? displayName(other) : t('messages.conversation');
+  return other ? displayName(other) : t("messages.conversation");
 };
 
 const formatTimestamp = (value: string) =>
   new Date(value).toLocaleString(locale.value, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+    dateStyle: "medium",
+    timeStyle: "short",
   });
 
 const markMentionRead = async (id: string) => {
-  await $fetch('/api/notifications/mark-read', {
-    method: 'PATCH',
+  await $fetch("/api/notifications/mark-read", {
+    method: "PATCH",
     body: { ids: [id] },
   });
   queryClient.invalidateQueries({ queryKey: queryKey.value });
@@ -128,8 +134,8 @@ const markAllMentionsRead = async () => {
   const unreadIds = mentions.value.filter((m) => !m.isRead).map((m) => m.id);
   if (!unreadIds.length) return;
 
-  await $fetch('/api/notifications/mark-read', {
-    method: 'PATCH',
+  await $fetch("/api/notifications/mark-read", {
+    method: "PATCH",
     body: { ids: unreadIds },
   });
   queryClient.invalidateQueries({ queryKey: queryKey.value });
@@ -145,7 +151,9 @@ const openMention = async (mention: InboxMention) => {
 const openConversation = async (conversationId: string) => {
   if (!workspaceId.value) return;
   sheetOpen.value = false;
-  await router.push(`/workspaces/${workspaceId.value}/messages/${conversationId}`);
+  await router.push(
+    `/workspaces/${workspaceId.value}/messages/${conversationId}`,
+  );
 };
 
 if (import.meta.client) {
@@ -166,26 +174,28 @@ if (import.meta.client) {
     close();
     if (!id) return;
 
-    source = new EventSource(`/api/realtime/inbox?workspace_id=${encodeURIComponent(id)}`);
+    source = new EventSource(
+      `/api/realtime/inbox?workspace_id=${encodeURIComponent(id)}`,
+    );
 
     source.onopen = () => {
       reconnectAttempt = 0;
     };
 
-    source.addEventListener('inbox', () => {
+    source.addEventListener("inbox", () => {
       queryClient.invalidateQueries({ queryKey: queryKey.value });
     });
 
     source.onerror = () => {
       close();
-      const delay = Math.min(30_000, 500 * (2 ** reconnectAttempt));
+      const delay = Math.min(30_000, 500 * 2 ** reconnectAttempt);
       reconnectAttempt += 1;
       reconnectTimer = setTimeout(() => connect(id), delay);
     };
   };
 
-  onMounted(() => connect(String(workspaceId.value ?? '')));
-  watch(workspaceId, (id) => connect(String(id ?? '')));
+  onMounted(() => connect(String(workspaceId.value ?? "")));
+  watch(workspaceId, (id) => connect(String(id ?? "")));
   onUnmounted(close);
 }
 </script>
@@ -194,7 +204,11 @@ if (import.meta.client) {
   <Sheet v-model:open="sheetOpen">
     <SheetTrigger as-child>
       <Button variant="ghost" size="icon" class="relative">
-        <Icon name="heroicons:chat-bubble-left-right" size="16px" class="size-4 text-muted-foreground" />
+        <Icon
+          name="heroicons:chat-bubble-left-right"
+          size="16px"
+          class="size-4 text-muted-foreground"
+        />
         <span
           v-if="unreadCount > 0"
           class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[11px] text-white"
@@ -203,30 +217,32 @@ if (import.meta.client) {
         </span>
       </Button>
     </SheetTrigger>
-    <SheetContent side="right" class="w-[280px] sm:w-[380px] flex flex-col">
+    <SheetContent side="right" class="flex w-[280px] flex-col sm:w-[380px]">
       <SheetHeader class="gap-2">
         <div class="flex items-center gap-2">
-          <SheetTitle>{{ t('messages.title') }}</SheetTitle>
+          <SheetTitle>{{ t("messages.title") }}</SheetTitle>
           <Button
             variant="outline"
             size="xs"
             :disabled="!mentions.some((m) => !m.isRead)"
-            class="capitalize text-[11px]"
+            class="text-[11px] capitalize"
             @click="markAllMentionsRead"
           >
-            {{ t('messages.markMentionsRead') }}
+            {{ t("messages.markMentionsRead") }}
           </Button>
         </div>
-        <SheetDescription>{{ t('messages.description') }}</SheetDescription>
+        <SheetDescription>{{ t("messages.description") }}</SheetDescription>
       </SheetHeader>
 
-      <div class="mt-4 flex-1 overflow-y-auto pr-1 space-y-5">
+      <div class="mt-4 flex-1 space-y-5 overflow-y-auto pr-1">
         <Loader v-if="isFetching" class="h-24" />
 
         <section v-else class="space-y-2">
           <div class="flex items-center justify-between">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              {{ t('messages.mentions') }}
+            <p
+              class="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase"
+            >
+              {{ t("messages.mentions") }}
             </p>
             <NuxtLink
               v-if="workspaceId"
@@ -234,65 +250,87 @@ if (import.meta.client) {
               class="text-[11px] font-semibold text-primary hover:underline"
               @click="sheetOpen = false"
             >
-              {{ t('common.open') }}
+              {{ t("common.open") }}
             </NuxtLink>
           </div>
 
           <div v-if="!mentions.length" class="text-sm text-muted-foreground">
-            {{ t('messages.noMentions') }}
+            {{ t("messages.noMentions") }}
           </div>
 
           <button
             v-for="mention in mentions"
             :key="mention.id"
             type="button"
-            class="w-full text-left flex items-start gap-3 rounded-xl border border-border/70 bg-background/90 px-3 py-2 transition hover:border-primary/80"
+            class="flex w-full items-start gap-3 rounded-xl border border-border/70 bg-background/90 px-3 py-2 text-left transition hover:border-primary/80"
             @click="openMention(mention)"
           >
             <span class="mt-1">
               <Icon
-                :name="mention.isRead ? 'heroicons:check-circle' : 'heroicons:circle'"
+                :name="
+                  mention.isRead ? 'heroicons:check-circle' : 'heroicons:circle'
+                "
                 size="18px"
-                :class="mention.isRead ? 'text-muted-foreground' : 'text-primary'"
+                :class="
+                  mention.isRead ? 'text-muted-foreground' : 'text-primary'
+                "
               />
             </span>
             <div class="flex-1 space-y-0.5">
-              <p class="text-sm font-semibold leading-tight">
-                {{ mention.taskName ? t('messages.mentionedTask', { task: mention.taskName }) : t('messages.mentioned') }}
+              <p class="text-sm leading-tight font-semibold">
+                {{
+                  mention.taskName
+                    ? t("messages.mentionedTask", { task: mention.taskName })
+                    : t("messages.mentioned")
+                }}
               </p>
               <p class="text-xs text-muted-foreground">
-                {{ mention.actorName ?? t('common.someone') }} · {{ formatTimestamp(mention.createdAt) }}
+                {{ mention.actorName ?? t("common.someone") }} ·
+                {{ formatTimestamp(mention.createdAt) }}
               </p>
             </div>
           </button>
         </section>
 
         <section v-if="!isFetching" class="space-y-2">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            {{ t('messages.chats') }}
+          <p
+            class="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase"
+          >
+            {{ t("messages.chats") }}
           </p>
 
-          <div v-if="!conversations.length" class="text-sm text-muted-foreground">
-            {{ t('messages.noChats') }}
+          <div
+            v-if="!conversations.length"
+            class="text-sm text-muted-foreground"
+          >
+            {{ t("messages.noChats") }}
           </div>
 
           <button
             v-for="conv in conversations"
             :key="conv.id"
             type="button"
-            class="w-full text-left flex items-start gap-3 rounded-xl border border-border/70 bg-background/90 px-3 py-2 transition hover:border-primary/80"
+            class="flex w-full items-start gap-3 rounded-xl border border-border/70 bg-background/90 px-3 py-2 text-left transition hover:border-primary/80"
             @click="openConversation(conv.id)"
           >
             <span class="mt-1">
               <Icon
-                :name="conv.unread_count > 0 ? 'heroicons:chat-bubble-left-right-solid' : 'heroicons:chat-bubble-left-right'"
+                :name="
+                  conv.unread_count > 0
+                    ? 'heroicons:chat-bubble-left-right-solid'
+                    : 'heroicons:chat-bubble-left-right'
+                "
                 size="18px"
-                :class="conv.unread_count > 0 ? 'text-primary' : 'text-muted-foreground'"
+                :class="
+                  conv.unread_count > 0
+                    ? 'text-primary'
+                    : 'text-muted-foreground'
+                "
               />
             </span>
             <div class="flex-1 space-y-0.5">
               <div class="flex items-center justify-between gap-2">
-                <p class="text-sm font-semibold leading-tight truncate">
+                <p class="truncate text-sm leading-tight font-semibold">
                   {{ conversationTitle(conv) }}
                 </p>
                 <span
@@ -302,11 +340,14 @@ if (import.meta.client) {
                   {{ conv.unread_count }}
                 </span>
               </div>
-              <p v-if="conv.last_message" class="text-xs text-muted-foreground truncate">
+              <p
+                v-if="conv.last_message"
+                class="truncate text-xs text-muted-foreground"
+              >
                 {{ conv.last_message.body }}
               </p>
               <p v-else class="text-xs text-muted-foreground">
-                {{ t('messages.noMessages') }}
+                {{ t("messages.noMessages") }}
               </p>
             </div>
           </button>
@@ -314,8 +355,10 @@ if (import.meta.client) {
       </div>
 
       <SheetFooter class="mt-6">
-        <span class="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          {{ t('messages.inbox') }}
+        <span
+          class="text-[11px] tracking-[0.2em] text-muted-foreground uppercase"
+        >
+          {{ t("messages.inbox") }}
         </span>
       </SheetFooter>
     </SheetContent>

@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import authenticatedPageProtectMiddleware from '~/middleware/page-protect/authenticatedPage';
-import useAuthStore from '~/stores/auth';
+import authenticatedPageProtectMiddleware from "~/middleware/page-protect/authenticatedPage";
+import useAuthStore from "~/stores/auth";
 
 definePageMeta({
-    layout: 'dashboard',
-    middleware: [authenticatedPageProtectMiddleware]
-})
+  layout: "dashboard",
+  middleware: [authenticatedPageProtectMiddleware],
+});
 
 useHead({
-    title: 'My tasks'
-})
+  title: "My tasks",
+});
 
-const auth = useAuthStore()
+const auth = useAuthStore();
 </script>
 
 <template>
-    <div class="h-full flex flex-col">
-        <TaskSwitcher :assignee-id="auth.user?.id" />
-    </div>
+  <div class="flex h-full flex-col">
+    <TaskSwitcher :assignee-id="auth.user?.id" mine />
+  </div>
 </template>

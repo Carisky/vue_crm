@@ -86,6 +86,24 @@ export type WorkspaceMembersResponse = {
   is_admin: boolean;
 };
 
+export type WorkspaceGroupMember = {
+  $id: string;
+  name: string | null;
+  email: string;
+};
+
+export type WorkspaceGroup = {
+  $id: string;
+  workspace_id: string;
+  name: string;
+  description: string | null;
+  color: string | null;
+  conversation_id: string | null;
+  members: WorkspaceGroupMember[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Notification = {
   id: string;
   workspaceId: string;
@@ -114,6 +132,7 @@ export type Task = TaskTimeFields & {
   priority: TaskPriority;
   due_date: string | null;
   assignee_id: string | null;
+  assignee_group_id: string | null;
   description?: string | null;
   position: number;
 };
@@ -138,6 +157,12 @@ export type TaskMedia = {
 export type FilteredTask = Task & {
   project: Project | null;
   assignee: { $id: string; name: string | null; email: string } | null;
+  assignee_group: {
+    $id: string;
+    name: string;
+    color: string | null;
+    member_ids: string[];
+  } | null;
   media: TaskMedia[];
 };
 

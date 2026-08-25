@@ -57,14 +57,20 @@ export default defineEventHandler(async (event) => {
     prisma.task.count({
       where: {
         projectId,
-        assigneeId: user.id,
+        OR: [
+          { assigneeId: user.id },
+          { assigneeGroup: { members: { some: { userId: user.id } } } },
+        ],
         createdAt: { gte: thisMonthStart, lte: thisMonthEnd },
       },
     }),
     prisma.task.count({
       where: {
         projectId,
-        assigneeId: user.id,
+        OR: [
+          { assigneeId: user.id },
+          { assigneeGroup: { members: { some: { userId: user.id } } } },
+        ],
         createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
       },
     }),
@@ -108,8 +114,7 @@ export default defineEventHandler(async (event) => {
   const completed_task_diff = thisMonthCompletedTasks - lastMonthCompletedTasks;
   const incompleted_task_count = task_count - completed_task_count;
   const incompleted_task_diff =
-    incompleted_task_count -
-    (lastMonthTasks - lastMonthCompletedTasks);
+    incompleted_task_count - (lastMonthTasks - lastMonthCompletedTasks);
   const overdue_task_count = thisMonthOverdueTasks;
   const overdue_task_diff = thisMonthOverdueTasks - lastMonthOverdueTasks;
 
