@@ -5,9 +5,17 @@ const useCreateProjectModal = () => {
   } = useUrlQuery("create_project");
 
   const isOpen = computed(() => createProjectModalOpen.value === "1");
+  const { setQueryValue: setParentProjectId } =
+    useUrlQuery("parent_project_id");
 
-  const open = () => setCreateProjectModalOpen(String(1));
-  const close = () => setCreateProjectModalOpen(null);
+  const open = (parentProjectId?: string) => {
+    setParentProjectId(parentProjectId ?? null);
+    setCreateProjectModalOpen(String(1));
+  };
+  const close = () => {
+    setCreateProjectModalOpen(null);
+    setParentProjectId(null);
+  };
 
   return {
     isOpen,

@@ -53,6 +53,10 @@ export type Project = {
   name: string;
   image_url: string | null;
   workspace_id: string;
+  parent_id: string | null;
+  progress: number;
+  completed_tasks: number;
+  total_tasks: number;
 };
 
 export type ProjectDocSummary = {
@@ -128,6 +132,7 @@ export type Task = TaskTimeFields & {
   name: string;
   workspace_id: string;
   project_id: string;
+  parent_id: string | null;
   status: TaskStatus;
   priority: TaskPriority;
   due_date: string | null;
@@ -135,6 +140,9 @@ export type Task = TaskTimeFields & {
   assignee_group_id: string | null;
   description?: string | null;
   position: number;
+  progress: number;
+  completed_subtasks: number;
+  total_subtasks: number;
 };
 
 export type TaskMediaVariant = {

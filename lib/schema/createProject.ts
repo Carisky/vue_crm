@@ -3,6 +3,7 @@ import * as z from "zod";
 export const CreateProjectsSchema = z.object({
   name: z.string().trim().min(1, "Required"),
   workspace_id: z.string(),
+  parent_project_id: z.string().trim().min(1).optional().nullable(),
   image: z
     .union([
       z

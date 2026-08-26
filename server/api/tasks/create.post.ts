@@ -87,6 +87,19 @@ export default defineEventHandler(async (event) => {
   if (!project || project.workspaceId !== workspace.id) {
     throw createError({ status: 400, statusText: "Project not found" });
   }
+  if (data.parent_task_id) {
+    const parentTask = await prisma.task.findUnique({
+      where: { id: data.parent_task_id },
+      select: { workspaceId: true, projectId: true },
+    });
+    if (
+      !parentTask ||
+      parentTask.workspaceId !== workspace.id ||
+      parentTask.projectId !== project.id
+    ) {
+      throw createError({ status: 400, statusText: "Parent task not found" });
+    }
+  }
   if (assigneeId && !assignee) {
     throw createError({ status: 400, statusText: "Assignee not found" });
   }
@@ -106,6 +119,7 @@ export default defineEventHandler(async (event) => {
         name: data.name,
         workspaceId: data.workspace_id,
         projectId: data.project_id,
+        parentId: data.parent_task_id ?? null,
         status: data.status as TaskStatus,
         priority: data.priority as TaskPriority,
         dueDate: data.due_date ?? null,

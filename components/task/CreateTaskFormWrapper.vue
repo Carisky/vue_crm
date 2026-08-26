@@ -1,12 +1,35 @@
 <script setup lang="ts">
 import { useQuery } from "@tanstack/vue-query";
 
-import type { Project, WorkspaceGroup, WorkspaceMember } from "~/lib/types";
+import type {
+  FilteredTask,
+  Project,
+  WorkspaceGroup,
+  WorkspaceMember,
+} from "~/lib/types";
 
 const { onCancel } = defineProps<{ onCancel?: () => void }>();
 
 const route = useRoute();
 const requestFetch = useRequestFetch();
+const parentTaskId = computed(() => {
+  const value = route.query["parent_task_id"];
+  return typeof value === "string" && value ? value : "";
+});
+
+const { data: parentTask, isLoading: isLoadingParentTask } =
+  useQuery<FilteredTask | null>({
+    queryKey: computed(() => ["parent-task", parentTaskId.value]),
+    queryFn: async () => {
+      if (!parentTaskId.value) return null;
+      const data = await requestFetch<{ task: FilteredTask }>(
+        `/api/tasks/${parentTaskId.value}`,
+      );
+      return data.task;
+    },
+    enabled: computed(() => Boolean(parentTaskId.value)),
+    staleTime: Infinity,
+  });
 
 const { data: projects, isLoading: isLoadingProjects } = useQuery<Project[]>({
   queryKey: ["projects", () => route.params["workspaceId"]],
@@ -50,16 +73,26 @@ const { data: groups, isLoading: isLoadingGroups } = useQuery<WorkspaceGroup[]>(
 
 const isLoading = computed(
   () =>
-    isLoadingProjects.value || isLoadingMembers.value || isLoadingGroups.value,
+    isLoadingProjects.value ||
+    isLoadingMembers.value ||
+    isLoadingGroups.value ||
+    (Boolean(parentTaskId.value) && isLoadingParentTask.value),
 );
 
-const projectOptions = computed(
-  () =>
+const projectOptions = computed(() =>
+  (
     projects.value?.map(({ $id, name, image_url }) => ({
       $id,
       name: name ?? "",
       image_url: image_url ?? undefined,
-    })) ?? [],
+    })) ?? []
+  ).sort((a, b) =>
+    a.$id === parentTask.value?.project_id
+      ? -1
+      : b.$id === parentTask.value?.project_id
+        ? 1
+        : 0,
+  ),
 );
 const memberOptions = computed(
   () =>
@@ -86,6 +119,8 @@ const groupOptions = computed(
       :project-options="projectOptions"
       :member-options="memberOptions"
       :group-options="groupOptions"
+      :parent-task-id="parentTaskId || undefined"
+      :parent-project-id="parentTask?.project_id"
       :on-cancel="onCancel"
     />
   </div>

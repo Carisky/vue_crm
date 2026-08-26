@@ -29,10 +29,19 @@ import {
   userAssigneeValue,
 } from "~/lib/task-assignee";
 
-const { projectOptions, memberOptions, groupOptions, onCancel } = defineProps<{
+const {
+  projectOptions,
+  memberOptions,
+  groupOptions,
+  parentTaskId,
+  parentProjectId,
+  onCancel,
+} = defineProps<{
   projectOptions: { $id: string; name: string; image_url?: string }[];
   memberOptions: { $id: string; name: string }[];
   groupOptions: { $id: string; name: string; color?: string | null }[];
+  parentTaskId?: string;
+  parentProjectId?: string;
   onCancel?: () => void;
 }>();
 
@@ -52,6 +61,7 @@ const getDefaultProjectId = () => {
   const routeProjectId = currentProjectId.value;
 
   return (
+    projectOptions.find((project) => project.$id === parentProjectId)?.$id ??
     projectOptions.find((project) => project.$id === routeProjectId)?.$id ??
     projectOptions[0]?.$id
   );
@@ -86,6 +96,7 @@ const form = useForm({
     priority: TaskPriority.Medium,
     assignee_id: UNASSIGNED_VALUE,
     project_id: getDefaultProjectId(),
+    parent_task_id: parentTaskId ?? null,
     description: "",
     started_at: undefined,
   },
@@ -204,6 +215,16 @@ const handleSubmit = form.handleSubmit((values) => {
             <FormField v-slot="{ componentField }" name="workspace_id">
               <Input type="hidden" v-bind="componentField" />
             </FormField>
+            <FormField v-slot="{ componentField }" name="parent_task_id">
+              <Input type="hidden" v-bind="componentField" />
+            </FormField>
+            <div
+              v-if="parentTaskId"
+              class="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
+            >
+              <Icon name="lucide:list-tree" class="size-4" />
+              {{ t("task.subtaskNotice") }}
+            </div>
             <FormField v-slot="{ componentField }" name="name">
               <FormItem>
                 <FormLabel>{{ t("task.name") }}</FormLabel>
@@ -422,6 +443,7 @@ const handleSubmit = form.handleSubmit((values) => {
                 <FormLabel>{{ t("common.project") }}</FormLabel>
                 <Select
                   :model-value="componentField.modelValue"
+                  :disabled="Boolean(parentTaskId)"
                   @update:model-value="componentField.onChange"
                 >
                   <FormControl>

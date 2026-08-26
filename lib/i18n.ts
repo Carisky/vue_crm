@@ -143,6 +143,18 @@ const en = {
   "project.deleteWarning":
     "Deleting a project is irreversible and will remove all associated data.",
   "project.noneFound": "No projects found",
+  "project.createSubproject": "Create subproject",
+  "project.subprojectNotice": "This project will be created as a subproject.",
+  "project.progress": "Project progress",
+  "project.progressDescription":
+    "Includes tasks in this project and all subprojects.",
+  "task.subtasks": "Subtasks",
+  "task.subtaskNotice": "This task will be created as a subtask.",
+  "task.createSubtask": "Create subtask",
+  "task.progressDescription":
+    "Progress is calculated from the leaf tasks in this branch.",
+  "task.noSubtasks": "No subtasks yet.",
+  "common.progress": "Progress",
   "upload.imageHint": "JPG, PNG, SVG or JPEG, max 1MB",
   "task.createTitle": "Create a new task",
   "task.create": "Create task",
@@ -422,6 +434,18 @@ type Messages = Record<TranslationKey, string>;
 
 const pl: Messages = {
   ...en,
+  "project.createSubproject": "Utwórz podprojekt",
+  "project.subprojectNotice": "Ten projekt zostanie utworzony jako podprojekt.",
+  "project.progress": "Postęp projektu",
+  "project.progressDescription":
+    "Obejmuje zadania w tym projekcie i we wszystkich podprojektach.",
+  "task.subtasks": "Podzadania",
+  "task.subtaskNotice": "To zadanie zostanie utworzone jako podzadanie.",
+  "task.createSubtask": "Utwórz podzadanie",
+  "task.progressDescription":
+    "Postęp jest obliczany na podstawie końcowych zadań w tej gałęzi.",
+  "task.noSubtasks": "Brak podzadań.",
+  "common.progress": "Postęp",
   "nav.groups": "Grupy",
   "header.groups.description": "Zespoły obszaru roboczego i ich czaty",
   "groups.title": "Grupy obszaru roboczego",
@@ -839,6 +863,18 @@ const pl: Messages = {
 
 const ru: Messages = {
   ...en,
+  "project.createSubproject": "Создать подпроект",
+  "project.subprojectNotice": "Этот проект будет создан как подпроект.",
+  "project.progress": "Прогресс проекта",
+  "project.progressDescription":
+    "Учитываются задачи этого проекта и всех его подпроектов.",
+  "task.subtasks": "Подзадачи",
+  "task.subtaskNotice": "Эта задача будет создана как подзадача.",
+  "task.createSubtask": "Создать подзадачу",
+  "task.progressDescription":
+    "Прогресс рассчитывается по конечным задачам этой ветки.",
+  "task.noSubtasks": "Подзадач пока нет.",
+  "common.progress": "Прогресс",
   "nav.groups": "Группы",
   "header.groups.description": "Команды пространства и их чаты",
   "groups.title": "Группы пространства",
@@ -1256,6 +1292,18 @@ const ru: Messages = {
 
 const uk: Messages = {
   ...en,
+  "project.createSubproject": "Створити підпроєкт",
+  "project.subprojectNotice": "Цей проєкт буде створено як підпроєкт.",
+  "project.progress": "Прогрес проєкту",
+  "project.progressDescription":
+    "Враховуються завдання цього проєкту та всіх його підпроєктів.",
+  "task.subtasks": "Підзавдання",
+  "task.subtaskNotice": "Це завдання буде створено як підзавдання.",
+  "task.createSubtask": "Створити підзавдання",
+  "task.progressDescription":
+    "Прогрес розраховується за кінцевими завданнями цієї гілки.",
+  "task.noSubtasks": "Підзавдань поки немає.",
+  "common.progress": "Прогрес",
   "nav.groups": "Групи",
   "header.groups.description": "Команди робочого простору та їхні чати",
   "groups.title": "Групи робочого простору",

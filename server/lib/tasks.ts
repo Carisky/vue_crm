@@ -101,6 +101,27 @@ export async function updateTask(
         statusText: "Project not found",
       });
     }
+    if (params.data.project_id !== task.projectId) {
+      const [parentTask, childCount] = await Promise.all([
+        task.parentId
+          ? prisma.task.findUnique({
+              where: { id: task.parentId },
+              select: { projectId: true },
+            })
+          : null,
+        prisma.task.count({ where: { parentId: task.id } }),
+      ]);
+      if (
+        (parentTask && parentTask.projectId !== params.data.project_id) ||
+        childCount > 0
+      ) {
+        if (options?.skipErrors) return null;
+        throw createError({
+          status: 400,
+          statusText: "A task branch must stay in one project",
+        });
+      }
+    }
   }
 
   const updateData: Prisma.TaskUncheckedUpdateInput = {};

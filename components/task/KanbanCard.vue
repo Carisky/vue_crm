@@ -27,6 +27,12 @@ const { task } = defineProps<{ task: FilteredTask }>();
         {{ taskPriorityLabels[task.priority] }}
       </Badge>
     </div>
+    <ProgressBar
+      :value="task.progress"
+      :completed="task.completed_subtasks"
+      :total="task.total_subtasks"
+      compact
+    />
     <DottedSeparator />
     <div class="flex items-center gap-x-1.5">
       <WorkspaceGroupAvatar

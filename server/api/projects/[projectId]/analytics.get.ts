@@ -7,6 +7,7 @@ import {
   requireWorkspaceMembership,
 } from "~/server/lib/permissions";
 import { serializeProject } from "~/server/lib/serializers";
+import { buildProjectProgressMap } from "~/lib/hierarchy";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -27,6 +28,25 @@ export default defineEventHandler(async (event) => {
   );
 
   const now = new Date();
+  const [workspaceProjects, workspaceTasks] = await Promise.all([
+    prisma.project.findMany({
+      where: { workspaceId: project.workspaceId },
+      select: { id: true, parentId: true },
+    }),
+    prisma.task.findMany({
+      where: { workspaceId: project.workspaceId },
+      select: { id: true, parentId: true, projectId: true, status: true },
+    }),
+  ]);
+  const projectProgress = buildProjectProgressMap(
+    workspaceProjects,
+    workspaceTasks.map((task) => ({
+      id: task.id,
+      parentId: task.parentId,
+      projectId: task.projectId,
+      done: task.status === TaskStatus.DONE,
+    })),
+  ).get(project.id);
   const thisMonthStart = startOfMonth(now);
   const thisMonthEnd = endOfMonth(now);
   const lastMonthStart = startOfMonth(subMonths(now, 1));
@@ -119,7 +139,7 @@ export default defineEventHandler(async (event) => {
   const overdue_task_diff = thisMonthOverdueTasks - lastMonthOverdueTasks;
 
   return {
-    project: serializeProject(project),
+    project: serializeProject(project, projectProgress),
     analytic_data: {
       task_count,
       task_diff,

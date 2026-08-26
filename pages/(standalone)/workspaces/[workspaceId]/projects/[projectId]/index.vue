@@ -12,6 +12,8 @@ definePageMeta({
 const route = useRoute()
 const queryClient = useQueryClient()
 const requestFetch = useRequestFetch()
+const { open: openProjectModal } = useCreateProjectModal()
+const { t } = useAppI18n()
 const projectId = computed(() => String(route.params['projectId'] ?? ''))
 
 const { data, isPending, isRefetching, suspense } = useQuery<{
@@ -89,6 +91,10 @@ onUnmounted(() => {
             </div>
             <div class="w-full sm:w-auto">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <Button variant="secondary" size="sm" class="w-full sm:w-auto" @click="openProjectModal(projectId)">
+                        <Icon name="lucide:git-branch-plus" size="16px" class="size-4 mr-1" />
+                        {{ t('project.createSubproject') }}
+                    </Button>
                     <Button variant="secondary" size="sm" :as-child="true" class="w-full sm:w-auto">
                         <NuxtLink
                             :href="`/workspaces/${route.params['workspaceId']}/projects/${route.params['projectId']}/docs`">
@@ -107,6 +113,16 @@ onUnmounted(() => {
             </div>
         </div>
 
+        <Card class="gap-3 p-4">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <p class="font-medium">{{ t('project.progress') }}</p>
+                    <p class="text-sm text-muted-foreground">{{ t('project.progressDescription') }}</p>
+                </div>
+                <span class="text-xl font-semibold tabular-nums">{{ data.project.progress }}%</span>
+            </div>
+            <ProgressBar :value="data.project.progress" :completed="data.project.completed_tasks" :total="data.project.total_tasks" />
+        </Card>
         <ProjectAnalytics :data="data.analytic_data" />
         <TaskSwitcher :project-id="String(route.params['projectId'])" />
     </div>

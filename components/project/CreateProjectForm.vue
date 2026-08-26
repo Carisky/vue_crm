@@ -13,6 +13,10 @@ const { onCancel } = defineProps<{ onCancel?: () => void }>()
 const route = useRoute()
 const queryClient = useQueryClient()
 const { t } = useAppI18n()
+const parentProjectId = computed(() => {
+    const value = route.query['parent_project_id']
+    return typeof value === 'string' && value ? value : null
+})
 
 configure({
     validateOnBlur: false
@@ -21,7 +25,8 @@ configure({
 const form = useForm({
     validationSchema: toTypedSchema(CreateProjectsSchema),
     initialValues: {
-        workspace_id: String(route.params['workspaceId'])
+        workspace_id: String(route.params['workspaceId']),
+        parent_project_id: parentProjectId.value
     }
 })
 
@@ -46,6 +51,7 @@ const { isPending, mutate } = useMutation({
         const manualFormData = new FormData()
         manualFormData.append('name', formData.name!)
         manualFormData.append('workspace_id', formData.workspace_id!)
+        if (formData.parent_project_id) manualFormData.append('parent_project_id', formData.parent_project_id)
         if (fileInputRef.value?.files?.[0]) manualFormData.append('image', fileInputRef.value.files[0])
 
         const res =
@@ -88,6 +94,13 @@ const handleSubmit = form.handleSubmit((values) => mutate(values))
                         <FormField v-slot="{ componentField }" name="workspace_id">
                             <Input type="hidden" v-bind="componentField" />
                         </FormField>
+                        <FormField v-slot="{ componentField }" name="parent_project_id">
+                            <Input type="hidden" v-bind="componentField" />
+                        </FormField>
+                        <div v-if="parentProjectId" class="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                            <Icon name="lucide:git-branch" class="size-4" />
+                            {{ t('project.subprojectNotice') }}
+                        </div>
                         <FormField v-slot="{ componentField }" name="name">
                             <FormItem>
                                 <FormLabel>{{ t('project.name') }}</FormLabel>

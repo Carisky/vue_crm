@@ -8,6 +8,7 @@ import {
 import { deleteTaskMediaObjects } from "~/server/lib/task-media-delete";
 import { getPrivateStorage } from "~/server/lib/storage";
 import { broadcastTaskEvent } from "~/server/lib/task-events";
+import { collectDescendantIds } from "~/lib/hierarchy";
 
 export default defineEventHandler(async (event) => {
   requireUser(event);
@@ -19,7 +20,6 @@ export default defineEventHandler(async (event) => {
 
   const task = await prisma.task.findUnique({
     where: { id: taskId },
-    include: { media: { include: { variants: true } } },
   });
   if (!task) {
     throw createError({ status: 404, statusText: "Task not found" });
@@ -29,7 +29,17 @@ export default defineEventHandler(async (event) => {
     MemberRole.ADMIN,
   ]);
 
-  await deleteTaskMediaObjects(task.media, getPrivateStorage().storage);
+  const workspaceTasks = await prisma.task.findMany({
+    where: { workspaceId: task.workspaceId },
+    select: { id: true, parentId: true },
+  });
+  const taskIds = collectDescendantIds(workspaceTasks, task.id);
+  const branchMedia = await prisma.taskMedia.findMany({
+    where: { taskId: { in: taskIds } },
+    include: { variants: true },
+  });
+
+  await deleteTaskMediaObjects(branchMedia, getPrivateStorage().storage);
 
   await prisma.task.delete({ where: { id: taskId } });
 

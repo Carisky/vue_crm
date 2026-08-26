@@ -36,6 +36,7 @@ export const CreateTasksSchema = z
     ),
     workspace_id: z.string().trim().min(1, "Required"),
     project_id: z.string().trim().min(1, "Required"),
+    parent_task_id: z.string().trim().min(1).optional().nullable(),
     status: z.nativeEnum(TaskStatus, { required_error: "Required" }),
     priority: z.nativeEnum(TaskPriority, { required_error: "Required" }),
     due_date: optionalDueDateField,

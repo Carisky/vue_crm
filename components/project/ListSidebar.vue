@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query'
-import ProjectAvatar from './ProjectAvatar.vue'
+import ProjectTreeItem from './TreeItem.vue'
 
 import type { Project, Workspace } from '~/lib/types';
 
@@ -39,6 +39,10 @@ const { data: projects, isLoading } = useQuery<Project[]>
     })
 
 const { open } = useCreateProjectModal()
+const rootProjects = computed(() => {
+    const ids = new Set((projects.value ?? []).map((project) => project.$id))
+    return (projects.value ?? []).filter((project) => !project.parent_id || !ids.has(project.parent_id))
+})
 </script>
 
 <template>
@@ -46,7 +50,7 @@ const { open } = useCreateProjectModal()
         <div class="flex items-center justify-between text-sidebar-foreground/85">
             <p class="text-xs uppercase">{{ t('nav.projects') }}</p>
             <button
-                @click="open"
+                @click="() => open()"
                 class="flex items-center justify-center text-sidebar-foreground hover:text-sidebar-primary"
             >
                 <Icon
@@ -65,16 +69,13 @@ const { open } = useCreateProjectModal()
         </div>
 
         <template v-if="projects?.length">
-            <NuxtLink
-                v-for="project of projects"
+            <ProjectTreeItem
+                v-for="project of rootProjects"
                 :key="project.$id"
-                :href="`/workspaces/${workspaceId}/projects/${project.$id}`"
-                active-class="bg-sidebar-primary/15 text-sidebar-foreground shadow-sm"
-                class="flex items-center gap-2.5 p-2.5 rounded-md text-sidebar-foreground transition hover:text-sidebar-primary hover:bg-sidebar-primary/5"
-            >
-                <ProjectAvatar :name="project.name" :image="project.image_url ?? undefined" />
-                <span class="truncate">{{ project.name }}</span>
-            </NuxtLink>
+                :project="project"
+                :projects="projects"
+                :workspace-id="workspaceId"
+            />
         </template>
     </div>
 </template>

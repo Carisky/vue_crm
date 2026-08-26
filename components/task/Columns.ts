@@ -13,7 +13,7 @@ import {
   type FilteredTask,
   type Project,
 } from "~/lib/types";
-import { Badge, Button, Icon, ProjectAvatar } from "#components";
+import { Badge, Button, Icon, ProgressBar, ProjectAvatar } from "#components";
 import MemberAvatar from "../workspace/member/MemberAvatar.vue";
 import Actions from "./Actions.vue";
 
@@ -53,6 +53,20 @@ export const createColumns = (
         const name = String(row.getValue("name") ?? "");
         return h("p", { class: "line-clamp-2 break-words", title: name }, name);
       })(),
+  },
+  {
+    accessorKey: "progress",
+    size: 150,
+    minSize: 120,
+    meta: { label: t("common.progress"), headerClass: "w-[150px]" },
+    header: t("common.progress"),
+    cell: ({ row }) =>
+      h(ProgressBar, {
+        value: row.original.progress,
+        completed: row.original.completed_subtasks,
+        total: row.original.total_subtasks,
+        compact: true,
+      }),
   },
   {
     accessorKey: "project",

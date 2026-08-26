@@ -233,6 +233,7 @@ const handleSubmit = form.handleSubmit((values) => {
                 <FormLabel>{{ t("common.assignee") }}</FormLabel>
                 <Select
                   :default-value="componentField.modelValue"
+                  :disabled="Boolean(initialValues.parent_id)"
                   @update:model-value="componentField.onChange"
                 >
                   <FormControl>

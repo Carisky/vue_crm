@@ -7,6 +7,7 @@ import {
   requireWorkspaceMembership,
 } from "~/server/lib/permissions";
 import { serializeTask } from "~/server/lib/serializers";
+import { buildLeafProgressMap } from "~/lib/hierarchy";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -75,18 +76,34 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const tasks = await prisma.task.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: {
-      project: true,
-      assignee: true,
-      assigneeGroup: { include: { members: true } },
-      media: { include: { variants: true } },
-    },
-  });
+  const [tasks, workspaceTasks] = await Promise.all([
+    prisma.task.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: {
+        project: true,
+        assignee: true,
+        assigneeGroup: { include: { members: true } },
+        media: { include: { variants: true } },
+      },
+    }),
+    prisma.task.findMany({
+      where: { workspaceId: workspace_id },
+      select: { id: true, parentId: true, status: true },
+    }),
+  ]);
 
-  const serializedTasks = tasks.map((task) => serializeTask(task));
+  const progress = buildLeafProgressMap(
+    workspaceTasks.map((task) => ({
+      id: task.id,
+      parentId: task.parentId,
+      done: task.status === TaskStatus.DONE,
+    })),
+  );
+
+  const serializedTasks = tasks.map((task) =>
+    serializeTask(task, progress.get(task.id)),
+  );
 
   return { tasks: serializedTasks };
 });
