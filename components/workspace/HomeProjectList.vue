@@ -14,7 +14,7 @@ const { t } = useAppI18n()
                 <p class="text-lg font-semibold">
                     {{ t('nav.projects') }} ({{ projects.length }})
                 </p>
-                <Button variant="secondary" size="icon" @click="openProjectModal">
+                <Button variant="secondary" size="icon" @click="() => openProjectModal()">
                     <Icon name="lucide:plus" size="16px" class="size-4 text-muted-foreground" />
                 </Button>
             </div>

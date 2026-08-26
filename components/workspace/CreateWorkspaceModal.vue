@@ -2,16 +2,15 @@
 import { ResponsiveModal } from '#components';
 import CreateWorkspaceForm from './CreateWorkspaceForm.vue';
 
-const { isOpen, open, close } = useCreateWorkspaceModal()
+const { isOpen, close } = useCreateWorkspaceModal()
 
 const onModalOpenUpdate = (isOpen: boolean) => {
-    if (isOpen) open()
-    else close()
+    if (!isOpen) close()
 }
 </script>
 
 <template>
     <ResponsiveModal :open="isOpen" @open-update="onModalOpenUpdate">
-        <CreateWorkspaceForm :on-cancel="close" />
+        <CreateWorkspaceForm v-if="isOpen" :on-cancel="close" />
     </ResponsiveModal>
 </template>

@@ -113,16 +113,14 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <Card class="gap-3 p-4">
-            <div class="flex items-center justify-between gap-4">
-                <div>
-                    <p class="font-medium">{{ t('project.progress') }}</p>
-                    <p class="text-sm text-muted-foreground">{{ t('project.progressDescription') }}</p>
-                </div>
-                <span class="text-xl font-semibold tabular-nums">{{ data.project.progress }}%</span>
-            </div>
-            <ProgressBar :value="data.project.progress" :completed="data.project.completed_tasks" :total="data.project.total_tasks" />
-        </Card>
+        <div class="flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
+            <span class="shrink-0 text-sm font-medium">{{ t('project.progress') }}</span>
+            <ProgressBar class="min-w-24 flex-1" :value="data.project.progress"
+                :completed="data.project.completed_tasks" :total="data.project.total_tasks" compact />
+            <span class="shrink-0 text-xs text-muted-foreground tabular-nums">
+                {{ data.project.completed_tasks }}/{{ data.project.total_tasks }}
+            </span>
+        </div>
         <ProjectAnalytics :data="data.analytic_data" />
         <TaskSwitcher :project-id="String(route.params['projectId'])" />
     </div>

@@ -9,7 +9,9 @@ const useCreateProjectModal = () => {
     useUrlQuery("parent_project_id");
 
   const open = (parentProjectId?: string) => {
-    setParentProjectId(parentProjectId ?? null);
+    setParentProjectId(
+      typeof parentProjectId === "string" ? parentProjectId : null,
+    );
     setCreateProjectModalOpen(String(1));
   };
   const close = () => {

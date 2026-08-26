@@ -56,9 +56,9 @@ export const createColumns = (
   },
   {
     accessorKey: "progress",
-    size: 150,
-    minSize: 120,
-    meta: { label: t("common.progress"), headerClass: "w-[150px]" },
+    size: 120,
+    minSize: 90,
+    meta: { label: t("common.progress"), headerClass: "w-[120px]" },
     header: t("common.progress"),
     cell: ({ row }) =>
       h(ProgressBar, {

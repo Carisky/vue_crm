@@ -99,13 +99,11 @@ export const useParamWatcherStore = defineStore("urlParamWatcher", () => {
         ...(options?.preserveHash && route.hash ? { hash: route.hash } : {}),
       };
 
-      if (options?.replace) {
-        router.replace(navigationOptions);
-      } else {
-        router.push(navigationOptions);
-      }
+      const navigation = options?.replace
+        ? router.replace(navigationOptions)
+        : router.push(navigationOptions);
 
-      nextTick().then(() => cleanup(routeKey));
+      void navigation.finally(() => cleanup(routeKey));
     }, delay);
   };
 

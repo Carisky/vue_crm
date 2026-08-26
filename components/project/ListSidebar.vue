@@ -26,7 +26,7 @@ const workspaceId = computed(() => {
     return workspaces.value?.[0]?.$id ?? ''
 })
 
-const { data: projects, isLoading } = useQuery<Project[]>
+const { data: projects } = useQuery<Project[]>
     ({
         queryKey: ['projects', workspaceId],
         queryFn: async () => {
@@ -54,13 +54,6 @@ const rootProjects = computed(() => {
                 class="flex items-center justify-center text-sidebar-foreground hover:text-sidebar-primary"
             >
                 <Icon
-                    v-if="isLoading && !projects"
-                    name="svg-spinners:8-dots-rotate"
-                    size="20px"
-                    class="size-5 text-sidebar-foreground/80"
-                />
-                <Icon
-                    v-else
                     name="heroicons:plus-circle-20-solid"
                     size="20px"
                     class="size-5 text-sidebar-foreground/85 cursor-pointer transition hover:opacity-75"

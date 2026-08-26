@@ -9,11 +9,18 @@ const { open, onOpenUpdate } = defineProps<{
 }>()
 
 const isDesktop = ref<boolean | undefined>(undefined)
+let mediaQuery: MediaQueryList | null = null
+const updateMode = () => {
+    isDesktop.value = mediaQuery?.matches ?? false
+}
 
 onMounted(() => {
-    let mql = window.matchMedia("(width >= 1024px)");
-    isDesktop.value = mql.matches
+    mediaQuery = window.matchMedia("(width >= 1024px)");
+    updateMode()
+    mediaQuery.addEventListener('change', updateMode)
 })
+
+onUnmounted(() => mediaQuery?.removeEventListener('change', updateMode))
 </script>
 
 <template>

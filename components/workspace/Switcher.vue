@@ -8,7 +8,7 @@ const route = useRoute()
 const requestFetch = useRequestFetch()
 const { t } = useAppI18n()
 
-const { data, isLoading } = useQuery<Workspace[]>
+const { data } = useQuery<Workspace[]>
     ({
         queryKey: ['workspaces/all'],
         queryFn: async () => {
@@ -44,13 +44,6 @@ watch([() => route.params['workspaceId'], () => route.query['workspace_id'], dat
             <p class="text-xs uppercase">{{ t('nav.workspaces') }}</p>
             <button @click="open" class="flex items-center justify-center text-sidebar-foreground hover:text-sidebar-primary">
                 <Icon
-                    v-if="isLoading && !data"
-                    name="svg-spinners:8-dots-rotate"
-                    size="20px"
-                    class="size-5 text-sidebar-foreground/85"
-                />
-                <Icon
-                    v-else
                     name="heroicons:plus-circle-20-solid"
                     size="20px"
                     class="size-5 text-sidebar-foreground/85 cursor-pointer transition hover:opacity-75"

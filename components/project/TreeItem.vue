@@ -32,7 +32,7 @@ const children = computed(() =>
       <NuxtLink
         :href="`/workspaces/${workspaceId}/projects/${project.$id}`"
         active-class="bg-sidebar-primary/15 text-sidebar-foreground shadow-sm"
-        class="flex min-w-0 items-center gap-2 rounded-md px-2 py-2 text-sidebar-foreground transition hover:bg-sidebar-primary/5 hover:text-sidebar-primary"
+        class="flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-sidebar-foreground transition hover:bg-sidebar-primary/5 hover:text-sidebar-primary"
       >
         <button
           v-if="children.length"
@@ -49,10 +49,10 @@ const children = computed(() =>
         <ProjectAvatar
           :name="project.name"
           :image="project.image_url ?? undefined"
-          class="size-7 shrink-0"
+          class="size-6 shrink-0"
         />
         <div class="min-w-0 flex-1">
-          <div class="flex min-w-0 items-center gap-1">
+          <div class="flex min-w-0 items-center gap-1 leading-tight">
             <span class="truncate text-sm">{{ project.name }}</span>
             <button
               type="button"
