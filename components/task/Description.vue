@@ -50,8 +50,9 @@ const { isPending, mutate: save } = useMutation({
                 <template v-else>{{ t('task.saveChanges') }}</template>
             </Button>
         </div>
-        <div v-else>
-            <template v-if="task.description">{{ task.description }}</template>
+        <div v-else class="min-w-0">
+            <div v-if="task.description"
+                class="max-h-96 overflow-y-auto whitespace-pre-wrap break-words pr-2 leading-relaxed">{{ task.description }}</div>
             <span v-else class="text-muted-foreground">{{ t('task.noDescription') }}</span>
         </div>
         
