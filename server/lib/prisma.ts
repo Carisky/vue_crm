@@ -12,7 +12,19 @@ function getDatabaseAdapter() {
   if (!url) {
     throw new Error("DATABASE_URL is not defined.");
   }
-  return new PrismaMariaDb(url);
+
+  const configuredConnectionLimit =
+    process.env.DATABASE_CONNECTION_LIMIT ?? "30";
+  const connectionLimit = Number(configuredConnectionLimit);
+  if (!Number.isSafeInteger(connectionLimit) || connectionLimit <= 0) {
+    throw new Error(
+      "DATABASE_CONNECTION_LIMIT must be a positive safe integer.",
+    );
+  }
+
+  const poolUrl = new URL(url);
+  poolUrl.searchParams.set("connectionLimit", String(connectionLimit));
+  return new PrismaMariaDb(poolUrl.toString());
 }
 
 function createPrismaClient() {
