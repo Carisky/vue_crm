@@ -1,6 +1,6 @@
 import { MemberRole, TaskStatus } from "@prisma/client";
-import { endOfMonth, startOfMonth, subMonths } from "date-fns";
 
+import { calculateTaskAnalytics } from "~/lib/task-analytics";
 import prisma from "~/server/lib/prisma";
 import {
   requireUser,
@@ -35,7 +35,16 @@ export default defineEventHandler(async (event) => {
     }),
     prisma.task.findMany({
       where: { workspaceId: project.workspaceId },
-      select: { id: true, parentId: true, projectId: true, status: true },
+      select: {
+        id: true,
+        parentId: true,
+        projectId: true,
+        status: true,
+        createdAt: true,
+        dueDate: true,
+        assigneeId: true,
+        assigneeGroup: { select: { members: { select: { userId: true } } } },
+      },
     }),
   ]);
   const projectProgress = buildProjectProgressMap(
@@ -47,111 +56,15 @@ export default defineEventHandler(async (event) => {
       done: task.status === TaskStatus.DONE,
     })),
   ).get(project.id);
-  const thisMonthStart = startOfMonth(now);
-  const thisMonthEnd = endOfMonth(now);
-  const lastMonthStart = startOfMonth(subMonths(now, 1));
-  const lastMonthEnd = endOfMonth(subMonths(now, 1));
-
-  const [
-    thisMonthTasks,
-    lastMonthTasks,
-    thisMonthAssignedTasks,
-    lastMonthAssignedTasks,
-    thisMonthCompletedTasks,
-    lastMonthCompletedTasks,
-    thisMonthOverdueTasks,
-    lastMonthOverdueTasks,
-  ] = await Promise.all([
-    prisma.task.count({
-      where: {
-        projectId,
-        createdAt: { gte: thisMonthStart, lte: thisMonthEnd },
-      },
-    }),
-    prisma.task.count({
-      where: {
-        projectId,
-        createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
-      },
-    }),
-    prisma.task.count({
-      where: {
-        projectId,
-        OR: [
-          { assigneeId: user.id },
-          { assigneeGroup: { members: { some: { userId: user.id } } } },
-        ],
-        createdAt: { gte: thisMonthStart, lte: thisMonthEnd },
-      },
-    }),
-    prisma.task.count({
-      where: {
-        projectId,
-        OR: [
-          { assigneeId: user.id },
-          { assigneeGroup: { members: { some: { userId: user.id } } } },
-        ],
-        createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
-      },
-    }),
-    prisma.task.count({
-      where: {
-        projectId,
-        status: TaskStatus.DONE,
-        createdAt: { gte: thisMonthStart, lte: thisMonthEnd },
-      },
-    }),
-    prisma.task.count({
-      where: {
-        projectId,
-        status: TaskStatus.DONE,
-        createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
-      },
-    }),
-    prisma.task.count({
-      where: {
-        projectId,
-        status: { not: TaskStatus.DONE },
-        dueDate: { lt: now },
-        createdAt: { gte: thisMonthStart, lte: thisMonthEnd },
-      },
-    }),
-    prisma.task.count({
-      where: {
-        projectId,
-        status: { not: TaskStatus.DONE },
-        dueDate: { lt: now },
-        createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
-      },
-    }),
-  ]);
-
-  const task_count = thisMonthTasks;
-  const task_diff = thisMonthTasks - lastMonthTasks;
-  const assigned_task_count = thisMonthAssignedTasks;
-  const assigned_task_diff = thisMonthAssignedTasks - lastMonthAssignedTasks;
-  const completed_task_count = thisMonthCompletedTasks;
-  const completed_task_diff = thisMonthCompletedTasks - lastMonthCompletedTasks;
-  const incompleted_task_count = task_count - completed_task_count;
-  const incompleted_task_diff =
-    incompleted_task_count - (lastMonthTasks - lastMonthCompletedTasks);
-  const overdue_task_count = thisMonthOverdueTasks;
-  const overdue_task_diff = thisMonthOverdueTasks - lastMonthOverdueTasks;
+  const analyticData = calculateTaskAnalytics(
+    workspaceTasks.filter((task) => task.projectId === projectId),
+    user.id,
+    now,
+  );
 
   return {
     project: serializeProject(project, projectProgress),
-    analytic_data: {
-      task_count,
-      task_diff,
-      assigned_task_count,
-      assigned_task_diff,
-      completed_task_count,
-      completed_task_diff,
-      incompleted_task_count,
-      incompleted_task_diff,
-      overdue_task_count,
-      overdue_task_diff,
-    },
+    analytic_data: analyticData,
     is_owner: project.workspace.ownerId === user.id,
     is_admin: membership.role === MemberRole.ADMIN,
   };
