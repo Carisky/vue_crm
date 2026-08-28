@@ -1,7 +1,9 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
+import { normalizeTelegramLocale, telegramT } from "~/lib/telegram-i18n";
 import prisma from "~/server/lib/prisma";
 import {
+  configureTelegramMiniAppMenu,
   getTelegramConfig,
   getTelegramMiniAppUrl,
   sendTelegramMessage,
@@ -34,17 +36,28 @@ function startToken(text: string) {
     .match(/^\/start(?:@[A-Za-z0-9_]+)?(?:\s+([A-Za-z0-9_-]+))?$/)?.[1];
 }
 
-async function sendMiniAppButton(chatId: string, chatCount: number) {
+async function sendMiniAppButton(
+  chatId: string,
+  chatCount: number,
+  locale: string,
+) {
   const webAppUrl = getTelegramMiniAppUrl();
+  try {
+    await configureTelegramMiniAppMenu({ chatId, locale });
+  } catch (error) {
+    console.warn("[telegram] failed to configure a localized Mini App menu", {
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
   await sendTelegramMessage(
     chatId,
-    `Готово. Доступно рабочих чатов: ${chatCount}. Нажмите кнопку ниже — команды вводить не нужно.`,
+    telegramT(locale, "bot.ready", { count: chatCount }),
     {
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: "Открыть рабочие чаты",
+              text: telegramT(locale, "bot.openChats"),
               web_app: { url: webAppUrl },
             },
           ],
@@ -60,11 +73,15 @@ async function connectFromStart(message: TelegramMessage, token: string) {
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const linkToken = await prisma.telegramLinkToken.findUnique({
     where: { tokenHash },
+    include: { user: { select: { locale: true } } },
   });
+  const locale = normalizeTelegramLocale(
+    linkToken?.user.locale ?? message.from.language_code,
+  );
   if (!linkToken || linkToken.usedAt || linkToken.expiresAt <= new Date()) {
     await sendTelegramMessage(
       String(message.chat.id),
-      "Эта ссылка устарела. Откройте CRM и создайте новый QR-код.",
+      telegramT(locale, "bot.linkExpired"),
     );
     return;
   }
@@ -78,7 +95,7 @@ async function connectFromStart(message: TelegramMessage, token: string) {
   if (existingOwner && existingOwner.userId !== linkToken.userId) {
     await sendTelegramMessage(
       telegramChatId,
-      "Этот Telegram уже привязан к другому пользователю CRM.",
+      telegramT(locale, "bot.linkedElsewhere"),
     );
     return;
   }
@@ -124,7 +141,7 @@ async function connectFromStart(message: TelegramMessage, token: string) {
   if (!connection) {
     await sendTelegramMessage(
       telegramChatId,
-      "Эта ссылка уже использована. Создайте новый QR-код в CRM.",
+      telegramT(locale, "bot.linkUsed"),
     );
     return;
   }
@@ -132,7 +149,7 @@ async function connectFromStart(message: TelegramMessage, token: string) {
   const count = await prisma.conversationParticipant.count({
     where: { userId: connection.userId },
   });
-  await sendMiniAppButton(telegramChatId, count);
+  await sendMiniAppButton(telegramChatId, count, locale);
 }
 
 async function processMessage(message: TelegramMessage) {
@@ -148,11 +165,15 @@ async function processMessage(message: TelegramMessage) {
 
   const connection = await prisma.telegramConnection.findUnique({
     where: { telegramUserId: String(message.from.id) },
+    include: { user: { select: { locale: true } } },
   });
+  const locale = normalizeTelegramLocale(
+    connection?.user.locale ?? message.from.language_code,
+  );
   if (!connection || connection.telegramChatId !== String(message.chat.id)) {
     await sendTelegramMessage(
       String(message.chat.id),
-      "Сначала откройте CRM, нажмите кнопку Telegram и отсканируйте QR-код.",
+      telegramT(locale, "bot.linkFirst"),
     );
     return;
   }
@@ -160,7 +181,7 @@ async function processMessage(message: TelegramMessage) {
   const count = await prisma.conversationParticipant.count({
     where: { userId: connection.userId },
   });
-  await sendMiniAppButton(connection.telegramChatId, count);
+  await sendMiniAppButton(connection.telegramChatId, count, locale);
 }
 
 export default defineEventHandler(async (event) => {

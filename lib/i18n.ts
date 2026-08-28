@@ -302,7 +302,7 @@ const en = {
   "telegram.link": "Link Telegram",
   "telegram.linkTitle": "Link Telegram",
   "telegram.linkDescription":
-    "Receive all available working chats in Telegram and reply back to CRM.",
+    "Receive all available working chats in Telegram",
   "telegram.notConfigured":
     "Telegram is not configured on the server yet. Add the bot token, username and webhook secret.",
   "telegram.connected": "Telegram connected",
@@ -500,7 +500,7 @@ const pl: Messages = {
   "telegram.link": "Połącz Telegram",
   "telegram.linkTitle": "Połącz Telegram",
   "telegram.linkDescription":
-    "Odbieraj wszystkie dostępne czaty robocze w Telegramie i odpowiadaj do CRM.",
+    "Odbieraj wszystkie dostępne czaty robocze w Telegramie",
   "telegram.notConfigured":
     "Telegram nie jest jeszcze skonfigurowany na serwerze. Dodaj token bota, nazwę użytkownika i sekret webhooka.",
   "telegram.connected": "Telegram połączony",
@@ -949,7 +949,7 @@ const ru: Messages = {
   "telegram.link": "Подключить Telegram",
   "telegram.linkTitle": "Подключение Telegram",
   "telegram.linkDescription":
-    "Получайте все доступные рабочие чаты в Telegram и отвечайте обратно в CRM.",
+    "Получайте все доступные рабочие чаты в Telegram",
   "telegram.notConfigured":
     "Telegram ещё не настроен на сервере. Добавьте токен, имя бота и секрет webhook.",
   "telegram.connected": "Telegram подключён",
@@ -1398,7 +1398,7 @@ const uk: Messages = {
   "telegram.link": "Підключити Telegram",
   "telegram.linkTitle": "Підключення Telegram",
   "telegram.linkDescription":
-    "Отримуйте всі доступні робочі чати в Telegram і відповідайте назад у CRM.",
+    "Отримуйте всі доступні робочі чати в Telegram",
   "telegram.notConfigured":
     "Telegram ще не налаштований на сервері. Додайте токен, ім’я бота та секрет webhook.",
   "telegram.connected": "Telegram підключено",

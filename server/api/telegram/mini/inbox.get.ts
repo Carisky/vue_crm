@@ -1,9 +1,13 @@
 import prisma from "~/server/lib/prisma";
 import { requireTelegramMiniAppUser } from "~/server/lib/telegram-mini-app";
-import { telegramConversationTitle } from "~/server/lib/telegram";
+import {
+  normalizeTelegramLocale,
+  telegramConversationTitle,
+} from "~/server/lib/telegram";
 
 export default defineEventHandler(async (event) => {
   const connection = await requireTelegramMiniAppUser(event);
+  const locale = normalizeTelegramLocale(connection.user.locale);
   const memberships = await prisma.conversationParticipant.findMany({
     where: {
       userId: connection.userId,
@@ -50,6 +54,7 @@ export default defineEventHandler(async (event) => {
     user: {
       id: connection.user.id,
       name: connection.user.name ?? connection.user.email,
+      locale,
     },
     conversations: memberships.map((membership, index) => {
       const conversation = membership.conversation;
@@ -59,7 +64,11 @@ export default defineEventHandler(async (event) => {
         workspace_id: conversation.workspace.id,
         workspace_name: conversation.workspace.name,
         type: conversation.type,
-        title: telegramConversationTitle(conversation, connection.userId),
+        title: telegramConversationTitle(
+          conversation,
+          connection.userId,
+          locale,
+        ),
         unread_count: unreadCounts[index] ?? 0,
         updated_at: conversation.updatedAt.toISOString(),
         last_message: lastMessage

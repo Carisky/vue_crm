@@ -1,10 +1,14 @@
 import prisma from "~/server/lib/prisma";
 import { serializeConversationMessage } from "~/server/lib/serializers";
 import { requireTelegramMiniAppUser } from "~/server/lib/telegram-mini-app";
-import { telegramConversationTitle } from "~/server/lib/telegram";
+import {
+  normalizeTelegramLocale,
+  telegramConversationTitle,
+} from "~/server/lib/telegram";
 
 export default defineEventHandler(async (event) => {
   const connection = await requireTelegramMiniAppUser(event);
+  const locale = normalizeTelegramLocale(connection.user.locale);
   const { conversationId } = getRouterParams(event);
   const participant = await prisma.conversationParticipant.findUnique({
     where: {
@@ -50,6 +54,7 @@ export default defineEventHandler(async (event) => {
       title: telegramConversationTitle(
         participant.conversation,
         connection.userId,
+        locale,
       ),
       type: participant.conversation.type,
     },

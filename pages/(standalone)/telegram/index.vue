@@ -1,14 +1,28 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import type { AppLocale } from "~/lib/locales";
+import {
+  normalizeTelegramLocale,
+  telegramT,
+  type TelegramTranslationKey,
+} from "~/lib/telegram-i18n";
 
 definePageMeta({ layout: false });
-useHead({
-  title: "Рабочие чаты",
+const locale = ref<AppLocale>("en");
+const t = (
+  key: TelegramTranslationKey,
+  params: Record<string, string | number> = {},
+) => telegramT(locale.value, key, params);
+useHead(() => ({
+  title: t("mini.workingChats"),
   script: [{ src: "https://telegram.org/js/telegram-web-app.js?59" }],
-});
+}));
 
 type TelegramWebApp = {
   initData: string;
+  initDataUnsafe?: {
+    user?: { language_code?: string };
+  };
   ready: () => void;
   expand: () => void;
   BackButton: {
@@ -47,7 +61,7 @@ type MiniMessage = {
 };
 
 type InboxResponse = {
-  user: { id: string; name: string };
+  user: { id: string; name: string; locale: AppLocale };
   conversations: MiniConversation[];
 };
 
@@ -94,7 +108,9 @@ const scrollToBottom = async () => {
 };
 
 const loadInbox = async () => {
-  inbox.value = await miniFetch<InboxResponse>("/api/telegram/mini/inbox");
+  const response = await miniFetch<InboxResponse>("/api/telegram/mini/inbox");
+  locale.value = normalizeTelegramLocale(response.user.locale);
+  inbox.value = response;
 };
 
 const markRead = async (conversationId: string) => {
@@ -158,7 +174,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 };
 
 const formatTime = (value: string) =>
-  new Date(value).toLocaleTimeString([], {
+  new Date(value).toLocaleTimeString(locale.value, {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -190,8 +206,11 @@ onMounted(async () => {
       Telegram?: { WebApp?: TelegramWebApp };
     }
   ).Telegram?.WebApp;
+  locale.value = normalizeTelegramLocale(
+    telegram?.initDataUnsafe?.user?.language_code,
+  );
   if (!telegram?.initData) {
-    error.value = "Откройте приложение кнопкой внутри Telegram-бота.";
+    error.value = t("mini.openInsideTelegram");
     loading.value = false;
     return;
   }
@@ -206,8 +225,7 @@ onMounted(async () => {
     await loadInbox();
     pollTimer = setInterval(() => void poll(), 3000);
   } catch {
-    error.value =
-      "Не удалось открыть рабочие чаты. Переподключите Telegram в CRM.";
+    error.value = t("mini.loadFailed");
   } finally {
     loading.value = false;
   }
@@ -241,7 +259,7 @@ onUnmounted(() => {
       <header
         class="border-b border-black/10 px-4 pt-4 pb-3 dark:border-white/10"
       >
-        <h1 class="text-xl font-bold">Рабочие чаты</h1>
+        <h1 class="text-xl font-bold">{{ t("mini.workingChats") }}</h1>
         <p class="mt-0.5 text-xs opacity-60">{{ inbox?.user.name }}</p>
       </header>
 
@@ -250,7 +268,7 @@ onUnmounted(() => {
           v-if="!inbox?.conversations.length"
           class="py-16 text-center text-sm opacity-60"
         >
-          Доступных чатов пока нет
+          {{ t("mini.noAvailableChats") }}
         </div>
 
         <button
@@ -284,7 +302,7 @@ onUnmounted(() => {
                   {{ item.last_message.sender_name }}:
                   {{ item.last_message.body }}
                 </template>
-                <template v-else>Сообщений пока нет</template>
+                <template v-else>{{ t("mini.noMessages") }}</template>
               </span>
               <span
                 v-if="item.unread_count"
@@ -305,12 +323,13 @@ onUnmounted(() => {
         <button
           type="button"
           class="flex size-9 items-center justify-center rounded-full active:bg-black/10"
+          :aria-label="t('mini.back')"
           @click="closeConversation"
         >
           <Icon name="lucide:arrow-left" size="21px" />
         </button>
         <h1 class="min-w-0 flex-1 truncate text-base font-bold">
-          {{ conversation?.conversation.title ?? "Чат" }}
+          {{ conversation?.conversation.title ?? t("mini.chat") }}
         </h1>
       </header>
 
@@ -328,7 +347,7 @@ onUnmounted(() => {
           v-else-if="!conversation?.messages.length"
           class="py-16 text-center text-sm opacity-60"
         >
-          Напишите первое сообщение
+          {{ t("mini.firstMessage") }}
         </div>
         <div
           v-for="message in conversation?.messages"
@@ -365,13 +384,14 @@ onUnmounted(() => {
           v-model="messageBox"
           rows="1"
           class="max-h-28 min-h-10 flex-1 resize-none rounded-2xl border-0 bg-[var(--tg-theme-secondary-bg-color,#f3f4f6)] px-3 py-2.5 text-sm outline-none"
-          placeholder="Сообщение"
+          :placeholder="t('mini.message')"
           :disabled="sending"
           @keydown="handleKeydown"
         />
         <button
           type="button"
           class="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#229ED9] text-white disabled:opacity-40"
+          :aria-label="t('mini.send')"
           :disabled="sending || !messageBox.trim()"
           @click="handleSend"
         >

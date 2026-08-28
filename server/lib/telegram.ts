@@ -1,3 +1,5 @@
+import { normalizeTelegramLocale, telegramT } from "~/lib/telegram-i18n";
+
 type TelegramApiResponse<T> = {
   ok: boolean;
   result?: T;
@@ -21,6 +23,7 @@ export type TelegramUser = {
   first_name: string;
   last_name?: string;
   username?: string;
+  language_code?: string;
 };
 
 export type TelegramMessage = {
@@ -130,14 +133,17 @@ export async function configureTelegramWebhook() {
   });
 }
 
-export async function configureTelegramMiniAppMenu() {
+export async function configureTelegramMiniAppMenu(
+  options: { chatId?: string; locale?: string | null } = {},
+) {
   const webAppUrl = getTelegramMiniAppUrl();
   if (!webAppUrl) throw new Error("PUBLIC_SITE_URL is required for Mini App");
 
   return await callTelegramApi<boolean>("setChatMenuButton", {
+    ...(options.chatId ? { chat_id: options.chatId } : {}),
     menu_button: {
       type: "web_app",
-      text: "Рабочие чаты",
+      text: telegramT(options.locale, "mini.workingChats"),
       web_app: { url: webAppUrl },
     },
   });
@@ -154,17 +160,22 @@ export function telegramConversationTitle(
     }>;
   },
   viewerUserId: string,
+  locale: string | null | undefined = "en",
 ) {
   let title: string;
   if (conversation.type === "WORKSPACE") {
-    title = "Общий чат";
+    title = telegramT(locale, "conversation.general");
   } else if (conversation.type === "GROUP") {
-    title = conversation.name || "Группа";
+    title = conversation.name || telegramT(locale, "conversation.group");
   } else {
     const other = conversation.participants.find(
       (participant) => participant.userId !== viewerUserId,
     );
-    title = other ? other.user.name?.trim() || other.user.email : "Личный чат";
+    title = other
+      ? other.user.name?.trim() || other.user.email
+      : telegramT(locale, "conversation.direct");
   }
   return `${conversation.workspace.name} · ${title}`;
 }
+
+export { normalizeTelegramLocale };
