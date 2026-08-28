@@ -7,7 +7,9 @@ import useAuthStore from "./stores/auth";
 import type { AppLocale, ThemePreference } from "~/lib/types";
 
 const authStore = useAuthStore();
-await authStore.init();
+const route = useRoute();
+const isTelegramMiniApp = computed(() => route.path === "/telegram");
+if (!isTelegramMiniApp.value) await authStore.init();
 const { locale } = useAppI18n();
 
 useHead(() => ({
@@ -34,7 +36,10 @@ if (process.client) {
 </script>
 
 <template>
-  <Loader v-if="authStore.isFirstLoading" class="fixed size-full top-0 left-0 bg-white z-10" />
+  <Loader
+    v-if="authStore.isFirstLoading && !isTelegramMiniApp"
+    class="fixed top-0 left-0 z-10 size-full bg-white"
+  />
 
   <NuxtLayout>
     <NuxtPage></NuxtPage>

@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import {
   getHeader,
+  getRequestURL,
   setResponseHeader,
   setResponseStatus,
   type H3Event,
@@ -73,7 +74,13 @@ export default defineEventHandler((event) => {
   const hostname = getHostname(getHeader(event, "host"));
   const isTrustedInternalRequest =
     getHeader(event, "x-crm-internal-request") === "1";
-  if (!requiresBasicAuth({ hostname, isTrustedInternalRequest })) {
+  if (
+    !requiresBasicAuth({
+      hostname,
+      isTrustedInternalRequest,
+      pathname: getRequestURL(event).pathname,
+    })
+  ) {
     return;
   }
 

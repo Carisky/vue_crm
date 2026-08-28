@@ -42,6 +42,8 @@ model User {
   uiPreferences              UiPreference[]
   emailVerification          EmailVerificationToken?
   passwordReset              PasswordResetToken?
+  telegramConnection         TelegramConnection?
+  telegramLinkTokens         TelegramLinkToken[]
 }
 
 model EmailVerificationToken {
@@ -347,6 +349,41 @@ model ConversationMessage {
 
   @@index([conversationId])
   @@index([senderId])
+  @@index([createdAt])
+}
+
+model TelegramConnection {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  telegramUserId String   @unique
+  telegramChatId String   @unique
+  username       String?
+  firstName      String?
+  lastName       String?
+  linkedAt       DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TelegramLinkToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique @db.VarChar(64)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model TelegramUpdate {
+  updateId  String   @id
+  createdAt DateTime @default(now())
+
   @@index([createdAt])
 }
 

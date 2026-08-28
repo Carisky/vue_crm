@@ -12,7 +12,11 @@ export default defineNuxtConfig({
     head: {
       link: [
         { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
-        { rel: "icon", type: "image/svg+xml", href: "/TSL%20Silesia%20Collab.svg" },
+        {
+          rel: "icon",
+          type: "image/svg+xml",
+          href: "/TSL%20Silesia%20Collab.svg",
+        },
         { rel: "apple-touch-icon", href: "/TSL%20Silesia%20Collab.png" },
       ],
     },
@@ -52,6 +56,9 @@ export default defineNuxtConfig({
     smtpUser: process.env.SMTP_USER,
     smtpPass: process.env.SMTP_PASS,
     smtpFrom: process.env.SMTP_FROM,
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
+    telegramBotUsername: process.env.TELEGRAM_BOT_USERNAME,
+    telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET,
     public: {
       sessionCookieName: process.env.PUBLIC_SESSION_COOKIE_NAME,
       siteUrl: process.env.PUBLIC_SITE_URL,

@@ -219,7 +219,7 @@ if (import.meta.client) {
     </SheetTrigger>
     <SheetContent side="right" class="flex w-[280px] flex-col sm:w-[380px]">
       <SheetHeader class="gap-2">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 pr-8">
           <SheetTitle>{{ t("messages.title") }}</SheetTitle>
           <Button
             variant="outline"
@@ -230,6 +230,9 @@ if (import.meta.client) {
           >
             {{ t("messages.markMentionsRead") }}
           </Button>
+          <div class="ml-auto">
+            <TelegramLinkButton />
+          </div>
         </div>
         <SheetDescription>{{ t("messages.description") }}</SheetDescription>
       </SheetHeader>

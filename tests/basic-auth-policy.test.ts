@@ -44,3 +44,30 @@ test("keeps local development available without Basic Auth", () => {
     );
   }
 });
+
+test("lets Telegram load only its signed Mini App and webhook routes", () => {
+  for (const pathname of [
+    "/telegram",
+    "/api/telegram/webhook",
+    "/api/telegram/mini/inbox",
+    "/api/_nuxt_icon/v1/lucide.json",
+  ]) {
+    assert.equal(
+      requiresBasicAuth({
+        hostname: "collab.tsl-silesia.com.pl",
+        isTrustedInternalRequest: false,
+        pathname,
+      }),
+      false,
+    );
+  }
+
+  assert.equal(
+    requiresBasicAuth({
+      hostname: "collab.tsl-silesia.com.pl",
+      isTrustedInternalRequest: false,
+      pathname: "/api/telegram/link",
+    }),
+    true,
+  );
+});
