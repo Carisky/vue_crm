@@ -87,47 +87,17 @@ const ru: TelegramMessages = {
   "mini.send": "Отправить",
 };
 
-const uk: TelegramMessages = {
-  "bot.ready":
-    "Готово. Доступно робочих чатів: {count}. Натисніть кнопку нижче — команди вводити не потрібно.",
-  "bot.openChats": "Відкрити робочі чати",
-  "bot.linkExpired":
-    "Це посилання застаріло. Відкрийте CRM і створіть новий QR-код.",
-  "bot.linkedElsewhere":
-    "Цей Telegram уже підключено до іншого користувача CRM.",
-  "bot.linkUsed": "Це посилання вже використано. Створіть новий QR-код у CRM.",
-  "bot.linkFirst":
-    "Спочатку відкрийте CRM, натисніть кнопку Telegram і відскануйте QR-код.",
-  "conversation.general": "Загальний чат",
-  "conversation.group": "Група",
-  "conversation.direct": "Особистий чат",
-  "mini.workingChats": "Робочі чати",
-  "mini.openInsideTelegram":
-    "Відкрийте застосунок кнопкою всередині Telegram-бота.",
-  "mini.loadFailed":
-    "Не вдалося відкрити робочі чати. Повторно підключіть Telegram у CRM.",
-  "mini.noAvailableChats": "Доступних чатів поки немає",
-  "mini.noMessages": "Повідомлень поки немає",
-  "mini.chat": "Чат",
-  "mini.firstMessage": "Напишіть перше повідомлення",
-  "mini.message": "Повідомлення",
-  "mini.back": "Назад",
-  "mini.send": "Надіслати",
-};
-
 const telegramMessages: Record<AppLocale, TelegramMessages> = {
   en,
   pl,
   ru,
-  uk,
 };
 
 export function normalizeTelegramLocale(
   locale: string | null | undefined,
 ): AppLocale {
   const language = locale?.trim().toLowerCase().split(/[-_]/)[0];
-  if (language === "ua") return "uk";
-  if (language === "pl" || language === "ru" || language === "uk") {
+  if (language === "pl" || language === "ru") {
     return language;
   }
   return "en";

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatDistanceToNow } from 'date-fns';
-import { enUS, pl, ru, uk } from 'date-fns/locale';
+import { enUS, pl, ru } from 'date-fns/locale';
 import { taskPriorityTranslationKeys } from '~/lib/i18n';
 import type { FilteredTask } from '~/lib/types';
 
@@ -9,7 +9,7 @@ const { tasks } = defineProps<{ tasks: FilteredTask[] }>()
 const route = useRoute()
 const { open: openTaskModal } = useCreateTaskModal()
 const { locale, t } = useAppI18n()
-const dateLocales = { en: enUS, pl, ru, uk }
+const dateLocales = { en: enUS, pl, ru }
 </script>
 
 <template>

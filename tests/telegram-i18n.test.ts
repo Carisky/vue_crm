@@ -7,8 +7,8 @@ test("normalizes supported CRM and Telegram language codes", () => {
   assert.equal(normalizeTelegramLocale("en-US"), "en");
   assert.equal(normalizeTelegramLocale("pl_PL"), "pl");
   assert.equal(normalizeTelegramLocale("ru"), "ru");
-  assert.equal(normalizeTelegramLocale("uk-UA"), "uk");
-  assert.equal(normalizeTelegramLocale("ua"), "uk");
+  assert.equal(normalizeTelegramLocale("uk-UA"), "en");
+  assert.equal(normalizeTelegramLocale("ua"), "en");
   assert.equal(normalizeTelegramLocale("de"), "en");
   assert.equal(normalizeTelegramLocale(null), "en");
 });
@@ -17,5 +17,4 @@ test("translates Telegram system text and interpolates values", () => {
   assert.match(telegramT("en", "bot.ready", { count: 3 }), /3/);
   assert.equal(telegramT("pl", "conversation.general"), "Czat ogólny");
   assert.equal(telegramT("ru", "mini.message"), "Сообщение");
-  assert.equal(telegramT("uk", "bot.openChats"), "Відкрити робочі чати");
 });

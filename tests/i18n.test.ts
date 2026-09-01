@@ -12,14 +12,14 @@ test("accepts every supported persisted locale and rejects unknown values", () =
 
   assert.equal(UpdateLocaleSchema.safeParse({ locale: "de" }).success, false);
   assert.equal(UpdateLocaleSchema.safeParse({ locale: "ua" }).success, false);
+  assert.equal(UpdateLocaleSchema.safeParse({ locale: "uk" }).success, false);
 });
 
 test("exposes the requested language labels", () => {
-  assert.deepEqual(localeLabels, { en: "EN", pl: "PL", ru: "RU", uk: "UA" });
+  assert.deepEqual(localeLabels, { en: "EN", pl: "PL", ru: "RU" });
 });
 
 test("translates core navigation and interpolates values", () => {
   assert.equal(translate("ru", "nav.myTasks"), "Мои задания");
   assert.equal(translate("pl", "docs.updated", { date: "25.08.2026" }), "Zaktualizowano 25.08.2026");
-  assert.equal(translate("uk", "messages.mentionedTask", { task: "CRM" }), "Вас згадали в завданні CRM");
 });
