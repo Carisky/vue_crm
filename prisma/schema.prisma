@@ -44,6 +44,8 @@ model User {
   passwordReset              PasswordResetToken?
   telegramConnection         TelegramConnection?
   telegramLinkTokens         TelegramLinkToken[]
+  agentApiKeys               AgentApiKey[]
+  agentProposals             AgentProposal[]
 }
 
 model EmailVerificationToken {
@@ -101,8 +103,53 @@ model Workspace {
   groups             WorkspaceGroup[]
   owner              User                @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   uiPreferences      UiPreference[]
+  agentProposals     AgentProposal[]
 
   @@index([ownerId], map: "Workspace_ownerId_fkey")
+}
+
+model AgentApiKey {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  keyPrefix   String
+  tokenHash   String    @unique @db.VarChar(64)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proposals AgentProposal[]
+
+  @@index([userId])
+  @@index([revokedAt])
+}
+
+model AgentProposal {
+  id          String              @id @default(cuid())
+  userId      String
+  apiKeyId    String?
+  workspaceId String
+  title       String
+  summary     String?             @db.Text
+  operations  Json
+  status      AgentProposalStatus @default(PENDING)
+  result      Json?
+  error       String?             @db.Text
+  reviewedAt  DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKey    AgentApiKey? @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([workspaceId])
+  @@index([apiKeyId])
+  @@index([createdAt])
 }
 
 model UiPreference {
@@ -501,5 +548,12 @@ enum EmailQueueStatus {
   PENDING
   SENDING
   SENT
+  FAILED
+}
+
+enum AgentProposalStatus {
+  PENDING
+  APPROVED
+  REJECTED
   FAILED
 }

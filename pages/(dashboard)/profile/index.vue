@@ -138,6 +138,7 @@ const handleEmailNotificationsChange = async (checked: boolean | 'indeterminate'
 
 <template>
     <div class="flex w-full max-w-3xl flex-col gap-6">
+        <ProfileAgentAccessPanel />
         <Card class="border">
             <CardHeader>
                 <CardTitle class="text-lg font-semibold">{{ t('profile.theme') }}</CardTitle>
