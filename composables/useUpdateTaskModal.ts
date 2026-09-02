@@ -1,19 +1,15 @@
-const useUpdateProjectModal = () => {
-  const {
-    value: updateProjectModalOpen,
-    setQueryValue: setUpdateProjectModalOpen,
-  } = useUrlQuery("update_task");
+import {
+  createUpdateTaskModalController,
+  emptyUpdateTaskModalState,
+  type UpdateTaskModalState,
+} from "~/lib/task-modal-state";
 
-  const isOpen = computed(() => !!updateProjectModalOpen.value);
-
-  const open = (taskId: string) => setUpdateProjectModalOpen(taskId);
-  const close = () => setUpdateProjectModalOpen(null);
-
-  return {
-    isOpen,
-    open,
-    close,
-  };
+const useUpdateTaskModal = () => {
+  const state = useState<UpdateTaskModalState>(
+    "update-task-modal",
+    emptyUpdateTaskModalState,
+  );
+  return createUpdateTaskModalController(state);
 };
 
-export default useUpdateProjectModal;
+export default useUpdateTaskModal;

@@ -1,10 +1,14 @@
-import type { FilteredTask } from "./types.ts";
+import type { FilteredTask, TaskMedia } from "./types.ts";
 import {
   taskAssigneeValue,
   UNASSIGNED_TASK_ASSIGNEE,
 } from "./task-assignee.ts";
 
 export { UNASSIGNED_TASK_ASSIGNEE } from "./task-assignee.ts";
+
+export function taskMediaForUpdate(task: { media?: TaskMedia[] | null }) {
+  return task.media ?? [];
+}
 
 export function buildUpdateTaskInitialValues(task: FilteredTask) {
   return {

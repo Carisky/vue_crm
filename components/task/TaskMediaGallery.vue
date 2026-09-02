@@ -21,6 +21,9 @@ import {
   mediaIconName,
 } from "~/lib/task-media-presentation";
 import type { FilteredTask, TaskMedia } from "~/lib/types";
+import {
+  invalidateTaskQueries,
+} from "~/lib/task-query-keys";
 
 const props = defineProps<{
   media: TaskMedia[];
@@ -135,8 +138,8 @@ const openPreview = (item: TaskMedia) => {
   if (isImage(item) || isVideo(item) || isPdf(item)) previewMedia.value = item;
 };
 const refetchTask = async () => {
-  if (props.taskId)
-    await queryClient.refetchQueries({ queryKey: ["task", props.taskId] });
+  if (!props.taskId) return;
+  await invalidateTaskQueries(queryClient, props.taskId);
 };
 const handleMediaChange = async (event: Event) => {
   if (!canEdit.value || !props.workspaceId || !props.taskId) return;
@@ -162,7 +165,7 @@ const handleMediaChange = async (event: Event) => {
       },
     );
     if (!response.task) throw new Error("Task update returned no task");
-    queryClient.setQueryData(["task", props.taskId], response.task);
+    await refetchTask();
     toast.success(t("media.uploaded"));
   } catch {
     mediaUploadError.value = "Failed to upload media";

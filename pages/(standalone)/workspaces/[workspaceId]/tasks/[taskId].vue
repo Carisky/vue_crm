@@ -8,6 +8,7 @@ import type {
   UpdateTaskInject,
 } from "~/lib/types";
 import authenticatedPageProtectMiddleware from "~/middleware/page-protect/authenticatedPage";
+import { taskDetailQueryKey } from "~/lib/task-query-keys";
 
 definePageMeta({
   layout: "dashboard",
@@ -18,7 +19,7 @@ const route = useRoute();
 const queryClient = useQueryClient();
 const requestFetch = useRequestFetch();
 const taskId = computed(() => String(route.params["taskId"] ?? ""));
-const taskQueryKey = computed(() => ["task", taskId.value]);
+const taskQueryKey = computed(() => taskDetailQueryKey(taskId.value));
 
 const { data, isLoading, isRefetching, suspense } = useQuery<{
   task: FilteredTask;

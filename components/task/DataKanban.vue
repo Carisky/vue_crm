@@ -10,6 +10,7 @@ import {
 } from '~/lib/types';
 import KanbanColumnHeader from './KanbanColumnHeader.vue';
 import KanbanCard from './KanbanCard.vue';
+import { invalidateTaskQueries } from '~/lib/task-query-keys';
 
 interface DragItem { id: string; position: number, workspaceId: string; }
 interface DragEndEvent { index: number, value: DragItem }
@@ -53,7 +54,7 @@ const { mutate: updateTask } = useMutation({
         if (task) {
             // invalidate tasks 
             queryClient.invalidateQueries({ queryKey: ['tasks', route.params['workspaceId']] })
-            queryClient.invalidateQueries({ queryKey: ['task', data.id] }) // invalidate the dnded task
+            if (data.id) void invalidateTaskQueries(queryClient, data.id)
 
             // update the local task
             applyTaskUpdates([data])
@@ -77,7 +78,7 @@ const { mutate: updateTasks } = useMutation({
         if ((res as { ok: boolean }).ok) {
             // invalidate tasks 
             queryClient.invalidateQueries({ queryKey: ['tasks', route.params['workspaceId']] })
-            queryClient.invalidateQueries({ queryKey: ['task', updatedData[0].id] }) // invalidate the dnded task
+            void invalidateTaskQueries(queryClient, updatedData[0].id)
 
             // update the local tasks
             applyTaskUpdates(updatedData.map((({ id, data }) => ({ ...data, id }))))
@@ -245,7 +246,7 @@ const applyTaskUpdates = (updatedTasks: UpdateTaskData[]) => {
         if (status) tasks.value[id].status = status as TaskStatus
         tasks.value[id].position = position
 
-        queryClient.resetQueries({ queryKey: ['task', id] })
+        void invalidateTaskQueries(queryClient, id)
     }
 }
 </script>

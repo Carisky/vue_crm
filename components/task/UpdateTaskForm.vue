@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMutation } from "@tanstack/vue-query";
+import { useMutation, useQueryClient } from "@tanstack/vue-query";
 import { configure, useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import { toast } from "vue-sonner";
@@ -17,6 +17,7 @@ import {
 } from "~/lib/task-media-client";
 import {
   buildUpdateTaskInitialValues,
+  taskMediaForUpdate,
   UNASSIGNED_TASK_ASSIGNEE,
 } from "~/lib/task-update-form";
 import {
@@ -31,6 +32,7 @@ import {
   parseTaskAssigneeValue,
   userAssigneeValue,
 } from "~/lib/task-assignee";
+import { invalidateTaskQueries } from "~/lib/task-query-keys";
 
 const { initialValues, projectOptions, memberOptions, groupOptions, onCancel } =
   defineProps<{
@@ -44,8 +46,9 @@ const { initialValues, projectOptions, memberOptions, groupOptions, onCancel } =
 const onUpdateTask: UpdateTaskInject | undefined = inject("update-task-inject");
 const UNASSIGNED_VALUE = UNASSIGNED_TASK_ASSIGNEE;
 const { t } = useAppI18n();
+const queryClient = useQueryClient();
 
-const existingMedia = ref([...initialValues.media]);
+const existingMedia = ref([...taskMediaForUpdate(initialValues)]);
 const uploadedMedia = ref<PendingMedia[]>([]);
 const isUploadingMedia = ref(false);
 const mediaUploadProgress = ref(0);
@@ -136,6 +139,7 @@ const { isPending, mutate } = useMutation({
       task: FilteredTask | null;
     };
     if (task) {
+      await invalidateTaskQueries(queryClient, task.$id);
       // run all subscribers
       await Promise.all(
         (onUpdateTask?.updateTaskSuccessSubsribers ?? []).map((onUpdate) =>

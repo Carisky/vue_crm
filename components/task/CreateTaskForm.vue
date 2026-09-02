@@ -33,6 +33,7 @@ const {
   projectOptions,
   memberOptions,
   groupOptions,
+  initialStatus,
   parentTaskId,
   parentProjectId,
   onCancel,
@@ -40,13 +41,13 @@ const {
   projectOptions: { $id: string; name: string; image_url?: string }[];
   memberOptions: { $id: string; name: string }[];
   groupOptions: { $id: string; name: string; color?: string | null }[];
+  initialStatus?: string;
   parentTaskId?: string;
   parentProjectId?: string;
   onCancel?: () => void;
 }>();
 
 const route = useRoute();
-const { value: taskStatus } = useUrlQuery("create_task");
 const { t } = useAppI18n();
 const UNASSIGNED_VALUE = UNASSIGNED_TASK_ASSIGNEE;
 
@@ -80,11 +81,8 @@ configure({
 });
 
 const initialTaskStatus: ComputedRef<TaskStatus | undefined> = computed(() => {
-  const decoded = taskStatus.value
-    ? decodeURIComponent(String(taskStatus.value))
-    : undefined;
-  if (decoded && decoded in TaskStatus)
-    return TaskStatus[decoded as keyof typeof TaskStatus];
+  if (initialStatus && initialStatus in TaskStatus)
+    return TaskStatus[initialStatus as keyof typeof TaskStatus];
   else return undefined;
 });
 

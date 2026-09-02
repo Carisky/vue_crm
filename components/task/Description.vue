@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query';
 import { toast } from 'vue-sonner';
 
 import type { FilteredTask } from '~/lib/types';
+import { invalidateTaskQueries } from '~/lib/task-query-keys';
 import TaskMediaGallery from './TaskMediaGallery.vue';
 
 const { task } = defineProps<{ task: FilteredTask }>()
@@ -19,7 +20,7 @@ const { isPending, mutate: save } = useMutation({
         const res =
             await $fetch(`/api/tasks/${task.$id}`, { method: 'PATCH', body: { description: inputDescription.value } })
         if ((res as unknown as { task: FilteredTask }).task) {
-            await queryClient.refetchQueries({ queryKey: ['task', task.$id] }) // re-fetch tasks
+            await invalidateTaskQueries(queryClient, task.$id)
             isEditing.value = false
             toast.success(t('task.descriptionUpdated'))
         } else toast.error(t('task.descriptionUpdateFailed'))

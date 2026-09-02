@@ -3,86 +3,61 @@ import test from "node:test";
 
 import { ref } from "vue";
 
-import {
-  createTaskModalController,
-  type TaskModalNavigationState,
-} from "../lib/create-task-modal-state.ts";
+import * as taskModalState from "../lib/task-modal-state.ts";
 
-test("opens the shared task modal immediately while URL navigation is pending", async () => {
-  const queryValue = ref<string | undefined>(undefined);
-  const navigationState = ref<TaskModalNavigationState>({
-    override: null,
-    sequence: 0,
+test("opens and closes create-task state without touching navigation", () => {
+  const state = ref({
+    isOpen: false,
+    initialStatus: undefined as string | undefined,
+    parentTaskId: undefined as string | undefined,
   });
-  const navigations: Array<Record<string, unknown>> = [];
-  let finishNavigation: (() => void) | undefined;
+  const modal = taskModalState.createTaskModalController(state);
 
-  const createController = () =>
-    createTaskModalController({
-      queryValue,
-      navigationState,
-      currentQuery: () => ({ tab: "kanban" }),
-      navigate(query) {
-        navigations.push(query);
-        return new Promise<void>((resolve) => {
-          finishNavigation = () => {
-            queryValue.value = String(query["create_task"]);
-            resolve();
-          };
-        });
-      },
-    });
+  modal.open("IN_PROGRESS", "parent-1");
 
-  const trigger = createController();
-  const modalRenderedInLayout = createController();
-
-  trigger.open("InProgress", "parent-1");
-
-  assert.equal(modalRenderedInLayout.isOpen.value, true);
-  assert.deepEqual(navigations, [
-    {
-      tab: "kanban",
-      create_task: "InProgress",
-      parent_task_id: "parent-1",
-    },
-  ]);
-
-  finishNavigation?.();
-  await Promise.resolve();
-  await Promise.resolve();
-
-  assert.equal(modalRenderedInLayout.isOpen.value, true);
-  assert.equal(navigationState.value.override, null);
-});
-
-test("closes the shared task modal immediately and removes both modal query values", async () => {
-  const queryValue = ref<string | undefined>("Todo");
-  const navigationState = ref<TaskModalNavigationState>({
-    override: null,
-    sequence: 0,
-  });
-  let navigatedQuery: Record<string, unknown> | undefined;
-
-  const modal = createTaskModalController({
-    queryValue,
-    navigationState,
-    currentQuery: () => ({
-      tab: "table",
-      create_task: "Todo",
-      parent_task_id: "parent-1",
-    }),
-    async navigate(query) {
-      navigatedQuery = query;
-      queryValue.value = undefined;
-    },
+  assert.equal(modal.isOpen.value, true);
+  assert.deepEqual(state.value, {
+    isOpen: true,
+    initialStatus: "IN_PROGRESS",
+    parentTaskId: "parent-1",
   });
 
   modal.close();
 
   assert.equal(modal.isOpen.value, false);
-  assert.deepEqual(navigatedQuery, { tab: "table" });
+  assert.deepEqual(state.value, {
+    isOpen: false,
+    initialStatus: undefined,
+    parentTaskId: undefined,
+  });
+});
 
-  await Promise.resolve();
-  await Promise.resolve();
+test("opens update-task state with a task id and resets it on close", () => {
+  assert.equal(
+    typeof (taskModalState as Record<string, unknown>)[
+      "createUpdateTaskModalController"
+    ],
+    "function",
+  );
+  const createController = (
+    taskModalState as unknown as {
+      createUpdateTaskModalController(
+        state: ReturnType<typeof ref<{ isOpen: boolean; taskId?: string }>>,
+      ): {
+        isOpen: Readonly<{ value: boolean }>;
+        open(taskId: string): void;
+        close(): void;
+      };
+    }
+  ).createUpdateTaskModalController;
+  const state = ref({ isOpen: false, taskId: undefined as string | undefined });
+  const modal = createController(state);
+
+  modal.open("task-1");
+  assert.equal(modal.isOpen.value, true);
+  assert.deepEqual(state.value, { isOpen: true, taskId: "task-1" });
+
+  modal.close();
   assert.equal(modal.isOpen.value, false);
+  assert.deepEqual(state.value, { isOpen: false, taskId: undefined });
 });

@@ -6,6 +6,8 @@ import CreateWorkspaceModal from '~/components/workspace/CreateWorkspaceModal.vu
 import CreateProjectModal from '~/components/project/CreateProjectModal.vue';
 import CreateTaskModal from '~/components/task/CreateTaskModal.vue';
 import UpdateTaskModal from '~/components/task/UpdateTaskModal.vue';
+import { subscribeToList } from '~/lib/subscriber-list';
+import { invalidateTaskQueries } from '~/lib/task-query-keys';
 
 type TaskRealtimeEvent =
     | { type: 'TASK_CREATED'; workspaceId: string; task: FilteredTask }
@@ -17,8 +19,7 @@ type TaskRealtimeEvent =
 const createTaskSuccessSubsribers: TaskSuccessSubscriber[] = []
 
 const subscribeToCreateTaskSuccess = (func: (newTask: FilteredTask) => Promise<void> | void) => {
-    const index = createTaskSuccessSubsribers.push(func)
-    return () => createTaskSuccessSubsribers[index] = null
+    return subscribeToList(createTaskSuccessSubsribers, func)
 }
 
 provide('create-task-inject', {
@@ -29,8 +30,7 @@ provide('create-task-inject', {
 const updateTaskSuccessSubsribers: TaskSuccessSubscriber[] = []
 
 const subscribeToUpdateTaskSuccess = (func: (updatedTask: FilteredTask) => Promise<void> | void) => {
-    const index = updateTaskSuccessSubsribers.push(func)
-    return () => updateTaskSuccessSubsribers[index] = null
+    return subscribeToList(updateTaskSuccessSubsribers, func)
 }
 
 provide('update-task-inject', {
@@ -41,8 +41,7 @@ provide('update-task-inject', {
 const deleteTaskSuccessSubsribers: DeleteTaskInject['deleteTaskSuccessSubsribers'] = []
 
 const subscribeToDeleteTaskSuccess: DeleteTaskInject['subscribeToDeleteTaskSuccess'] = (func) => {
-    const index = deleteTaskSuccessSubsribers.push(func)
-    return () => deleteTaskSuccessSubsribers[index] = null
+    return subscribeToList(deleteTaskSuccessSubsribers, func)
 }
 
 provide('delete-task-inject', {
@@ -98,9 +97,9 @@ if (import.meta.client) {
 
                 queryClient.invalidateQueries({ queryKey: ['tasks'] })
                 if (parsed.type !== 'TASK_DELETED') {
-                    queryClient.invalidateQueries({ queryKey: ['task', parsed.task.$id] })
+                    void invalidateTaskQueries(queryClient, parsed.task.$id)
                 } else {
-                    queryClient.invalidateQueries({ queryKey: ['task', parsed.taskId] })
+                    void invalidateTaskQueries(queryClient, parsed.taskId)
                 }
                 queryClient.invalidateQueries({ queryKey: ['workspace-analytics'] })
                 queryClient.invalidateQueries({ queryKey: ['project-analytics'] })

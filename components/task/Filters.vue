@@ -9,6 +9,10 @@ import {
   type WorkspaceMember,
 } from "~/lib/types";
 import { taskStatusTranslationKeys } from "~/lib/i18n";
+import {
+  taskMemberOptionsQueryKey,
+  taskProjectOptionsQueryKey,
+} from "~/lib/task-query-keys";
 
 const { projectId, assigneeId } = defineProps<{
   projectId?: string;
@@ -19,14 +23,15 @@ const route = useRoute();
 const requestFetch = useRequestFetch();
 const { value: filterValues, setQueryValue } = useTaskFilterQueries();
 const { t } = useAppI18n();
+const workspaceId = computed(() => String(route.params["workspaceId"] ?? ""));
 
 const statusOptions = Object.entries(TaskStatus);
 
 const { data: projects, isLoading: isLoadingProjects } = useQuery<Project[]>({
-  queryKey: ["projects", () => route.params["workspaceId"]],
+  queryKey: computed(() => taskProjectOptionsQueryKey(workspaceId.value)),
   queryFn: async () => {
     const data = await requestFetch<{ projects: Project[] }>(
-      `/api/workspaces/${route.params["workspaceId"]}/projects`,
+      `/api/workspaces/${workspaceId.value}/projects`,
     );
     return data.projects;
   },
@@ -36,10 +41,10 @@ const { data: projects, isLoading: isLoadingProjects } = useQuery<Project[]>({
 const { data: members, isLoading: isLoadingMembers } = useQuery<
   WorkspaceMember[]
 >({
-  queryKey: ["members", () => route.params["workspaceId"]],
+  queryKey: computed(() => taskMemberOptionsQueryKey(workspaceId.value)),
   queryFn: async () => {
     const data = await requestFetch<{ members: WorkspaceMember[] }>(
-      `/api/workspaces/${route.params["workspaceId"]}/members`,
+      `/api/workspaces/${workspaceId.value}/members`,
     );
     return data.members;
   },

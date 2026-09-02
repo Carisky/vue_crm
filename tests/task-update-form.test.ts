@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildUpdateTaskInitialValues } from "../lib/task-update-form.ts";
+import * as taskUpdateForm from "../lib/task-update-form.ts";
 import type { TaskPriority, TaskStatus } from "../lib/types.ts";
 
 test("keeps only editable task fields in update-form initial values", () => {
-  const result = buildUpdateTaskInitialValues({
+  const result = taskUpdateForm.buildUpdateTaskInitialValues({
     $id: "task-1",
     name: "Task",
     workspace_id: "workspace-1",
@@ -48,4 +48,18 @@ test("keeps only editable task fields in update-form initial values", () => {
     started_at: undefined,
     position: 1,
   });
+});
+
+test("treats missing media from stale task data as an empty list", () => {
+  assert.equal(
+    typeof (taskUpdateForm as Record<string, unknown>)["taskMediaForUpdate"],
+    "function",
+  );
+  const taskMediaForUpdate = (
+    taskUpdateForm as unknown as {
+      taskMediaForUpdate(task: { media?: unknown[] }): unknown[];
+    }
+  ).taskMediaForUpdate;
+
+  assert.deepEqual(taskMediaForUpdate({}), []);
 });

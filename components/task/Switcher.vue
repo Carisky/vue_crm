@@ -8,6 +8,7 @@ import type {
   FilteredTask,
   UpdateTaskInject,
 } from "~/lib/types";
+import { invalidateTaskQueries } from "~/lib/task-query-keys";
 import { createColumns } from "./Columns";
 
 const {
@@ -193,7 +194,7 @@ const unsubscribeUpdateSuccess = updateTaskInject?.subscribeToUpdateTaskSuccess(
     } else {
       tasks.value = tasks.value?.map((t) => (t.$id === task.$id ? task : t));
     }
-    queryClient.invalidateQueries({ queryKey: ["task", task.$id] });
+    void invalidateTaskQueries(queryClient, task.$id);
     scheduleFetchTasks();
   },
 );

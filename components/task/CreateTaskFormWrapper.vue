@@ -7,35 +7,40 @@ import type {
   WorkspaceGroup,
   WorkspaceMember,
 } from "~/lib/types";
+import {
+  taskMemberOptionsQueryKey,
+  taskProjectOptionsQueryKey,
+} from "~/lib/task-query-keys";
 
-const { onCancel } = defineProps<{ onCancel?: () => void }>();
+const { initialStatus, parentTaskId, onCancel } = defineProps<{
+  initialStatus?: string;
+  parentTaskId?: string;
+  onCancel?: () => void;
+}>();
 
 const route = useRoute();
 const requestFetch = useRequestFetch();
-const parentTaskId = computed(() => {
-  const value = route.query["parent_task_id"];
-  return typeof value === "string" && value ? value : "";
-});
+const workspaceId = computed(() => String(route.params["workspaceId"] ?? ""));
 
 const { data: parentTask, isLoading: isLoadingParentTask } =
   useQuery<FilteredTask | null>({
-    queryKey: computed(() => ["parent-task", parentTaskId.value]),
+    queryKey: computed(() => ["parent-task", parentTaskId ?? ""]),
     queryFn: async () => {
-      if (!parentTaskId.value) return null;
+      if (!parentTaskId) return null;
       const data = await requestFetch<{ task: FilteredTask }>(
-        `/api/tasks/${parentTaskId.value}`,
+        `/api/tasks/${parentTaskId}`,
       );
       return data.task;
     },
-    enabled: computed(() => Boolean(parentTaskId.value)),
+    enabled: computed(() => Boolean(parentTaskId)),
     staleTime: Infinity,
   });
 
 const { data: projects, isLoading: isLoadingProjects } = useQuery<Project[]>({
-  queryKey: ["projects", () => route.params["workspaceId"]],
+  queryKey: computed(() => taskProjectOptionsQueryKey(workspaceId.value)),
   queryFn: async () => {
     const data = await requestFetch<{ projects: Project[] }>(
-      `/api/workspaces/${route.params["workspaceId"]}/projects`,
+      `/api/workspaces/${workspaceId.value}/projects`,
     );
     return data.projects;
   },
@@ -45,10 +50,10 @@ const { data: projects, isLoading: isLoadingProjects } = useQuery<Project[]>({
 const { data: members, isLoading: isLoadingMembers } = useQuery<
   WorkspaceMember[]
 >({
-  queryKey: ["members", () => route.params["workspaceId"]],
+  queryKey: computed(() => taskMemberOptionsQueryKey(workspaceId.value)),
   queryFn: async () => {
     const data = await requestFetch<{ members: WorkspaceMember[] }>(
-      `/api/workspaces/${route.params["workspaceId"]}/members`,
+      `/api/workspaces/${workspaceId.value}/members`,
     );
     return data.members;
   },
@@ -76,7 +81,7 @@ const isLoading = computed(
     isLoadingProjects.value ||
     isLoadingMembers.value ||
     isLoadingGroups.value ||
-    (Boolean(parentTaskId.value) && isLoadingParentTask.value),
+    (Boolean(parentTaskId) && isLoadingParentTask.value),
 );
 
 const projectOptions = computed(() =>
@@ -119,7 +124,8 @@ const groupOptions = computed(
       :project-options="projectOptions"
       :member-options="memberOptions"
       :group-options="groupOptions"
-      :parent-task-id="parentTaskId || undefined"
+      :initial-status="initialStatus"
+      :parent-task-id="parentTaskId"
       :parent-project-id="parentTask?.project_id"
       :on-cancel="onCancel"
     />

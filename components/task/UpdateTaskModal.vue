@@ -2,9 +2,7 @@
 import { ResponsiveModal } from "#components";
 import UpdateTaskFormWrapper from "./UpdateTaskFormWrapper.vue";
 
-const { isOpen, close } = useUpdateTaskModal();
-const route = useRoute();
-const modalTaskId = computed(() => String(route.query["update_task"] ?? ""));
+const { state, isOpen, close } = useUpdateTaskModal();
 
 const onModalOpenUpdate = (isOpen: boolean) => {
   if (!isOpen) close();
@@ -15,7 +13,8 @@ const onModalOpenUpdate = (isOpen: boolean) => {
   <ResponsiveModal :open="isOpen" @open-update="onModalOpenUpdate">
     <UpdateTaskFormWrapper
       v-if="isOpen"
-      :key="modalTaskId"
+      :key="state.taskId"
+      :task-id="state.taskId!"
       :on-cancel="close"
     />
   </ResponsiveModal>

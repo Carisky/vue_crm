@@ -8,29 +8,37 @@ import type {
   WorkspaceGroup,
   WorkspaceMember,
 } from "~/lib/types";
+import {
+  taskEditorQueryKey,
+  taskMemberOptionsQueryKey,
+  taskProjectOptionsQueryKey,
+} from "~/lib/task-query-keys";
 
-const { onCancel } = defineProps<{ onCancel?: () => void }>();
+const { taskId, onCancel } = defineProps<{
+  taskId: string;
+  onCancel?: () => void;
+}>();
 
 const route = useRoute();
 const requestFetch = useRequestFetch();
-const { value: taskId } = useUrlQuery("update_task");
-const taskQueryKey = computed(() => ["task", taskId.value ?? ""]);
+const workspaceId = computed(() => String(route.params["workspaceId"] ?? ""));
+const taskQueryKey = computed(() => taskEditorQueryKey(taskId));
 
 const { data: task, isLoading: isLoadingTask } = useQuery<FilteredTask | null>({
   queryKey: taskQueryKey,
   queryFn: async () => {
     const data = await requestFetch<{ task: FilteredTask | null }>(
-      `/api/tasks/${taskId.value}`,
+      `/api/tasks/${taskId}`,
     );
     return data?.task ?? null;
   },
 });
 
 const { data: projects, isLoading: isLoadingProjects } = useQuery<Project[]>({
-  queryKey: ["projects", () => route.params["workspaceId"]],
+  queryKey: computed(() => taskProjectOptionsQueryKey(workspaceId.value)),
   queryFn: async () => {
     const data = await requestFetch<{ projects: Project[] }>(
-      `/api/workspaces/${route.params["workspaceId"]}/projects`,
+      `/api/workspaces/${workspaceId.value}/projects`,
     );
     return data?.projects ?? [];
   },
@@ -40,10 +48,10 @@ const { data: projects, isLoading: isLoadingProjects } = useQuery<Project[]>({
 const { data: members, isLoading: isLoadingMembers } = useQuery<
   WorkspaceMember[]
 >({
-  queryKey: ["members", () => route.params["workspaceId"]],
+  queryKey: computed(() => taskMemberOptionsQueryKey(workspaceId.value)),
   queryFn: async () => {
     const data = await requestFetch<{ members: WorkspaceMember[] }>(
-      `/api/workspaces/${route.params["workspaceId"]}/members`,
+      `/api/workspaces/${workspaceId.value}/members`,
     );
     return data?.members ?? [];
   },
