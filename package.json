@@ -8,6 +8,8 @@
     "dev:local": "nuxt dev --dotenv .env.development",
     "db:dev:up": "docker compose -f docker-compose.dev.yml up -d",
     "db:dev:down": "docker compose -f docker-compose.dev.yml down",
+    "db:backup": "tsx scripts/database.ts backup",
+    "db:restore": "tsx scripts/database.ts restore",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "test": "node --test --experimental-strip-types tests/*.test.ts",

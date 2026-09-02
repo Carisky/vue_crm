@@ -11,6 +11,7 @@ npm ci
 npm test
 npm run typecheck
 npm run build
+npm run db:backup -- --name before-deploy
 npx prisma migrate deploy
 npm run storage:migrate -- --dry-run
 # verify the JSON inventory and take a database backup
@@ -26,6 +27,10 @@ short misspelled aliases `maintence:run`, `maintence:stop`, and
 
 Keep the database backup and migrated source files until the post-deploy smoke
 test is complete. Do not add Nginx or Apache aliases to `STORAGE_ROOT`.
+
+Database restore is destructive and creates a mandatory safety backup before
+changing any tables. See `docs/database-backups.md` for schema compatibility,
+named restores, and MariaDB client configuration.
 
 For local development:
 
