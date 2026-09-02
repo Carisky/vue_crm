@@ -1,26 +1,29 @@
-const useCreateProjectModal = () => {
-  const {
-    value: createProjectModalOpen,
-    setQueryValue: setCreateProjectModalOpen,
-  } = useUrlQuery("create_task");
+import type { LocationQueryRaw } from "vue-router";
 
-  const isOpen = computed(() => !!createProjectModalOpen.value);
-  const { setQueryValue: setParentTaskId } = useUrlQuery("parent_task_id");
+import {
+  createTaskModalController,
+  type TaskModalNavigationState,
+} from "~/lib/create-task-modal-state";
 
-  const open = (status?: string, parentTaskId?: string) => {
-    setParentTaskId(parentTaskId ?? null);
-    setCreateProjectModalOpen(encodeURIComponent(status ?? 1));
-  };
-  const close = () => {
-    setCreateProjectModalOpen(null);
-    setParentTaskId(null);
-  };
+const useCreateTaskModal = () => {
+  const route = useRoute();
+  const router = useRouter();
+  const navigationState = useState<TaskModalNavigationState>(
+    "create-task-modal-navigation",
+    () => ({ override: null, sequence: 0 }),
+  );
+  const queryValue = computed(() => {
+    const value = route.query["create_task"];
+    const firstValue = Array.isArray(value) ? value[0] : value;
+    return typeof firstValue === "string" ? firstValue : undefined;
+  });
 
-  return {
-    isOpen,
-    open,
-    close,
-  };
+  return createTaskModalController({
+    queryValue,
+    navigationState,
+    currentQuery: () => ({ ...route.query }),
+    navigate: (query) => router.push({ query: query as LocationQueryRaw }),
+  });
 };
 
-export default useCreateProjectModal;
+export default useCreateTaskModal;

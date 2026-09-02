@@ -107,6 +107,39 @@ function createSuperficialDocCfb(): Buffer {
   return CFB.write(container, { type: "buffer", fileType: "cfb" }) as Buffer;
 }
 
+function createDocx(mainDocumentXml: string): Buffer {
+  const container = CFB.utils.cfb_new();
+  CFB.utils.cfb_add(
+    container,
+    "[Content_Types].xml",
+    Buffer.from(
+      '<?xml version="1.0" encoding="UTF-8"?>' +
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+        '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+        "</Types>",
+    ),
+  );
+  CFB.utils.cfb_add(
+    container,
+    "_rels/.rels",
+    Buffer.from(
+      '<?xml version="1.0" encoding="UTF-8"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+        "</Relationships>",
+    ),
+  );
+  CFB.utils.cfb_add(
+    container,
+    "word/document.xml",
+    Buffer.from(mainDocumentXml),
+  );
+  return CFB.write(container, {
+    type: "buffer",
+    fileType: "zip",
+  }) as Buffer;
+}
+
 async function createDocWithOrphanedFamilyStreams(): Promise<Buffer> {
   const content = Buffer.from(
     await readFile(join(fixturesDirectory, "legacy-real.doc")),
@@ -361,6 +394,57 @@ test("validates structurally correct OOXML and OpenDocument package fixtures", a
       item.name,
     );
   }
+});
+
+test("accepts a valid DOCX whose main document XML is larger than 256 KiB", async () => {
+  const repeatedText = "A".repeat(300 * 1024);
+  const document = createDocx(
+    '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+      `<w:body><w:p><w:r><w:t>${repeatedText}</w:t></w:r></w:p></w:body>` +
+      "</w:document>",
+  );
+
+  await withTemporaryFile("large-document.docx", document, async (path) => {
+    assert.deepEqual(
+      await validateMediaFile({
+        path,
+        originalName: "large-document.docx",
+        claimedMime: canonicalMime.docx,
+      }),
+      {
+        mime: canonicalMime.docx,
+        extension: "docx",
+        kind: "document",
+        disposition: "attachment",
+      },
+    );
+  });
+});
+
+test("accepts the implicitly bound xml namespace used by Word attributes", async () => {
+  const document = createDocx(
+    '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+      '<w:body><w:p><w:r><w:t xml:space="preserve"> spaced text </w:t></w:r></w:p></w:body>' +
+      "</w:document>",
+  );
+
+  await withTemporaryFile("word-generated.docx", document, async (path) => {
+    assert.deepEqual(
+      await validateMediaFile({
+        path,
+        originalName: "word-generated.docx",
+        claimedMime: canonicalMime.docx,
+      }),
+      {
+        mime: canonicalMime.docx,
+        extension: "docx",
+        kind: "document",
+        disposition: "attachment",
+      },
+    );
+  });
 });
 
 test("validates real legacy DOC, XLS, and PPT fixtures with live family data", async () => {

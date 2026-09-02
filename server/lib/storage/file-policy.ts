@@ -37,6 +37,7 @@ const TEXT_INSPECTION_LIMIT_BYTES = 256 * 1024;
 const ZIP_METADATA_LIMIT_BYTES = 4 * 1024 * 1024;
 const ZIP_ENTRY_LIMIT = 2048;
 const ZIP_TEXT_ENTRY_LIMIT_BYTES = 256 * 1024;
+const ZIP_MAIN_DOCUMENT_LIMIT_BYTES = 16 * 1024 * 1024;
 
 const policies = {
   jpg: policy("image/jpeg", "jpg", "image", "inline", "binary", ["jpg"]),
@@ -439,10 +440,11 @@ async function readZipDirectory(
 async function readZipEntry(
   handle: FileHandle,
   entry: ZipEntry,
+  maxBytes = ZIP_TEXT_ENTRY_LIMIT_BYTES,
 ): Promise<Buffer> {
   if (
-    entry.uncompressedSize > ZIP_TEXT_ENTRY_LIMIT_BYTES ||
-    entry.compressedSize > ZIP_TEXT_ENTRY_LIMIT_BYTES ||
+    entry.uncompressedSize > maxBytes ||
+    entry.compressedSize > maxBytes ||
     ![0, 8].includes(entry.method)
   ) {
     unsupported();
@@ -472,7 +474,7 @@ async function readZipEntry(
     entry.method === 0
       ? compressed
       : inflateRawSync(compressed, {
-          maxOutputLength: ZIP_TEXT_ENTRY_LIMIT_BYTES,
+          maxOutputLength: maxBytes,
         });
   if (content.length !== entry.uncompressedSize) {
     unsupported();
@@ -500,6 +502,8 @@ type XmlElement = {
   attributes: XmlAttribute[];
   children: XmlElement[];
 };
+
+const XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
 
 const xmlParser = new XMLParser({
   preserveOrder: true,
@@ -626,6 +630,12 @@ function parseXmlElements(
         if (!prefix || prefix.includes(":")) {
           unsupported();
         }
+        if (
+          (prefix === "xml" && rawValue !== XML_NAMESPACE) ||
+          prefix === "xmlns"
+        ) {
+          unsupported();
+        }
         namespaces.set(prefix, rawValue);
       }
     }
@@ -675,7 +685,10 @@ function parseXmlDocument(content: Buffer): XmlElement {
     unsupported();
   }
 
-  const roots = parseXmlElements(xmlParser.parse(text) as unknown, new Map());
+  const roots = parseXmlElements(
+    xmlParser.parse(text) as unknown,
+    new Map([["xml", XML_NAMESPACE]]),
+  );
   if (roots.length !== 1) {
     unsupported();
   }
@@ -844,7 +857,11 @@ async function validateOoxmlPackage(
   }
 
   const mainRoot = parseXmlDocument(
-    await readZipEntry(handle, entries.get(selected.packageRoot)!),
+    await readZipEntry(
+      handle,
+      entries.get(selected.packageRoot)!,
+      ZIP_MAIN_DOCUMENT_LIMIT_BYTES,
+    ),
   );
   const expectedRoot = OOXML_MAIN_ROOTS[selected.extension];
   if (
@@ -904,7 +921,11 @@ async function validateOpenDocumentPackage(
   }
 
   const content = parseXmlDocument(
-    await readZipEntry(handle, entries.get("content.xml")!),
+    await readZipEntry(
+      handle,
+      entries.get("content.xml")!,
+      ZIP_MAIN_DOCUMENT_LIMIT_BYTES,
+    ),
   );
   if (!hasName(content, ODF_OFFICE_NAMESPACE, "document-content")) {
     unsupported();
