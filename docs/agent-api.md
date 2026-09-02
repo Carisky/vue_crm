@@ -16,9 +16,15 @@ The Agent API gives an external AI agent read access to the current user's works
 
 Revoke a key from Profile at any time. Revocation takes effect on its next request.
 
+The application-level Basic Auth middleware explicitly allows
+`/api/agent/v1/*` through because these routes authenticate every request with
+their own Bearer API key. If a reverse proxy also enforces Basic Auth, allow the
+same path there.
+
 ## API v1
 
-Use `Authorization: Bearer <key>` with every request. The base path is `/api/agent/v1`.
+Use `Authorization: Bearer <key>` with every request. The base path is
+`/api/agent/v1`.
 
 | Method | Path | Purpose |
 | --- | --- | --- |

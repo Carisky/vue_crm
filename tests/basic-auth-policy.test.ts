@@ -71,3 +71,23 @@ test("lets Telegram load only its signed Mini App and webhook routes", () => {
     true,
   );
 });
+
+test("lets the Agent API authenticate with its Bearer key", () => {
+  assert.equal(
+    requiresBasicAuth({
+      hostname: "collab.tsl-silesia.com.pl",
+      isTrustedInternalRequest: false,
+      pathname: "/api/agent/v1/capabilities",
+    }),
+    false,
+  );
+
+  assert.equal(
+    requiresBasicAuth({
+      hostname: "collab.tsl-silesia.com.pl",
+      isTrustedInternalRequest: false,
+      pathname: "/api/profile/agent-keys",
+    }),
+    true,
+  );
+});

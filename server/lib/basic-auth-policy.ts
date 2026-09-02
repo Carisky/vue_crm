@@ -16,6 +16,7 @@ export function requiresBasicAuth({
     pathname === "/telegram" ||
     pathname === "/api/telegram/webhook" ||
     pathname.startsWith("/api/telegram/mini/") ||
+    pathname.startsWith("/api/agent/v1/") ||
     pathname.startsWith("/api/_nuxt_icon/")
   ) {
     return false;
