@@ -245,7 +245,7 @@ async function main() {
         "import",
         "--help",
       ]);
-      await assertCrmReachable(config.callbackUrl);
+      await assertCrmReachable(config.callbackHealthUrl);
       const [users, workspaces, conversations, messages] = await Promise.all([
         prisma.user.count(),
         prisma.workspace.count(),

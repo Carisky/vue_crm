@@ -18,6 +18,8 @@ const env = {
   MATTERMOST_RUNTIME_ENV_FILE: "/srv/crm/.mattermost.runtime.env",
   MATTERMOST_PLUGIN_SECRET: "plugin-secret",
   MATTERMOST_CALLBACK_URL:
+    "http://host.docker.internal:3000/api/integrations/mattermost/events",
+  MATTERMOST_CALLBACK_HEALTH_URL:
     "http://127.0.0.1:3000/api/integrations/mattermost/events",
   MATTERMOST_INTERNAL_URL: "http://127.0.0.1:8066",
 };
@@ -40,7 +42,7 @@ test("requires resolved paths and every bootstrap secret setting", () => {
 
 test("refuses an unreachable CRM callback", async () => {
   await assert.rejects(
-    assertCrmReachable(env.MATTERMOST_CALLBACK_URL, async () => {
+    assertCrmReachable(env.MATTERMOST_CALLBACK_HEALTH_URL, async () => {
       throw new Error("offline");
     }),
     /unreachable/,

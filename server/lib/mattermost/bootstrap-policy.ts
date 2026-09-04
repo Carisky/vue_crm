@@ -8,6 +8,7 @@ export type BootstrapEnvironment = {
   runtimeEnvFile: string;
   pluginSecret: string;
   callbackUrl: string;
+  callbackHealthUrl: string;
   internalUrl: string;
 };
 
@@ -29,8 +30,13 @@ export function validateBootstrapEnvironment(
   source: Environment,
 ): BootstrapEnvironment {
   const callbackUrl = required(source, "MATTERMOST_CALLBACK_URL");
+  const callbackHealthUrl = required(
+    source,
+    "MATTERMOST_CALLBACK_HEALTH_URL",
+  );
   const internalUrl = required(source, "MATTERMOST_INTERNAL_URL");
   const parsedCallback = URL.parse(callbackUrl);
+  const parsedCallbackHealth = URL.parse(callbackHealthUrl);
   if (
     !parsedCallback ||
     !["http:", "https:"].includes(parsedCallback.protocol) ||
@@ -38,12 +44,22 @@ export function validateBootstrapEnvironment(
   ) {
     throw new Error("MATTERMOST_CALLBACK_URL must be an absolute HTTP URL");
   }
+  if (
+    !parsedCallbackHealth ||
+    !["http:", "https:"].includes(parsedCallbackHealth.protocol) ||
+    !parsedCallbackHealth.host
+  ) {
+    throw new Error(
+      "MATTERMOST_CALLBACK_HEALTH_URL must be an absolute HTTP URL",
+    );
+  }
   return {
     composeDirectory: absolute(source, "MATTERMOST_COMPOSE_DIR"),
     importDirectory: absolute(source, "MATTERMOST_IMPORT_DIR"),
     runtimeEnvFile: absolute(source, "MATTERMOST_RUNTIME_ENV_FILE"),
     pluginSecret: required(source, "MATTERMOST_PLUGIN_SECRET"),
     callbackUrl,
+    callbackHealthUrl,
     internalUrl,
   };
 }

@@ -9,6 +9,7 @@ declare global {
       MATTERMOST_SYNC_ENABLED?: string;
       MATTERMOST_PLUGIN_ID?: string;
       MATTERMOST_CALLBACK_URL?: string;
+      MATTERMOST_CALLBACK_HEALTH_URL?: string;
       MATTERMOST_RUNTIME_ENV_FILE?: string;
     }
   }

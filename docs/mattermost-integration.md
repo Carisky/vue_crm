@@ -31,7 +31,8 @@ CRM server-only variables:
 | `MATTERMOST_PLUGIN_SECRET` | Shared HMAC secret, at least 32 random bytes. |
 | `MATTERMOST_RUNTIME_ENV_FILE` | Absolute mode-0600 file holding the generated admin token. |
 | `MATTERMOST_ADMIN_TOKEN` | Optional direct token; prefer the runtime file. |
-| `MATTERMOST_CALLBACK_URL` | CRM callback reachable from the plugin container. |
+| `MATTERMOST_CALLBACK_URL` | CRM callback reachable from the plugin container, normally through `host.docker.internal`. |
+| `MATTERMOST_CALLBACK_HEALTH_URL` | The same route reached locally by bootstrap, normally through `127.0.0.1`. |
 | `MATTERMOST_COMPOSE_DIR` | Absolute checkout/deploy directory for the companion stack. |
 | `MATTERMOST_IMPORT_DIR` | Absolute directory for mode-0600 export archives. |
 
