@@ -64,10 +64,14 @@ function runCommand(
     child.on("error", reject);
     child.on("exit", (code) => {
       if (code === 0) return resolve(stdout.trim());
-      const firstLine = stderr.split(/\r?\n/, 1)[0] || "command failed";
+      const lines = stderr
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const detail = lines.at(-1) || "command failed";
       reject(
         new Error(
-          `${basename(file)} exited ${code}: ${firstLine.slice(0, 300)}`,
+          `${basename(file)} exited ${code}: ${detail.slice(0, 300)}`,
         ),
       );
     });
