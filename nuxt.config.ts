@@ -59,6 +59,13 @@ export default defineNuxtConfig({
     telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
     telegramBotUsername: process.env.TELEGRAM_BOT_USERNAME,
     telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET,
+    mattermostInternalUrl: process.env.MATTERMOST_INTERNAL_URL,
+    mattermostAdminToken: process.env.MATTERMOST_ADMIN_TOKEN,
+    mattermostPluginSecret: process.env.MATTERMOST_PLUGIN_SECRET,
+    mattermostSyncEnabled: process.env.MATTERMOST_SYNC_ENABLED,
+    mattermostPluginId: process.env.MATTERMOST_PLUGIN_ID,
+    mattermostCallbackUrl: process.env.MATTERMOST_CALLBACK_URL,
+    mattermostRuntimeEnvFile: process.env.MATTERMOST_RUNTIME_ENV_FILE,
     public: {
       sessionCookieName: process.env.PUBLIC_SESSION_COOKIE_NAME,
       siteUrl: process.env.PUBLIC_SITE_URL,

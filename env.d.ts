@@ -1,5 +1,19 @@
 import type { Session, User } from "@prisma/client";
 
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      MATTERMOST_INTERNAL_URL?: string;
+      MATTERMOST_ADMIN_TOKEN?: string;
+      MATTERMOST_PLUGIN_SECRET?: string;
+      MATTERMOST_SYNC_ENABLED?: string;
+      MATTERMOST_PLUGIN_ID?: string;
+      MATTERMOST_CALLBACK_URL?: string;
+      MATTERMOST_RUNTIME_ENV_FILE?: string;
+    }
+  }
+}
+
 export type CurrentUser = {
   id: string;
   name: string | null;
