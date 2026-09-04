@@ -29,7 +29,7 @@ CRM server-only variables:
 | `MATTERMOST_SYNC_ENABLED` | Exact `true` enables runtime synchronization. |
 | `MATTERMOST_INTERNAL_URL` | Private API, normally `http://127.0.0.1:8066`. |
 | `MATTERMOST_PLUGIN_SECRET` | Shared HMAC secret, at least 32 random bytes. |
-| `MATTERMOST_RUNTIME_ENV_FILE` | Absolute mode-0600 file holding the generated admin token. |
+| `MATTERMOST_RUNTIME_ENV_FILE` | Absolute service-account-owned mode-0600 file holding the generated admin token. |
 | `MATTERMOST_ADMIN_TOKEN` | Optional direct token; prefer the runtime file. |
 | `MATTERMOST_CALLBACK_URL` | CRM callback reachable from the plugin container, normally through `host.docker.internal`. |
 | `MATTERMOST_CALLBACK_HEALTH_URL` | The same route reached locally by bootstrap, normally through `127.0.0.1`. |
@@ -43,8 +43,8 @@ image tags, `APP_PORT`, `MM_SERVICESETTINGS_SITEURL`,
 another image. Never commit either real `.env` or `.mattermost.runtime.env`.
 
 Create secrets with a cryptographic generator, for example `openssl rand -hex
-32`. The runtime-env parent directory should be root-owned `0700`; the file is
-atomically written as `0600`. The file also contains a bootstrap-admin password,
+32`. The runtime-env parent directory should be owned by the CRM service account
+and mode `0700`; the file is atomically written as `0600`. The file also contains a bootstrap-admin password,
 so treat it as a production credential and include it in secret backup policy.
 
 ## First deployment and rebuild
@@ -126,7 +126,7 @@ To rotate the plugin secret, set the same new random value in both services,
 reinstall/reconfigure the plugin with `scripts/install-plugin.sh`, restart CRM,
 and verify health. To rotate the Mattermost admin token, create a replacement on
 the private API, atomically replace only `MATTERMOST_ADMIN_TOKEN` in the
-root-owned runtime file, restart CRM, verify status, then revoke the old token.
+service-account-owned runtime file, restart CRM, verify status, then revoke the old token.
 
 Rollback application code and the companion stack together. If schema rollback
 is required, restore the pre-deployment CRM database backup rather than manually
