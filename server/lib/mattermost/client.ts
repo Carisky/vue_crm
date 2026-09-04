@@ -452,6 +452,13 @@ export class MattermostClient {
     ) as Promise<MattermostChannel[]>;
   }
 
+  listPrivateChannelsForTeam(teamId: string, page: number, perPage: number) {
+    return this.request<MattermostChannel[]>(
+      "GET",
+      `/api/v4/teams/${segment(teamId)}/channels/private?page=${page}&per_page=${perPage}`,
+    ) as Promise<MattermostChannel[]>;
+  }
+
   listChannelMembers(channelId: string, page: number, perPage: number) {
     return this.request<MattermostChannelMember[]>(
       "GET",

@@ -41,7 +41,11 @@ export type MattermostResolvedLinks = {
 
 export type MattermostResolutionClient = Pick<
   MattermostClient,
-  "listUsers" | "listTeams" | "listChannelsForTeam" | "listChannelPosts"
+  | "listUsers"
+  | "listTeams"
+  | "listChannelsForTeam"
+  | "listPrivateChannelsForTeam"
+  | "listChannelPosts"
 >;
 
 type ResolutionStore = {
@@ -146,12 +150,22 @@ export async function resolveMattermostLinks(
   const channelsByTeam = new Map<string, MattermostChannel[]>();
   await Promise.all(
     workspaces.map(async (workspace) => {
-      channelsByTeam.set(
-        workspace.mattermostTeamId,
-        await collectPages((page, size) =>
+      const [publicChannels, privateChannels] = await Promise.all([
+        collectPages((page, size) =>
           client.listChannelsForTeam(workspace.mattermostTeamId, page, size),
         ),
-      );
+        collectPages((page, size) =>
+          client.listPrivateChannelsForTeam(
+            workspace.mattermostTeamId,
+            page,
+            size,
+          ),
+        ),
+      ]);
+      channelsByTeam.set(workspace.mattermostTeamId, [
+        ...publicChannels,
+        ...privateChannels,
+      ]);
     }),
   );
 

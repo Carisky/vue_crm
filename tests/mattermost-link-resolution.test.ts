@@ -51,6 +51,7 @@ function client(
             },
           ]
         : [],
+    listPrivateChannelsForTeam: async () => [],
     listChannelPosts: async (_channelId: string, page: number) =>
       page === 0
         ? {
@@ -109,6 +110,43 @@ test("resolves deterministic names and CRM message props across pages", async ()
     ],
   });
   assert.deepEqual(saved, result);
+});
+
+test("resolves private CRM channels through the system-admin endpoint", async () => {
+  const privateConversation = {
+    id: "conversation-private",
+    workspaceId: "workspace-a",
+    type: "GROUP" as const,
+    name: "Night shift",
+  };
+  const result = await resolveMattermostLinks(
+    {
+      ...source,
+      conversations: [privateConversation],
+      messages: [],
+    },
+    client({
+      listChannelsForTeam: async () => [],
+      listPrivateChannelsForTeam: async (_teamId, page) =>
+        page === 0
+          ? [
+              {
+                id: "mm-private-channel",
+                team_id: "mm-team-a",
+                name: mattermostChannelName(
+                  privateConversation.id,
+                  privateConversation.name,
+                ),
+                display_name: privateConversation.name,
+                type: "P" as const,
+              },
+            ]
+          : [],
+    }),
+    { save: async () => undefined },
+  );
+
+  assert.equal(result.conversations[0]?.mattermostChannelId, "mm-private-channel");
 });
 
 test("does not match posts by mutable message or timestamp", async () => {

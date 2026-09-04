@@ -187,6 +187,7 @@ test("Mattermost client maps managed operations to their private API contracts",
   await client.listTeams(1, 25);
   await client.listTeamMembers("t1", 1, 25);
   await client.listChannelsForTeam("t1", 1, 25);
+  await client.listPrivateChannelsForTeam("t1", 1, 25);
   await client.listChannelMembers("c1", 1, 25);
   await client.listChannelPosts("c1", 1, 25);
 
@@ -210,6 +211,7 @@ test("Mattermost client maps managed operations to their private API contracts",
     { method: "GET", path: "/api/v4/teams?page=1&per_page=25", body: undefined },
     { method: "GET", path: "/api/v4/teams/t1/members?page=1&per_page=25", body: undefined },
     { method: "GET", path: "/api/v4/teams/t1/channels?page=1&per_page=25", body: undefined },
+    { method: "GET", path: "/api/v4/teams/t1/channels/private?page=1&per_page=25", body: undefined },
     { method: "GET", path: "/api/v4/channels/c1/members?page=1&per_page=25", body: undefined },
     { method: "GET", path: "/api/v4/channels/c1/posts?page=1&per_page=25", body: undefined },
   ]);
