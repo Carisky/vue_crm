@@ -569,9 +569,20 @@ export async function reconcileMattermostWithRuntime() {
   const config = getMattermostConfig();
   if (!config.enabled) return null;
   const store = createPrismaMattermostReconcileStore(prisma);
-  return reconcileMattermost(
+  const summary = await reconcileMattermost(
     await store.load(),
     new MattermostClient(config) as MattermostReconcileClient,
     store,
   );
+  if (summary.failed === 0) {
+    await prisma.mattermostSyncControl.update({
+      where: { key: "global" },
+      data: {
+        pausedAt: null,
+        pauseReason: null,
+        lastBootstrapState: "RECOVERED",
+      },
+    });
+  }
+  return summary;
 }
