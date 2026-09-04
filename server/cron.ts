@@ -2,6 +2,7 @@ import { processEmailQueue } from "~/server/lib/email-queue";
 import { Schedule } from "~/server/lib/scheduler";
 import { removeExpiredEmailVerificationAccounts } from "~/server/lib/email-verification-cleanup";
 import { removeExpiredPasswordResetTokens } from "~/server/lib/password-reset";
+import { processMattermostOutboxWithRuntime } from "~/server/lib/mattermost/outbox";
 import { removeExpiredPendingMedia } from "~/server/lib/pending-media-cleanup";
 import prisma from "~/server/lib/prisma";
 import { getPrivateStorage } from "~/server/lib/storage";
@@ -10,6 +11,12 @@ export function registerCronJobs() {
   Schedule.call(() => processEmailQueue(), { name: "email-queue" }).everyMinutes(
     1,
   );
+
+  Schedule.call(async () => {
+    await processMattermostOutboxWithRuntime();
+  }, {
+    name: "mattermost-outbox",
+  }).everyMinutes(1);
 
   Schedule.call(removeExpiredEmailVerificationAccounts, {
     name: "email-verification-cleanup",
