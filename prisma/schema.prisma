@@ -510,6 +510,8 @@ model MattermostSyncControl {
   lastBootstrapAt      DateTime?
   lastBootstrapState   String?   @db.VarChar(32)
   lastBootstrapSummary Json?
+  lastReconciledAt     DateTime?
+  lastReconcileSummary Json?
   updatedAt            DateTime  @updatedAt
 }
 

@@ -100,7 +100,10 @@ export class MattermostRequestError extends Error {
   readonly retryable: boolean;
   readonly status?: number;
 
-  constructor(message: string, options: { retryable: boolean; status?: number }) {
+  constructor(
+    message: string,
+    options: { retryable: boolean; status?: number },
+  ) {
     super(message);
     this.name = "MattermostRequestError";
     this.retryable = options.retryable;
@@ -119,7 +122,10 @@ function parseRuntimeToken(contents: string) {
       continue;
     }
     const separator = line.indexOf("=");
-    if (separator < 0 || line.slice(0, separator).trim() !== "MATTERMOST_ADMIN_TOKEN") {
+    if (
+      separator < 0 ||
+      line.slice(0, separator).trim() !== "MATTERMOST_ADMIN_TOKEN"
+    ) {
       continue;
     }
     const value = line.slice(separator + 1).trim();
@@ -183,9 +189,12 @@ export class MattermostClient {
     if (this.config.adminToken) {
       return this.config.adminToken;
     }
-    throw new MattermostRequestError("Mattermost administrator token is unavailable", {
-      retryable: false,
-    });
+    throw new MattermostRequestError(
+      "Mattermost administrator token is unavailable",
+      {
+        retryable: false,
+      },
+    );
   }
 
   private async request<T>(
@@ -287,9 +296,13 @@ export class MattermostClient {
   }
 
   getTeamByName(name: string) {
-    return this.request<MattermostTeam>(`GET`, `/api/v4/teams/name/${segment(name)}`, {
-      notFoundAsNull: true,
-    });
+    return this.request<MattermostTeam>(
+      `GET`,
+      `/api/v4/teams/name/${segment(name)}`,
+      {
+        notFoundAsNull: true,
+      },
+    );
   }
 
   createTeam(input: { name: string; display_name: string }) {
@@ -362,9 +375,13 @@ export class MattermostClient {
   }
 
   async addChannelMember(channelId: string, userId: string) {
-    await this.request("POST", `/api/v4/channels/${segment(channelId)}/members`, {
-      body: { user_id: userId },
-    });
+    await this.request(
+      "POST",
+      `/api/v4/channels/${segment(channelId)}/members`,
+      {
+        body: { user_id: userId },
+      },
+    );
   }
 
   async removeChannelMember(channelId: string, userId: string) {
@@ -396,6 +413,15 @@ export class MattermostClient {
       `/plugins/${segment(this.config.pluginId)}/api/v1/health`,
       { plugin: true },
     ) as Promise<{ id: string; version: string }>;
+  }
+
+  getSystemPing() {
+    return this.request<{ status: string }>(
+      "GET",
+      "/api/v4/system/ping",
+    ) as Promise<{
+      status: string;
+    }>;
   }
 
   listUsers(page: number, perPage: number) {
@@ -439,7 +465,6 @@ export class MattermostClient {
       `/api/v4/channels/${segment(channelId)}/posts?page=${page}&per_page=${perPage}`,
     ) as Promise<MattermostPostPage>;
   }
-
 }
 
 export function getMattermostConfig(
@@ -448,11 +473,14 @@ export function getMattermostConfig(
   const value = (camel: string, environment: string) =>
     String(source[camel] ?? source[environment] ?? "");
   return {
-    enabled: value("mattermostSyncEnabled", "MATTERMOST_SYNC_ENABLED") === "true",
+    enabled:
+      value("mattermostSyncEnabled", "MATTERMOST_SYNC_ENABLED") === "true",
     internalUrl: value("mattermostInternalUrl", "MATTERMOST_INTERNAL_URL"),
-    adminToken: value("mattermostAdminToken", "MATTERMOST_ADMIN_TOKEN") || undefined,
+    adminToken:
+      value("mattermostAdminToken", "MATTERMOST_ADMIN_TOKEN") || undefined,
     adminTokenFile:
-      value("mattermostRuntimeEnvFile", "MATTERMOST_RUNTIME_ENV_FILE") || undefined,
+      value("mattermostRuntimeEnvFile", "MATTERMOST_RUNTIME_ENV_FILE") ||
+      undefined,
     pluginSecret: value("mattermostPluginSecret", "MATTERMOST_PLUGIN_SECRET"),
     pluginId:
       value("mattermostPluginId", "MATTERMOST_PLUGIN_ID") ||

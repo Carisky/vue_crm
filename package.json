@@ -28,6 +28,8 @@
     "maintence:stop": "npm run maintenance:stop",
     "maintence:status": "npm run maintenance:status",
     "mattermost:export": "tsx scripts/mattermost-export.ts",
+    "mattermost:reconcile": "tsx scripts/mattermost-reconcile.ts",
+    "mattermost:status": "tsx scripts/mattermost-status.ts",
     "users:mattermost-up": "tsx scripts/mattermost-bootstrap.ts",
     "ssl:get": "bash scripts/ssl-get.sh"
   },

@@ -22,6 +22,18 @@ import {
   createPrismaMattermostLinkStore,
   resolveMattermostLinks,
 } from "../server/lib/mattermost/link-resolution.ts";
+import {
+  createPrismaMattermostOutboxRepository,
+  processMattermostOutbox,
+} from "../server/lib/mattermost/outbox.ts";
+import {
+  createPrismaMattermostReconcileStore,
+  reconcileMattermost,
+} from "../server/lib/mattermost/reconcile.ts";
+import {
+  dispatchMattermostEvent,
+  runtimeMattermostDispatchDependencies,
+} from "../server/lib/mattermost/dispatch.ts";
 
 type CommandOptions = {
   cwd?: string;
@@ -344,11 +356,44 @@ async function main() {
         MATTERMOST_RUNTIME_ENV_FILE: config.runtimeEnvFile,
         MATTERMOST_PLUGIN_SECRET: config.pluginSecret,
       });
-      await resolveMattermostLinks(
-        await store.load(),
-        new MattermostClient(clientConfig),
-        store,
+      const client = new MattermostClient(clientConfig);
+      await resolveMattermostLinks(await store.load(), client, store);
+      const reconcileStore = createPrismaMattermostReconcileStore(prisma);
+      const reconciliation = await reconcileMattermost(
+        await reconcileStore.load(),
+        client,
+        reconcileStore,
       );
+      if (reconciliation.failed) {
+        throw new Error(
+          `Mattermost reconciliation left ${reconciliation.failed} failed operations`,
+        );
+      }
+
+      const repository = createPrismaMattermostOutboxRepository(prisma);
+      const unpausedRepository = {
+        ...repository,
+        isPaused: async () => false,
+      };
+      for (let batch = 0; batch < 1_000; batch += 1) {
+        const drained = await processMattermostOutbox({
+          enabled: true,
+          repository: unpausedRepository,
+          dispatch: (record) =>
+            dispatchMattermostEvent(
+              record,
+              runtimeMattermostDispatchDependencies(prisma, clientConfig),
+            ),
+        });
+        if (drained.failed || drained.retried) {
+          throw new Error(
+            "Mattermost outbox did not drain cleanly after bootstrap",
+          );
+        }
+        if (!drained.claimed) break;
+        if (batch === 999)
+          throw new Error("Mattermost outbox drain exceeded its limit");
+      }
     },
     async recordSuccess() {
       await prisma.mattermostSyncControl.update({

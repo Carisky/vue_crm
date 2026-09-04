@@ -4,21 +4,25 @@ import { removeExpiredEmailVerificationAccounts } from "~/server/lib/email-verif
 import { removeExpiredPasswordResetTokens } from "~/server/lib/password-reset";
 import { processMattermostOutboxWithRuntime } from "~/server/lib/mattermost/outbox";
 import { deleteExpiredMattermostNonces } from "~/server/lib/mattermost/inbound";
+import { reconcileMattermostWithRuntime } from "~/server/lib/mattermost/reconcile";
 import { removeExpiredPendingMedia } from "~/server/lib/pending-media-cleanup";
 import prisma from "~/server/lib/prisma";
 import { getPrivateStorage } from "~/server/lib/storage";
 
 export function registerCronJobs() {
-  Schedule.call(() => processEmailQueue(), { name: "email-queue" }).everyMinutes(
-    1,
-  );
-
-  Schedule.call(async () => {
-    await deleteExpiredMattermostNonces();
-    await processMattermostOutboxWithRuntime();
-  }, {
-    name: "mattermost-outbox",
+  Schedule.call(() => processEmailQueue(), {
+    name: "email-queue",
   }).everyMinutes(1);
+
+  Schedule.call(
+    async () => {
+      await deleteExpiredMattermostNonces();
+      await processMattermostOutboxWithRuntime();
+    },
+    {
+      name: "mattermost-outbox",
+    },
+  ).everyMinutes(1);
 
   Schedule.call(removeExpiredEmailVerificationAccounts, {
     name: "email-verification-cleanup",
@@ -28,8 +32,35 @@ export function registerCronJobs() {
     name: "password-reset-cleanup",
   }).everyMinutes(5);
 
-  Schedule.call(async () => { await removeExpiredPendingMedia({}, {
-    media: { findExpiredPending: (input) => prisma.taskMedia.findMany({ where: { taskId: null, createdAt: { lt: input.before } }, take: input.take, select: { id: true, storageKey: true } }), deleteById: async (id) => { await prisma.taskMedia.delete({ where: { id } }); } },
-    storage: getPrivateStorage().storage,
-  }); }, { name: "pending-media-cleanup" }).hourly();
+  Schedule.call(
+    async () => {
+      await removeExpiredPendingMedia(
+        {},
+        {
+          media: {
+            findExpiredPending: (input) =>
+              prisma.taskMedia.findMany({
+                where: { taskId: null, createdAt: { lt: input.before } },
+                take: input.take,
+                select: { id: true, storageKey: true },
+              }),
+            deleteById: async (id) => {
+              await prisma.taskMedia.delete({ where: { id } });
+            },
+          },
+          storage: getPrivateStorage().storage,
+        },
+      );
+    },
+    { name: "pending-media-cleanup" },
+  ).hourly();
+
+  Schedule.call(
+    async () => {
+      await reconcileMattermostWithRuntime();
+    },
+    {
+      name: "mattermost-reconcile",
+    },
+  ).hourly();
 }
