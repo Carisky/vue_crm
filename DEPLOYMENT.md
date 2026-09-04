@@ -42,6 +42,50 @@ npm run dev:local
 The local MariaDB container listens only on `127.0.0.1:3307`. Stop it with
 `npm run db:dev:down`.
 
+## Mattermost integration
+
+Mattermost is an optional companion service. CRM remains available when it is
+down: structural and CRM-originated message changes stay in a durable outbox and
+are retried. During a history rebuild only this outbox is paused; CRM must not be
+put into maintenance mode or return 503 for the rebuild.
+
+Before enabling synchronization, deploy the companion stack from
+`mattermost_setup_docker`, apply the Prisma migrations, and set the server-only
+variables documented in `.env.example`. The application talks to the private
+Mattermost API at `127.0.0.1:8066`; browsers use the guarded gateway on `8065`.
+
+The first command below is always read-only and prints the resolved paths,
+Mattermost volume names, and CRM entity counts:
+
+```bash
+npm run users:mattermost-up
+```
+
+Read `docs/mattermost-integration.md`, take both database and Mattermost-volume
+backups, and review the printed targets before the destructive form:
+
+```bash
+npm run users:mattermost-up -- --confirm-reset
+```
+
+`--confirm-reset` deletes only the validated volumes belonging to the Compose
+project named `mattermost`, recreates Mattermost, imports the complete CRM chat
+history, installs the integration plugin, resolves IDs, reconciles access, and
+drains the outbox. A failure leaves synchronization paused and CRM running. Do
+not manually clear the pause until the failed stage has been repaired and both
+reconcile and outbox drain have completed.
+
+Operational checks:
+
+```bash
+npm run mattermost:status
+npm run mattermost:reconcile
+```
+
+See `docs/mattermost-integration.md` for recovery, credential migration, token
+rotation, rollback, and the explicit deployment boundary. No command in the
+repository automatically deploys to or resets `192.168.1.222`.
+
 ## Telegram bot
 
 Create a bot with `@BotFather`, then configure the production environment:
