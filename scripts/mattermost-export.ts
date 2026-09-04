@@ -128,7 +128,10 @@ async function main() {
         mode: 0o600,
       },
     );
-    await chmod(archivePath, 0o600);
+    // Docker preserves this mode when copying the archive into Mattermost.
+    // The parent import directory is owner-only; the container's Mattermost
+    // user still needs to read the copied archive under /tmp.
+    await chmod(archivePath, 0o644);
     await chmod(manifestPath, 0o600);
 
     process.stdout.write(
