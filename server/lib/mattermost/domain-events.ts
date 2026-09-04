@@ -160,6 +160,19 @@ export function enqueueConversationDelete(
   });
 }
 
+export function enqueueMessageCreate(
+  transaction: MattermostEventTransaction,
+  input: { messageId: string },
+) {
+  return enqueueMutable(transaction, {
+    kind: "message.create",
+    aggregateType: "message",
+    aggregateId: input.messageId,
+    idempotencyKey: `message.create:${input.messageId}`,
+    payload: { message_id: input.messageId },
+  });
+}
+
 export function enqueueUserActivate(
   transaction: MattermostEventTransaction,
   input: { userId: string },
