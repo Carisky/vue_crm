@@ -91,3 +91,22 @@ test("lets the Agent API authenticate with its Bearer key", () => {
     true,
   );
 });
+
+test("exempts only the exact signed Mattermost callback from Basic Auth", () => {
+  assert.equal(
+    requiresBasicAuth({
+      hostname: "collab.tsl-silesia.com.pl",
+      isTrustedInternalRequest: false,
+      pathname: "/api/integrations/mattermost/events",
+    }),
+    false,
+  );
+  assert.equal(
+    requiresBasicAuth({
+      hostname: "collab.tsl-silesia.com.pl",
+      isTrustedInternalRequest: false,
+      pathname: "/api/integrations/mattermost/events/extra",
+    }),
+    true,
+  );
+});

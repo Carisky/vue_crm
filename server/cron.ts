@@ -3,6 +3,7 @@ import { Schedule } from "~/server/lib/scheduler";
 import { removeExpiredEmailVerificationAccounts } from "~/server/lib/email-verification-cleanup";
 import { removeExpiredPasswordResetTokens } from "~/server/lib/password-reset";
 import { processMattermostOutboxWithRuntime } from "~/server/lib/mattermost/outbox";
+import { deleteExpiredMattermostNonces } from "~/server/lib/mattermost/inbound";
 import { removeExpiredPendingMedia } from "~/server/lib/pending-media-cleanup";
 import prisma from "~/server/lib/prisma";
 import { getPrivateStorage } from "~/server/lib/storage";
@@ -13,6 +14,7 @@ export function registerCronJobs() {
   );
 
   Schedule.call(async () => {
+    await deleteExpiredMattermostNonces();
     await processMattermostOutboxWithRuntime();
   }, {
     name: "mattermost-outbox",
