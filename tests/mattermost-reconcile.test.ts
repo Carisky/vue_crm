@@ -119,7 +119,8 @@ test("repairs linked Mattermost structure while leaving unlinked entities alone"
     updateTeamMemberRoles: async (_team, user, roles) => {
       calls.push(`team-role:${user}:${roles}`);
     },
-    listChannelsForTeam: async (_id, page) =>
+    listChannelsForTeam: async (_id, page) => (page ? [] : []),
+    listPrivateChannelsForTeam: async (_id, page) =>
       page
         ? []
         : [

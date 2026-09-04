@@ -86,6 +86,11 @@ export type MattermostReconcileClient = {
     page: number,
     perPage: number,
   ): Promise<MattermostChannel[]>;
+  listPrivateChannelsForTeam(
+    teamId: string,
+    page: number,
+    perPage: number,
+  ): Promise<MattermostChannel[]>;
   createChannel(input: MattermostChannelCreate): Promise<MattermostChannel>;
   patchChannel(
     channelId: string,
@@ -332,9 +337,15 @@ export async function reconcileMattermost(
         return;
       }
       try {
-        const channels = await collect((page) =>
-          client.listChannelsForTeam(team.id, page, PAGE_SIZE),
-        );
+        const [publicChannels, privateChannels] = await Promise.all([
+          collect((page) =>
+            client.listChannelsForTeam(team.id, page, PAGE_SIZE),
+          ),
+          collect((page) =>
+            client.listPrivateChannelsForTeam(team.id, page, PAGE_SIZE),
+          ),
+        ]);
+        const channels = [...publicChannels, ...privateChannels];
         const names = conversationNames(conversation);
         let channel =
           channels.find(

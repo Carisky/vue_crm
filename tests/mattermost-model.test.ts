@@ -31,8 +31,9 @@ test("Mattermost mappings expose remote identifiers and CRM relations", () => {
 });
 
 test("allows the default Mattermost channel name in multiple teams", () => {
-  assert.equal(field("MattermostConversationLink", "channelName").isUnique, false);
   const projectRoot = fileURLToPath(new URL("..", import.meta.url));
+  const schema = readFileSync(`${projectRoot}/prisma/schema.prisma`, "utf8");
+  assert.doesNotMatch(schema, /channelName\s+String\s+@unique/);
   const migration = readFileSync(
     `${projectRoot}/prisma/migrations/20260904130000_drop_mattermost_channel_name_unique/migration.sql`,
     "utf8",
