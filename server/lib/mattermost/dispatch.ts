@@ -277,10 +277,18 @@ async function dispatchKnownEvent(
     case "user.activate":
     case "user.deactivate": {
       const userId = requiredPayload(record, "user_id");
-      const link = await store.loadUserLink(userId);
-      if (!link) return;
+      const retainedRemoteId =
+        record.kind === "user.deactivate" &&
+        typeof payload(record).mattermost_user_id === "string"
+          ? (payload(record).mattermost_user_id as string)
+          : null;
+      const link = retainedRemoteId ? null : await store.loadUserLink(userId);
+      if (!retainedRemoteId && !link) return;
       await client.setUserActive(
-        requireRemoteId(link.mattermostUserId, `CRM user ${userId}`),
+        requireRemoteId(
+          retainedRemoteId ?? link?.mattermostUserId,
+          `CRM user ${userId}`,
+        ),
         record.kind === "user.activate",
       );
       return;

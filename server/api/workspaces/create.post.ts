@@ -9,6 +9,11 @@ import { generateWorkspaceInviteCode } from "~/server/lib/invite";
 import { normalizeImageInput } from "~/server/lib/images";
 import { serializeWorkspace } from "~/server/lib/serializers";
 import { ensureWorkspaceGeneralConversation } from "~/server/lib/workspace-channels";
+import {
+  enqueueConversationUpsert,
+  enqueueMembershipUpsert,
+  enqueueWorkspaceUpsert,
+} from "~/server/lib/mattermost/domain-events";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -59,7 +64,16 @@ export default defineEventHandler(async (event) => {
         },
       },
     });
-    await ensureWorkspaceGeneralConversation(created.id, tx);
+    const general = await ensureWorkspaceGeneralConversation(created.id, tx);
+    await enqueueWorkspaceUpsert(tx, {
+      workspaceId: created.id,
+      revision: created.updatedAt,
+    });
+    await enqueueMembershipUpsert(tx, {
+      workspaceId: created.id,
+      userId: user.id,
+    });
+    await enqueueConversationUpsert(tx, { conversationId: general.id });
     return created;
   });
 

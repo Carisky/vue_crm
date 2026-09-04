@@ -11,6 +11,7 @@ import {
 import { syncConversationParticipants } from "~/server/lib/workspace-channels";
 import { revokeConversationAccess } from "~/server/lib/conversation-events";
 import { broadcastInboxEvent } from "~/server/lib/inbox-events";
+import { enqueueConversationUpsert } from "~/server/lib/mattermost/domain-events";
 
 export default defineEventHandler(async (event) => {
   const { workspaceId, groupId } = getRouterParams(event);
@@ -74,6 +75,7 @@ export default defineEventHandler(async (event) => {
         select: { id: true },
       });
       await syncConversationParticipants(tx, conversation.id, memberIds);
+      await enqueueConversationUpsert(tx, { conversationId: conversation.id });
 
       return tx.workspaceGroup.findUniqueOrThrow({
         where: { id: groupId },

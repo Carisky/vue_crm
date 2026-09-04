@@ -6,6 +6,7 @@ import prisma from "~/server/lib/prisma";
 import { ensureWorkspaceAccess } from "~/server/lib/workspace";
 import { normalizeImageInput } from "~/server/lib/images";
 import { serializeWorkspace } from "~/server/lib/serializers";
+import { enqueueWorkspaceUpsert } from "~/server/lib/mattermost/domain-events";
 
 export default defineEventHandler(async (event) => {
   const { workspaceId } = getRouterParams(event);
@@ -58,9 +59,16 @@ export default defineEventHandler(async (event) => {
     updatePayload.imageUrl = await normalizeImageInput(params.data.image);
   }
 
-  const workspace = await prisma.workspace.update({
-    where: { id: workspaceId },
-    data: updatePayload,
+  const workspace = await prisma.$transaction(async (tx) => {
+    const updated = await tx.workspace.update({
+      where: { id: workspaceId },
+      data: updatePayload,
+    });
+    await enqueueWorkspaceUpsert(tx, {
+      workspaceId,
+      revision: updated.updatedAt,
+    });
+    return updated;
   });
 
   return { workspace: serializeWorkspace(workspace) };

@@ -4,6 +4,7 @@ import { ConversationType } from "@prisma/client";
 import prisma from "~/server/lib/prisma";
 import { ensureWorkspaceAccess } from "~/server/lib/workspace";
 import { requireUser } from "~/server/lib/permissions";
+import { enqueueConversationUpsert } from "~/server/lib/mattermost/domain-events";
 
 const CreateDirectConversationSchema = z.object({
   workspace_id: z.string().min(1),
@@ -68,18 +69,22 @@ export default defineEventHandler(async (event) => {
   }
 
   const now = new Date();
-  const created = await prisma.conversation.create({
-    data: {
-      workspaceId,
-      type: ConversationType.DIRECT,
-      participants: {
-        create: [
-          { userId: user.id, lastReadAt: now },
-          { userId: otherUserId, lastReadAt: now },
-        ],
+  const created = await prisma.$transaction(async (tx) => {
+    const conversation = await tx.conversation.create({
+      data: {
+        workspaceId,
+        type: ConversationType.DIRECT,
+        participants: {
+          create: [
+            { userId: user.id, lastReadAt: now },
+            { userId: otherUserId, lastReadAt: now },
+          ],
+        },
       },
-    },
-    select: { id: true },
+      select: { id: true },
+    });
+    await enqueueConversationUpsert(tx, { conversationId: conversation.id });
+    return conversation;
   });
 
   return { conversation_id: created.id };

@@ -4,6 +4,10 @@ import { InviteCodeSchema } from "~/lib/schema/inviteCode";
 import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
 import { ensureWorkspaceGeneralConversation } from "~/server/lib/workspace-channels";
+import {
+  enqueueConversationUpsert,
+  enqueueMembershipUpsert,
+} from "~/server/lib/mattermost/domain-events";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -37,7 +41,9 @@ export default defineEventHandler(async (event) => {
         role: MemberRole.MEMBER,
       },
     });
-    await ensureWorkspaceGeneralConversation(workspaceId, tx);
+    const general = await ensureWorkspaceGeneralConversation(workspaceId, tx);
+    await enqueueMembershipUpsert(tx, { workspaceId, userId: user.id });
+    await enqueueConversationUpsert(tx, { conversationId: general.id });
     return created;
   });
 

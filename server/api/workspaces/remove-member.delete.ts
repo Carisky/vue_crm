@@ -3,6 +3,10 @@ import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
 import { revokeConversationAccess } from "~/server/lib/conversation-events";
 import { broadcastInboxEvent } from "~/server/lib/inbox-events";
+import {
+  enqueueConversationUpsert,
+  enqueueMembershipDelete,
+} from "~/server/lib/mattermost/domain-events";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -16,7 +20,10 @@ export default defineEventHandler(async (event) => {
 
   const membershipToDelete = await prisma.member.findUnique({
     where: { id: membershipId },
-    include: { workspace: true },
+    include: {
+      workspace: { include: { mattermostLink: true } },
+      user: { include: { mattermostLink: true } },
+    },
   });
 
   if (!membershipToDelete) {
@@ -77,6 +84,22 @@ export default defineEventHandler(async (event) => {
       },
     });
     await tx.member.delete({ where: { id: membershipToDelete.id } });
+    const teamId = membershipToDelete.workspace.mattermostLink?.mattermostTeamId;
+    const remoteUserId =
+      membershipToDelete.user.mattermostLink?.mattermostUserId;
+    if (teamId && remoteUserId) {
+      await enqueueMembershipDelete(tx, {
+        workspaceId: membershipToDelete.workspaceId,
+        userId: membershipToDelete.userId,
+        mattermostTeamId: teamId,
+        mattermostUserId: remoteUserId,
+      });
+    }
+    for (const participant of conversationParticipants) {
+      await enqueueConversationUpsert(tx, {
+        conversationId: participant.conversationId,
+      });
+    }
   });
 
   await Promise.all(

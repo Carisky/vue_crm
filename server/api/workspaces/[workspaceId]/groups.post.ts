@@ -9,6 +9,7 @@ import {
   assertWorkspaceGroupMembers,
   uniqueGroupMemberIds,
 } from "~/server/lib/workspace-groups";
+import { enqueueConversationUpsert } from "~/server/lib/mattermost/domain-events";
 
 export default defineEventHandler(async (event) => {
   const { workspaceId } = getRouterParams(event);
@@ -36,7 +37,7 @@ export default defineEventHandler(async (event) => {
           },
         },
       });
-      await tx.conversation.create({
+      const conversation = await tx.conversation.create({
         data: {
           workspaceId,
           type: ConversationType.GROUP,
@@ -51,6 +52,7 @@ export default defineEventHandler(async (event) => {
           },
         },
       });
+      await enqueueConversationUpsert(tx, { conversationId: conversation.id });
       return tx.workspaceGroup.findUniqueOrThrow({
         where: { id: created.id },
         include: {

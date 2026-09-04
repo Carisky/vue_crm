@@ -2,6 +2,7 @@ import { UpdateMemberRoleSchema } from "~/lib/schema/updateRole";
 import { canChangeWorkspaceMemberRole } from "~/server/lib/member-role-policy";
 import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
+import { enqueueMembershipUpsert } from "~/server/lib/mattermost/domain-events";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -43,9 +44,15 @@ export default defineEventHandler(async (event) => {
     throw createError({ status: 403, statusText: "Forbidden" });
   }
 
-  await prisma.member.update({
-    where: { id: membership.id },
-    data: { role: params.data.role },
+  await prisma.$transaction(async (tx) => {
+    await tx.member.update({
+      where: { id: membership.id },
+      data: { role: params.data.role },
+    });
+    await enqueueMembershipUpsert(tx, {
+      workspaceId: membership.workspaceId,
+      userId: membership.userId,
+    });
   });
 
   return { ok: true, role: params.data.role };

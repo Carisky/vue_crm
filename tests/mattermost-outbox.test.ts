@@ -417,10 +417,10 @@ test("dispatch covers membership, delete, message, and account events", async ()
     saveMessageLink: async (input: unknown) => {
       calls.push(["saveMessageLink", input]);
     },
-    loadUserLink: async (userId: string) => ({
-      userId,
-      mattermostUserId: "remote-user-1",
-    }),
+    loadUserLink: async (userId: string) =>
+      userId === "deleted-user"
+        ? null
+        : { userId, mattermostUserId: "remote-user-1" },
   } as unknown as MattermostDispatchStore;
   const records = [
     event({
@@ -465,6 +465,15 @@ test("dispatch covers membership, delete, message, and account events", async ()
       kind: "user.deactivate",
       payload: { user_id: "user-1" },
     }),
+    event({
+      id: "deleted-user-deactivate",
+      idempotencyKey: "deleted-user-deactivate",
+      kind: "user.deactivate",
+      payload: {
+        user_id: "deleted-user",
+        mattermost_user_id: "remote-deleted-user",
+      },
+    }),
   ];
 
   for (const record of records) {
@@ -492,5 +501,6 @@ test("dispatch covers membership, delete, message, and account events", async ()
     ["saveMessageLink", { messageId: "message-1", mattermostPostId: "post-1" }],
     ["setUserActive", "remote-user-1", true],
     ["setUserActive", "remote-user-1", false],
+    ["setUserActive", "remote-deleted-user", false],
   ]);
 });
