@@ -211,6 +211,10 @@ export class MattermostClient {
     if (options.plugin) {
       const timestamp = this.now();
       const nonce = this.nonce();
+      const pluginPrefix = `/plugins/${segment(this.config.pluginId)}`;
+      const signaturePath = path.startsWith(pluginPrefix)
+        ? path.slice(pluginPrefix.length)
+        : path;
       headers.set("x-crm-timestamp", String(timestamp));
       headers.set("x-crm-nonce", nonce);
       headers.set(
@@ -219,7 +223,7 @@ export class MattermostClient {
           body,
           method,
           nonce,
-          path,
+          path: signaturePath,
           secret: this.config.pluginSecret,
           timestamp,
         }),

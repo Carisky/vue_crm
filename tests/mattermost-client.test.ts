@@ -134,8 +134,8 @@ test("plugin retries retain event identity but use fresh signed nonces", async (
     "nonce-b",
   ]);
   assert.deepEqual(requests.map(({ headers }) => headers.get("x-crm-signature")), [
-    "b57e7606999717594945a60f691cc4faec221ee041a3ff6110846ae0c0c480c0",
-    "5ea8f9fc73d6ead40f75cbe4a55643e13fa48614181e33ce7ae4114809deb9a2",
+    "c9eb64b89b69dc04074d315b616d6bd854899e12ed9f9c632a1c4dc5925dac6e",
+    "7c545be21cd610ffef3f429847d0aa1389db7c8ffe37dbfb6b4be13c73d4204a",
   ]);
 });
 
