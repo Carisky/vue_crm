@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { Prisma } from "@prisma/client";
@@ -27,6 +28,19 @@ test("Mattermost mappings expose remote identifiers and CRM relations", () => {
   assert.equal(field("Workspace", "mattermostLink").type, "MattermostWorkspaceLink");
   assert.equal(field("Conversation", "mattermostLink").type, "MattermostConversationLink");
   assert.equal(field("ConversationMessage", "mattermostLink").type, "MattermostMessageLink");
+});
+
+test("allows the default Mattermost channel name in multiple teams", () => {
+  assert.equal(field("MattermostConversationLink", "channelName").isUnique, false);
+  const projectRoot = fileURLToPath(new URL("..", import.meta.url));
+  const migration = readFileSync(
+    `${projectRoot}/prisma/migrations/20260904130000_drop_mattermost_channel_name_unique/migration.sql`,
+    "utf8",
+  );
+  assert.match(
+    migration,
+    /DROP INDEX `MattermostConversationLink_channelName_key` ON `MattermostConversationLink`/,
+  );
 });
 
 test("Mattermost replay and queue records expose their idempotency keys", () => {

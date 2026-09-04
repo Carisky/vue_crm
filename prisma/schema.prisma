@@ -439,7 +439,7 @@ model MattermostConversationLink {
   id                  String              @id @default(cuid())
   conversationId      String              @unique
   mattermostChannelId String              @unique
-  channelName         String              @unique
+  channelName         String
   syncState           MattermostSyncState @default(PENDING)
   lastError           String?             @db.Text
   lastSyncedAt        DateTime?
