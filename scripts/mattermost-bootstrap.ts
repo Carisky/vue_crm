@@ -289,7 +289,9 @@ async function main() {
           cwd: config.composeDirectory,
           env: {
             ...process.env,
+            MM_BOOTSTRAP_ENABLE_OPEN_SERVER: "true",
             MM_BOOTSTRAP_ENABLE_USER_CREATION: "true",
+            MM_BOOTSTRAP_ENABLE_EMAIL_SIGNUP: "true",
           },
         },
       );

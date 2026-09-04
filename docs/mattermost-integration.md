@@ -62,7 +62,7 @@ so treat it as a production credential and include it in secret backup policy.
    operator may then run `npm run users:mattermost-up -- --confirm-reset`.
 6. The confirmed workflow pauses the outbox, removes only validated Mattermost
    volumes, starts the stack with temporary private user creation, creates an
-   administrator and access token, disables user creation again, builds and
+   administrator and access token, closes the server and disables user creation and email signup again, builds and
    installs the plugin, exports/imports the CRM snapshot, resolves mappings,
    reconciles access, drains the outbox, records success, and resumes it.
 7. Set `MATTERMOST_SYNC_ENABLED=true`, restart CRM, then run
