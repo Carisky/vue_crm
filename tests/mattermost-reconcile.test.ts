@@ -244,3 +244,27 @@ test("classifies individual failures and still publishes resolved managed channe
   assert.equal(result.failed, 0);
   assert.equal(published, true);
 });
+
+test("reports a safe operation label when reconciliation fails", async () => {
+  const result = await reconcileMattermost(
+    { users: [], workspaces: [], memberships: [], conversations: [] },
+    {
+      ...({} as MattermostReconcileClient),
+      listUsers: async () => [],
+      listTeams: async () => [],
+      replaceManagedChannels: async () => {
+        throw new Error("Mattermost request failed (HTTP 403)");
+      },
+    },
+    {
+      saveUserLink: async () => undefined,
+      saveWorkspaceLink: async () => undefined,
+      saveConversationLink: async () => undefined,
+      recordResult: async () => undefined,
+    },
+  );
+
+  assert.deepEqual(result.failures, [
+    "managed channels: Mattermost request failed (HTTP 403)",
+  ]);
+});

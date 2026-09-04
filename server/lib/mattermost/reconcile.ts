@@ -50,6 +50,7 @@ export type MattermostReconcileSummary = {
   membershipsAdded: number;
   membershipsRemoved: number;
   failed: number;
+  failures: string[];
 };
 
 export type MattermostReconcileClient = {
@@ -153,6 +154,18 @@ function password(randomBytes: (size: number) => Buffer) {
   return `Crm!${randomBytes(24).toString("base64url")}`;
 }
 
+function recordFailure(
+  summary: MattermostReconcileSummary,
+  operation: string,
+  error: unknown,
+) {
+  summary.failed += 1;
+  const reason = error instanceof Error ? error.message : "request failed";
+  summary.failures.push(
+    `${operation}: ${reason.replace(/[\r\n]+/g, " ").slice(0, 300)}`,
+  );
+}
+
 function conversationNames(
   conversation: MattermostReconcileState["conversations"][number],
 ) {
@@ -182,6 +195,7 @@ export async function reconcileMattermost(
     membershipsAdded: 0,
     membershipsRemoved: 0,
     failed: 0,
+    failures: [],
   };
   const randomBytes = options.randomBytes ?? cryptoRandomBytes;
   const remoteUsers = await collect((page) =>
@@ -225,8 +239,8 @@ export async function reconcileMattermost(
         }
         resolvedUsers.set(user.id, remote);
         await store.saveUserLink(user.id, remote.id, username);
-      } catch {
-        summary.failed += 1;
+      } catch (error) {
+        recordFailure(summary, `user ${user.id}`, error);
       }
     },
   );
@@ -257,8 +271,8 @@ export async function reconcileMattermost(
         }
         resolvedTeams.set(workspace.id, remote);
         await store.saveWorkspaceLink(workspace.id, remote.id, name);
-      } catch {
-        summary.failed += 1;
+      } catch (error) {
+        recordFailure(summary, `workspace ${workspace.id}`, error);
       }
     },
   );
@@ -320,8 +334,8 @@ export async function reconcileMattermost(
             summary.membershipsRemoved += 1;
           }
         }
-      } catch {
-        summary.failed += 1;
+      } catch (error) {
+        recordFailure(summary, `workspace members ${workspace.id}`, error);
       }
     },
   );
@@ -333,7 +347,11 @@ export async function reconcileMattermost(
       summary.checked += 1;
       const team = resolvedTeams.get(conversation.workspaceId);
       if (!team) {
-        summary.failed += 1;
+        recordFailure(
+          summary,
+          `conversation ${conversation.id}`,
+          new Error("workspace unresolved"),
+        );
         return;
       }
       try {
@@ -403,16 +421,16 @@ export async function reconcileMattermost(
             summary.membershipsRemoved += 1;
           }
         }
-      } catch {
-        summary.failed += 1;
+      } catch (error) {
+        recordFailure(summary, `conversation ${conversation.id}`, error);
       }
     },
   );
 
   try {
     await client.replaceManagedChannels([...managedChannelIds].sort());
-  } catch {
-    summary.failed += 1;
+  } catch (error) {
+    recordFailure(summary, "managed channels", error);
   }
   await store.recordResult(summary);
   return summary;
