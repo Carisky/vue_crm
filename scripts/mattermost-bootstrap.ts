@@ -1,8 +1,9 @@
 import "dotenv/config";
 import { randomBytes } from "node:crypto";
-import { realpath } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { basename, join, resolve } from "node:path";
+import { parse as parseDotenv } from "dotenv";
 import type { PrismaClient } from "@prisma/client";
 import {
   assertCrmReachable,
@@ -88,6 +89,21 @@ function sanitizedError(error: unknown) {
   return (error instanceof Error ? error.message : "Bootstrap failed")
     .split(/\r?\n/, 1)[0]
     .slice(0, 500);
+}
+
+async function assertMattermostPluginSecretMatches(config: BootstrapEnvironment) {
+  const environment = parseDotenv(
+    await readFile(join(config.composeDirectory, ".env"), "utf8"),
+  );
+  const sharedSecret = environment.MATTERMOST_SHARED_SECRET?.trim();
+  if (!sharedSecret) {
+    throw new Error("Mattermost .env is missing MATTERMOST_SHARED_SECRET");
+  }
+  if (sharedSecret !== config.pluginSecret) {
+    throw new Error(
+      "MATTERMOST_PLUGIN_SECRET must match /opt/mattermost/.env MATTERMOST_SHARED_SECRET",
+    );
+  }
 }
 
 async function provisionAdministrator(config: BootstrapEnvironment) {
@@ -227,6 +243,7 @@ async function main() {
 
   await runBootstrapWorkflow(confirmed, {
     async preflight() {
+      await assertMattermostPluginSecretMatches(config);
       const model = JSON.parse(
         await compose(config, "config", "--format", "json"),
       );
