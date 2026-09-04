@@ -2,6 +2,7 @@ import { sendRedirect } from "h3";
 
 import prisma from "~/server/lib/prisma";
 import { getVerificationTokenHash } from "~/server/lib/email-verification";
+import { activateLinkedMattermostUserWithRuntime } from "~/server/lib/mattermost/account-sync";
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
@@ -34,6 +35,8 @@ export default defineEventHandler(async (event) => {
       },
     });
   });
+
+  await activateLinkedMattermostUserWithRuntime(verification.userId, config);
 
   return sendRedirect(event, `${siteUrl}/sign-in?verified=success`, 302);
 });

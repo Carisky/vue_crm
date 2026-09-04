@@ -44,6 +44,7 @@ const { isPending, mutate } = useMutation({
     mutationFn: async (credentials: typeof form.values) => {
         const res = await $fetch('/api/auth/sign-in', { method: 'POST', body: credentials })
         if (res.ok) {
+            if (res.mattermost_sync === 'pending') toast.warning(t('auth.mattermostSyncPending'))
             await queryClient.refetchQueries({ queryKey: ['auth/me'] })
             await navigateTo(getRedirectPath())
         } else toast.error(t('auth.signInFailed'))

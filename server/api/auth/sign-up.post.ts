@@ -4,6 +4,7 @@ import { hashPassword } from "~/server/lib/password";
 import { createEmailVerification } from "~/server/lib/email-verification";
 import { renderEmailVerificationEmail } from "~/server/lib/email-templates";
 import { enqueueEmail } from "~/server/lib/email-queue";
+import { synchronizeMattermostCredentialsWithRuntime } from "~/server/lib/mattermost/account-sync";
 
 export default defineEventHandler(async (event) => {
   const params = await readValidatedBody(event, SignUpSchema.safeParse);
@@ -49,5 +50,14 @@ export default defineEventHandler(async (event) => {
     text,
   });
 
-  return { ok: true, verificationRequired: true };
+  const mattermostSync = await synchronizeMattermostCredentialsWithRuntime(
+    { user, password: params.data.password },
+    config,
+  );
+
+  return {
+    ok: true,
+    verificationRequired: true,
+    mattermost_sync: mattermostSync.ok ? "synced" : "pending",
+  };
 });

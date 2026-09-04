@@ -2,6 +2,7 @@ import { SignInSchema } from "~/lib/schema/auth";
 import { createAuthSession } from "~/server/lib/auth";
 import prisma from "~/server/lib/prisma";
 import { verifyPassword } from "~/server/lib/password";
+import { synchronizeMattermostCredentialsWithRuntime } from "~/server/lib/mattermost/account-sync";
 
 export default defineEventHandler(async (event) => {
   const params = await readValidatedBody(event, SignInSchema.safeParse);
@@ -28,5 +29,13 @@ export default defineEventHandler(async (event) => {
 
   await createAuthSession(event, user.id);
 
-  return { ok: true };
+  const mattermostSync = await synchronizeMattermostCredentialsWithRuntime(
+    { user, password: params.data.password },
+    useRuntimeConfig(event),
+  );
+
+  return {
+    ok: true,
+    mattermost_sync: mattermostSync.ok ? "synced" : "pending",
+  };
 });

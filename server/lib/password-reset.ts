@@ -6,6 +6,7 @@ import {
   requestPasswordReset,
   resetPassword,
 } from "~/server/lib/password-reset-service";
+import { synchronizeMattermostCredentialsWithRuntime } from "~/server/lib/mattermost/account-sync";
 
 const PASSWORD_RESET_EMAIL_SUBJECT = "Reset your password";
 
@@ -46,9 +47,15 @@ export async function requestPasswordResetEmail(email: string, siteUrl: string) 
 }
 
 export async function applyPasswordReset(token: string, password: string) {
-  return resetPassword(token, password, {
-    findToken: (tokenHash) =>
-      prisma.passwordResetToken.findUnique({ where: { tokenHash } }),
+  let resetUserId: string | null = null;
+  const reset = await resetPassword(token, password, {
+    findToken: async (tokenHash) => {
+      const storedToken = await prisma.passwordResetToken.findUnique({
+        where: { tokenHash },
+      });
+      resetUserId = storedToken?.userId ?? null;
+      return storedToken;
+    },
     hashPassword,
     commitPasswordReset: async ({ userId, tokenId, passwordHash }) => {
       await prisma.$transaction(async (tx) => {
@@ -66,6 +73,18 @@ export async function applyPasswordReset(token: string, password: string) {
       });
     },
   });
+
+  if (reset && resetUserId) {
+    const user = await prisma.user.findUnique({ where: { id: resetUserId } });
+    if (user) {
+      await synchronizeMattermostCredentialsWithRuntime(
+        { user, password },
+        useRuntimeConfig(),
+      );
+    }
+  }
+
+  return reset;
 }
 
 export async function removeExpiredPasswordResetTokens() {
