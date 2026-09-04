@@ -46,6 +46,7 @@ model User {
   telegramLinkTokens         TelegramLinkToken[]
   agentApiKeys               AgentApiKey[]
   agentProposals             AgentProposal[]
+  mattermostLink             MattermostUserLink?
 }
 
 model EmailVerificationToken {
@@ -84,13 +85,13 @@ model Session {
 }
 
 model Workspace {
-  id                 String              @id @default(cuid())
+  id                 String                   @id @default(cuid())
   name               String
-  inviteCode         String              @unique
-  imageUrl           String?             @db.Text
+  inviteCode         String                   @unique
+  imageUrl           String?                  @db.Text
   ownerId            String
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
   members            Member[]
   notifications      Notification[]
   projects           Project[]
@@ -101,9 +102,10 @@ model Workspace {
   projectDocSections ProjectDocSection[]
   taskMedia          TaskMedia[]
   groups             WorkspaceGroup[]
-  owner              User                @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner              User                     @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   uiPreferences      UiPreference[]
   agentProposals     AgentProposal[]
+  mattermostLink     MattermostWorkspaceLink?
 
   @@index([ownerId], map: "Workspace_ownerId_fkey")
 }
@@ -359,10 +361,11 @@ model Conversation {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  workspace    Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  participants ConversationParticipant[]
-  messages     ConversationMessage[]
-  group        WorkspaceGroup?           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  workspace      Workspace                   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  participants   ConversationParticipant[]
+  messages       ConversationMessage[]
+  group          WorkspaceGroup?             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  mattermostLink MattermostConversationLink?
 
   @@unique([workspaceId, channelKey])
   @@index([workspaceId])
@@ -391,12 +394,123 @@ model ConversationMessage {
   body           String   @db.Text
   createdAt      DateTime @default(now())
 
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation("ConversationMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  conversation   Conversation           @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User                   @relation("ConversationMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  mattermostLink MattermostMessageLink?
 
   @@index([conversationId])
   @@index([senderId])
   @@index([createdAt])
+}
+
+model MattermostUserLink {
+  id               String              @id @default(cuid())
+  userId           String              @unique
+  mattermostUserId String?             @unique
+  username         String              @unique
+  syncState        MattermostSyncState @default(PENDING)
+  lastError        String?             @db.Text
+  lastSyncedAt     DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([syncState])
+}
+
+model MattermostWorkspaceLink {
+  id               String              @id @default(cuid())
+  workspaceId      String              @unique
+  mattermostTeamId String              @unique
+  teamName         String              @unique
+  syncState        MattermostSyncState @default(PENDING)
+  lastError        String?             @db.Text
+  lastSyncedAt     DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([syncState])
+}
+
+model MattermostConversationLink {
+  id                  String              @id @default(cuid())
+  conversationId      String              @unique
+  mattermostChannelId String              @unique
+  channelName         String              @unique
+  syncState           MattermostSyncState @default(PENDING)
+  lastError           String?             @db.Text
+  lastSyncedAt        DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([syncState])
+}
+
+model MattermostMessageLink {
+  id               String                  @id @default(cuid())
+  messageId        String                  @unique
+  mattermostPostId String                  @unique
+  origin           MattermostMessageOrigin
+  syncState        MattermostSyncState     @default(SYNCED)
+  lastError        String?                 @db.Text
+  lastSyncedAt     DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  message ConversationMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([syncState])
+}
+
+model MattermostWebhookNonce {
+  nonce     String   @id @db.VarChar(191)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model MattermostInboundEvent {
+  eventId          String    @id @db.VarChar(191)
+  mattermostPostId String    @unique
+  receivedAt       DateTime  @default(now())
+  processedAt      DateTime?
+}
+
+model MattermostOutboxEvent {
+  id             String                @id @default(cuid())
+  kind           String                @db.VarChar(64)
+  aggregateType  String                @db.VarChar(64)
+  aggregateId    String
+  idempotencyKey String                @unique
+  payload        Json
+  state          MattermostOutboxState @default(PENDING)
+  attempts       Int                   @default(0)
+  nextAttemptAt  DateTime              @default(now())
+  lockedAt       DateTime?
+  lastError      String?               @db.Text
+  completedAt    DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([state, nextAttemptAt])
+  @@index([aggregateType, aggregateId, createdAt])
+}
+
+model MattermostSyncControl {
+  key                  String    @id @default("global")
+  pausedAt             DateTime?
+  pauseReason          String?   @db.VarChar(191)
+  snapshotCutoff       DateTime?
+  lastBootstrapAt      DateTime?
+  lastBootstrapState   String?   @db.VarChar(32)
+  lastBootstrapSummary Json?
+  updatedAt            DateTime  @updatedAt
 }
 
 model TelegramConnection {
@@ -515,6 +629,25 @@ model TaskMediaVariant {
   taskMedia TaskMedia @relation(fields: [taskMediaId], references: [id], onDelete: Cascade)
 
   @@index([taskMediaId])
+}
+
+enum MattermostSyncState {
+  PENDING
+  SYNCED
+  FAILED
+}
+
+enum MattermostOutboxState {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum MattermostMessageOrigin {
+  CRM
+  MATTERMOST
+  BOOTSTRAP
 }
 
 enum MemberRole {
