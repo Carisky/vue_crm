@@ -55,6 +55,50 @@ const BATCH_SIZE = 50;
 const STALE_LOCK_MS = 10 * 60_000;
 const MAX_ATTEMPTS = 12;
 
+type MattermostDrainSchedulerOptions = {
+  drain(): Promise<unknown>;
+  defer(callback: () => Promise<void>): void;
+  onError?(error: unknown): void;
+};
+
+export function createMattermostDrainScheduler(
+  options: MattermostDrainSchedulerOptions,
+) {
+  let scheduled = false;
+  let running = false;
+  let runAgain = false;
+
+  const run = async () => {
+    running = true;
+    try {
+      do {
+        runAgain = false;
+        await options.drain();
+      } while (runAgain);
+    } catch (error) {
+      options.onError?.(error);
+    } finally {
+      running = false;
+      if (runAgain) requestDrain();
+    }
+  };
+
+  const requestDrain = () => {
+    if (running) {
+      runAgain = true;
+      return;
+    }
+    if (scheduled) return;
+    scheduled = true;
+    options.defer(async () => {
+      scheduled = false;
+      await run();
+    });
+  };
+
+  return requestDrain;
+}
+
 export async function claimMattermostEvents(
   repository: Pick<
     MattermostOutboxRepository,
@@ -335,4 +379,22 @@ export async function processMattermostOutboxWithRuntime() {
         runtimeMattermostDispatchDependencies(prisma, config),
       ),
   });
+}
+
+const scheduleRuntimeMattermostDrain = createMattermostDrainScheduler({
+  drain: processMattermostOutboxWithRuntime,
+  defer: (callback) => {
+    setImmediate(() => void callback());
+  },
+  onError: (error) => {
+    const message =
+      error instanceof Error ? error.message : "Unknown Mattermost outbox error";
+    console.error(
+      `[mattermost-outbox] immediate drain failed: ${safeFailureMessage(message)}`,
+    );
+  },
+});
+
+export function requestMattermostOutboxDrain() {
+  scheduleRuntimeMattermostDrain();
 }

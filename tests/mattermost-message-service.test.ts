@@ -33,6 +33,9 @@ test("local message and Mattermost event commit in one ordered transaction", asy
         assert.equal(input.idempotencyKey, "message.create:message-1");
         assert.deepEqual(input.payload, { message_id: "message-1" });
       },
+      afterCommit: () => {
+        log.push("outbox.drain-requested");
+      },
     },
   );
 
@@ -42,6 +45,7 @@ test("local message and Mattermost event commit in one ordered transaction", asy
     "conversation.touch",
     "outbox:message.create",
     "transaction.commit",
+    "outbox.drain-requested",
   ]);
   assert.equal(result.message.id, "message-1");
   assert.equal(result.workspaceId, "workspace-1");

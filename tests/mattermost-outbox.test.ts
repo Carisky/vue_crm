@@ -8,11 +8,41 @@ import {
 import {
   claimMattermostEvents,
   computeMattermostRetry,
+  createMattermostDrainScheduler,
   enqueueMattermostEvent,
   processMattermostOutbox,
   type MattermostOutboxRecord,
   type MattermostOutboxRepository,
 } from "../server/lib/mattermost/outbox.ts";
+
+test("immediate drain requests are coalesced and rerun after concurrent enqueue", async () => {
+  const deferred: Array<() => Promise<void>> = [];
+  let drains = 0;
+  let releaseFirstDrain!: () => void;
+  const firstDrain = new Promise<void>((resolve) => {
+    releaseFirstDrain = resolve;
+  });
+  const requestDrain = createMattermostDrainScheduler({
+    defer: (callback) => deferred.push(callback),
+    drain: async () => {
+      drains += 1;
+      if (drains === 1) await firstDrain;
+    },
+  });
+
+  requestDrain();
+  requestDrain();
+  assert.equal(deferred.length, 1);
+
+  const running = deferred.shift()?.();
+  assert.ok(running);
+  await Promise.resolve();
+  requestDrain();
+  releaseFirstDrain();
+  await running;
+
+  assert.equal(drains, 2);
+});
 
 function event(
   input: Partial<MattermostOutboxRecord> &

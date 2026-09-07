@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { enqueueMessageCreate } from "./domain-events.ts";
+import { requestMattermostOutboxDrain } from "./outbox.ts";
 
 export type CreateLocalConversationMessageInput = {
   conversationId: string;
@@ -44,6 +45,7 @@ export type LocalMessageDependencies<TTransaction, TMessage extends { id: string
     transaction: TTransaction,
     input: MessageOutboxInput,
   ): Promise<void>;
+  afterCommit?(): void;
 };
 
 export class ConversationNotFoundError extends Error {
@@ -61,7 +63,7 @@ export async function createLocalConversationMessage<
   dependencies: LocalMessageDependencies<TTransaction, TMessage>,
 ) {
   const createdAt = input.createdAt ?? new Date();
-  return dependencies.transaction(async (transaction) => {
+  const result = await dependencies.transaction(async (transaction) => {
     const access = await dependencies.authorize(transaction, input);
     if (!access) throw new ConversationNotFoundError();
 
@@ -85,6 +87,8 @@ export async function createLocalConversationMessage<
     });
     return { message, workspaceId: access.workspaceId };
   });
+  dependencies.afterCommit?.();
+  return result;
 }
 
 export function createPrismaLocalMessageDependencies(database: PrismaClient) {
@@ -173,6 +177,7 @@ export function createPrismaLocalMessageDependencies(database: PrismaClient) {
         messageId: input.payload.message_id,
       });
     },
+    afterCommit: requestMattermostOutboxDrain,
   } satisfies LocalMessageDependencies<
     Prisma.TransactionClient,
     Prisma.ConversationMessageGetPayload<{ include: { sender: true } }>
