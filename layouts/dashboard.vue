@@ -51,6 +51,10 @@ provide('delete-task-inject', {
 
 const route = useRoute()
 const queryClient = useQueryClient()
+const sidebarCollapsed = useCookie<boolean>('dashboard-sidebar-collapsed', {
+    default: () => false,
+    sameSite: 'lax'
+})
 
 if (import.meta.client) {
     let source: EventSource | null = null
@@ -128,10 +132,20 @@ if (import.meta.client) {
 <template>
     <div class="min-h-screen flex flex-col">
         <div class="h-full grow">
-            <div class="fixed left-0 top-0 hidden h-full overflow-y-auto lg:block lg:w-[264px]">
-                <SideBar />
+            <div
+                class="custom-scrollbar fixed left-0 top-0 z-30 hidden h-dvh overflow-x-hidden overflow-y-auto transition-[width] duration-300 ease-in-out lg:block"
+                :class="sidebarCollapsed ? 'lg:w-[72px]' : 'lg:w-[264px]'"
+            >
+                <SideBar
+                    :collapsed="sidebarCollapsed"
+                    collapsible
+                    @toggle="sidebarCollapsed = !sidebarCollapsed"
+                />
             </div>
-            <div class="size-full grow lg:pl-[264px]">
+            <div
+                class="size-full min-w-0 grow transition-[padding] duration-300 ease-in-out"
+                :class="sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-[264px]'"
+            >
                 <div class="max-w-screen-2xl mx-auto h-full">
                     <NavBar />
                     <main class="h-full px-6 py-8 flex flex-col">

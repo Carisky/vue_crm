@@ -2,6 +2,12 @@
 const route = useRoute();
 const { t } = useAppI18n();
 
+withDefaults(defineProps<{
+  collapsed?: boolean;
+}>(), {
+  collapsed: false,
+});
+
 const routes = computed(() => [
   {
     label: t("nav.home"),
@@ -52,14 +58,16 @@ const routes = computed(() => [
       v-for="r of routes"
       :href="r.href"
       active-class="bg-sidebar-primary/15 text-sidebar-foreground shadow-sm"
-      class="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition hover:bg-sidebar-primary/5 hover:text-sidebar-primary"
+      class="flex min-w-0 items-center rounded-md py-2 text-sm font-medium transition hover:bg-sidebar-primary/5 hover:text-sidebar-primary"
+      :class="collapsed ? 'justify-center px-2' : 'gap-2.5 px-3'"
+      :title="collapsed ? r.label : undefined"
     >
       <Icon
         :name="r.icon"
         size="20px"
         class="size-5 text-sidebar-foreground/85"
       />
-      {{ r.label }}
+      <span v-if="!collapsed" class="truncate">{{ r.label }}</span>
     </NuxtLink>
   </ul>
 </template>
