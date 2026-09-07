@@ -40,18 +40,23 @@ const profileHref = computed(() => {
       </picture>
     </NuxtLink>
   </div>
-  <button
+  <div
     v-if="collapsible"
-    type="button"
-    class="absolute right-2 top-[92px] z-10 flex size-7 items-center justify-center rounded-full border border-sidebar-border bg-sidebar shadow-sm transition hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-    :title="collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')"
-    :aria-label="collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')"
-    :aria-expanded="!collapsed"
-    @click="$emit('toggle')"
+    class="flex h-8 shrink-0 items-center"
+    :class="collapsed ? 'justify-center' : 'justify-end'"
   >
-    <Icon :name="collapsed ? 'lucide:chevron-right' : 'lucide:chevron-left'" class="size-4" />
-  </button>
-  <div class="mt-2">
+    <button
+      type="button"
+      class="flex size-7 items-center justify-center rounded-full border border-sidebar-border bg-sidebar shadow-sm transition hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+      :title="collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')"
+      :aria-label="collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')"
+      :aria-expanded="!collapsed"
+      @click="$emit('toggle')"
+    >
+      <Icon :name="collapsed ? 'lucide:chevron-right' : 'lucide:chevron-left'" class="size-4" />
+    </button>
+  </div>
+  <div :class="collapsible ? 'mt-1' : 'mt-2'">
     <NuxtLink
         :href="profileHref"
         class="flex items-center rounded-md py-2 text-sm font-medium text-sidebar-foreground transition hover:bg-sidebar-primary/5 hover:text-sidebar-primary"
