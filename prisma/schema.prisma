@@ -90,7 +90,7 @@ model Workspace {
   id                 String                   @id @default(cuid())
   name               String
   inviteCode         String                   @unique
-  imageUrl           String?                  @db.Text
+  imageUrl           String?                  @db.MediumText
   ownerId            String
   createdAt          DateTime                 @default(now())
   updatedAt          DateTime                 @updatedAt
@@ -223,7 +223,7 @@ model WorkspaceGroupMember {
 model Project {
   id            String              @id @default(cuid())
   name          String
-  imageUrl      String?             @db.Text
+  imageUrl      String?             @db.MediumText
   workspaceId   String
   creatorId     String
   visibility    ProjectVisibility   @default(PUBLIC)
