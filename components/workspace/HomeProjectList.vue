@@ -1,46 +1,42 @@
 <script setup lang="ts">
 import type { Project } from '~/lib/types';
 
-const { projects } = defineProps<{ projects: Project[] }>()
+const { projects, total } = defineProps<{ projects: Project[]; total: number }>()
 
 const { open: openProjectModal } = useCreateProjectModal()
 const { t } = useAppI18n()
 </script>
 
 <template>
-    <div class="flex flex-col gap-y-4 col-span-1">
-        <div class="bg-card border border-border rounded-lg p-4 text-card-foreground">
-            <div class="flex items-center justify-between">
-                <p class="text-lg font-semibold">
-                    {{ t('nav.projects') }} ({{ projects.length }})
+    <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border bg-card text-card-foreground">
+            <div class="flex h-12 shrink-0 items-center justify-between border-b px-4">
+                <p class="font-semibold">
+                    {{ t('nav.projects') }} <span class="text-muted-foreground">{{ total }}</span>
                 </p>
-                <Button variant="secondary" size="icon" @click="() => openProjectModal()">
+                <Button variant="ghost" size="icon" class="size-8" @click="() => openProjectModal()">
                     <Icon name="lucide:plus" size="16px" class="size-4 text-muted-foreground" />
                 </Button>
             </div>
-            <DottedSeparator class="h-auto my-4" />
-            <ul class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <li v-for="project of projects" :key="project.$id">
-                    <NuxtLink :href="`/workspaces/${project.workspace_id}/projects/${project.$id}`">
-                        <Card class="shadow-none rounded-lg transition hover:opacity-75">
-                            <CardContent class="flex items-center gap-x-2.5 p-4">
+            <ul class="min-h-0 flex-1 divide-y overflow-hidden">
+                <li v-for="(project, index) of projects" :key="project.$id" :class="index >= 4 ? 'hidden sm:block' : ''">
+                    <NuxtLink :href="`/workspaces/${project.workspace_id}/projects/${project.$id}`"
+                        class="flex min-h-11 items-center gap-2.5 px-4 py-1.5 transition hover:bg-muted/60">
                                 <ProjectAvatar
                                     :name="project.name"
                                     :image="project.image_url ?? undefined"
-                                    class="size-12"
-                                    fallback-class="text-lg text-card-foreground"
+                                    class="size-7 shrink-0"
                                 />
-                                <p class="min-w-0 flex-1 text-lg font-medium truncate text-card-foreground">{{ project.name }}</p>
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate text-sm font-medium">{{ project.name }}</p>
+                                    <ProgressBar :value="project.progress" :completed="project.completed_tasks" :total="project.total_tasks" compact />
+                                </div>
                                 <Icon v-if="project.is_effectively_restricted" name="lucide:lock" class="size-4 shrink-0 text-muted-foreground"
                                     :title="t('project.private')" :aria-label="t('project.private')" />
-                            </CardContent>
-                        </Card>
                     </NuxtLink>
                 </li>
-                <li v-if="!projects?.length" class="text-sm text-muted-foreground text-center">
+                <li v-if="!projects?.length" class="p-4 text-center text-sm text-muted-foreground">
                     {{ t('project.noneFound') }}
                 </li>
             </ul>
-        </div>
-    </div>
+    </section>
 </template>

@@ -2,7 +2,7 @@
 import type { MEMBER_ROLE } from '~/lib/constant';
 import MemberAvatar from './member/MemberAvatar.vue';
 
-const { members } = defineProps<{
+const { members, total } = defineProps<{
     members: {
         $id: string;
         name: string | null;
@@ -10,7 +10,8 @@ const { members } = defineProps<{
         membership_id: string;
         role: keyof typeof MEMBER_ROLE;
         is_owner: boolean;
-    }[]
+    }[];
+    total: number;
 }>()
 
 const route = useRoute()
@@ -18,38 +19,27 @@ const { t } = useAppI18n()
 </script>
 
 <template>
-    <div class="flex flex-col gap-y-4 col-span-1">
-        <div class="bg-card border border-border rounded-lg p-4 text-card-foreground">
-            <div class="flex items-center justify-between">
-                <p class="text-lg font-semibold">
-                    {{ t('nav.members') }} ({{ members.length }})
+    <section class="rounded-lg border bg-card p-3 text-card-foreground">
+            <div class="flex items-center justify-between gap-3">
+                <p class="font-semibold">
+                    {{ t('nav.members') }} <span class="text-muted-foreground">{{ total }}</span>
                 </p>
-                <Button variant="secondary" size="icon" :as-child="true">
+                <Button variant="ghost" size="icon" class="size-8" :as-child="true">
                     <NuxtLink :href="`/workspaces/${route.params['workspaceId']}/members`">
                         <Icon name="lucide:settings" size="16px" class="size-4 text-muted-foreground" />
                     </NuxtLink>
                 </Button>
             </div>
-            <DottedSeparator class="h-auto my-4" />
-            <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <li v-for="member of members" :key="member.$id">
-                    <Card class="shadow-none rounded-lg overflow-hidden">
-                        <CardContent class="flex flex-col items-center p-3 gap-x-2">
-                            <MemberAvatar :name="member.name ?? member.email" class="size-12" />
-                            <div class="flex flex-col items-center overflow-hidden">
-                                <div class="flex items-center gap-1.5">
-                                    <p class="text-lg font-medium line-clamp-1">{{ member.name ?? member.email }}</p>
-                                    <WorkspaceMemberRoleIcon :role="member.role" :is-owner="member.is_owner" />
-                                </div>
-                                <p class="text-sm text-muted-foreground line-clamp-1">{{ member.email }}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+            <ul class="mt-2 flex items-center -space-x-2">
+                <li v-for="member of members" :key="member.$id" class="group relative" :title="`${member.name ?? member.email} · ${member.email}`">
+                    <MemberAvatar :name="member.name ?? member.email" class="size-9 border-2 border-card" />
+                    <WorkspaceMemberRoleIcon :role="member.role" :is-owner="member.is_owner"
+                        class="absolute -right-0.5 -bottom-0.5 size-3.5 rounded-full bg-card p-0.5" />
                 </li>
-                <li v-if="!members?.length" class="text-sm text-muted-foreground text-center">
+                <li v-if="total > members.length" class="ml-3 text-xs font-medium text-muted-foreground">+{{ total - members.length }}</li>
+                <li v-if="!members?.length" class="text-sm text-muted-foreground">
                     {{ t('members.noneFound') }}
                 </li>
             </ul>
-        </div>
-    </div>
+    </section>
 </template>

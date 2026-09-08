@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/vue-query';
 import { MEMBER_ROLE } from '~/lib/constant';
 import type { CreateTaskInject, FilteredTask, Project, Workspace, WorkspaceMember } from '~/lib/types';
 import authenticatedPageProtectMiddleware from '~/middleware/page-protect/authenticatedPage';
+import { buildHomeDashboardPreview } from '~/lib/home-dashboard';
 
 definePageMeta({
     layout: 'dashboard',
@@ -91,6 +92,12 @@ const isLoading = computed(() =>
     || isLoadingMembers.value
     || isLoadingTasks.value)
 
+const preview = computed(() => buildHomeDashboardPreview({
+    tasks: tasks.value ?? [],
+    projects: projects.value ?? [],
+    members: members.value ?? [],
+}))
+
 // Listen to event of creating task via create-task modal
 const onCreateTask: CreateTaskInject | undefined = inject('create-task-inject')
 
@@ -105,12 +112,15 @@ onUnmounted(() => {
 
 <template>
     <Loader v-if="isLoading" class="min-h-auto h-96" />
-    <div v-if="analytics && tasks && projects && members" class="h-full flex flex-col space-y-4">
+    <div v-if="analytics && tasks && projects && members"
+        class="grid h-[calc(100dvh-8rem)] min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
         <ProjectAnalytics :data="analytics.analytic_data" />
-        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <WorkspaceHomeTaskList :tasks="tasks" />
-            <WorkspaceHomeProjectList :projects="projects" />
-            <WorkspaceHomeMemberList :members="members" />
+        <div class="grid min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] lg:grid-rows-1">
+            <WorkspaceHomeTaskList :tasks="preview.tasks" :total="tasks.length" />
+            <div class="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-3">
+                <WorkspaceHomeProjectList :projects="preview.projects" :total="projects.length" />
+                <WorkspaceHomeMemberList :members="preview.members" :total="members.length" />
+            </div>
         </div>
     </div>
 </template>

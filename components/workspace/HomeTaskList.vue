@@ -4,7 +4,7 @@ import { enUS, pl, ru } from 'date-fns/locale';
 import { taskPriorityTranslationKeys } from '~/lib/i18n';
 import type { FilteredTask } from '~/lib/types';
 
-const { tasks } = defineProps<{ tasks: FilteredTask[] }>()
+const { tasks, total } = defineProps<{ tasks: FilteredTask[]; total: number }>()
 
 const route = useRoute()
 const { open: openTaskModal } = useCreateTaskModal()
@@ -13,49 +13,37 @@ const dateLocales = { en: enUS, pl, ru }
 </script>
 
 <template>
-    <div class="flex flex-col gap-y-4 col-span-1">
-        <div class="bg-muted rounded-lg p-4">
-            <div class="flex items-center justify-between">
-                <p class="text-lg font-semibold">
-                    {{ t('task.total') }} ({{ tasks.length }})
+    <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border bg-card">
+            <div class="flex h-12 shrink-0 items-center justify-between border-b px-4">
+                <p class="font-semibold">
+                    {{ t('task.total') }} <span class="text-muted-foreground">{{ total }}</span>
                 </p>
-                <Button variant="muted" size="icon" @click="openTaskModal('1')">
-                    <Icon name="lucide:plus" size="16px" class="size-4 text-neutral-400" />
+                <Button variant="ghost" size="icon" class="size-8" @click="openTaskModal('1')">
+                    <Icon name="lucide:plus" class="size-4 text-muted-foreground" />
                 </Button>
             </div>
-            <DottedSeparator class="h-auto my-4" />
-            <ul class="flex flex-col gap-y-4">
-                <li v-for="task of tasks" :key="task.$id">
-                    <NuxtLink :href="`/workspaces/${task.workspace_id}/tasks/${task.$id}`">
-                        <Card class="shadow-none rounded-lg transition hover:opacity-75">
-                            <CardContent class="p-4">
-                                <div class="flex items-center justify-between gap-2">
-                                    <p class="text-lg font-medium truncate">{{ task.name }}</p>
-                                    <Badge :variant="task.priority" class="text-[10px]">
-                                        {{ t(taskPriorityTranslationKeys[task.priority]) }}
-                                    </Badge>
-                                </div>
-                                <div class="flex items-center gap-x-2">
-                                    <p>{{ task.project?.name ?? '' }}</p>
-                                    <div class="size-1 rounded-full bg-neutral-300"></div>
-                                    <div class="flex items-center text-sm text-muted-foreground">
-                                        <Icon name="lucide:calendar" size="12px" class="size-3 mr-1" />
-                                        <span class="truncate">
-                                            {{ task.due_date ? formatDistanceToNow(task.due_date, { locale: dateLocales[locale] }) : t('task.noDueDate') }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+            <ul class="min-h-0 flex-1 divide-y overflow-hidden">
+                <li v-for="(task, index) of tasks" :key="task.$id" :class="index >= 3 ? 'hidden sm:block' : ''">
+                    <NuxtLink :href="`/workspaces/${task.workspace_id}/tasks/${task.$id}`"
+                        class="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-2 transition hover:bg-muted/60">
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-medium">{{ task.name }}</p>
+                            <div class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                                <span class="truncate">{{ task.project?.name ?? '' }}</span>
+                                <span>·</span>
+                                <Icon name="lucide:calendar" class="size-3 shrink-0" />
+                                <span class="truncate">{{ task.due_date ? formatDistanceToNow(task.due_date, { locale: dateLocales[locale] }) : t('task.noDueDate') }}</span>
+                            </div>
+                        </div>
+                        <Badge :variant="task.priority" class="text-[10px]">{{ t(taskPriorityTranslationKeys[task.priority]) }}</Badge>
                     </NuxtLink>
                 </li>
-                <li v-if="!tasks?.length" class="text-sm text-muted-foreground text-center">
+                <li v-if="!tasks?.length" class="p-4 text-center text-sm text-muted-foreground">
                     {{ t('task.noneFound') }}
                 </li>
             </ul>
-            <Button variant="muted" class="w-full mt-4" :as-child="true">
-                <NuxtLink :href="`/workspaces/${route.params['workspaceId']}/tasks`">{{ t('task.showAll') }}</NuxtLink>
+            <Button variant="ghost" class="h-10 shrink-0 rounded-none border-t" :as-child="true">
+                <NuxtLink :href="`/workspaces/${route.params['workspaceId']}/tasks`">{{ t('task.showAll') }} · {{ total }}</NuxtLink>
             </Button>
-        </div>
-    </div>
+    </section>
 </template>
