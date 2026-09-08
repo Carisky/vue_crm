@@ -10,6 +10,7 @@
     "db:dev:down": "docker compose -f docker-compose.dev.yml down",
     "db:backup": "tsx scripts/database.ts backup",
     "db:restore": "tsx scripts/database.ts restore",
+    "db:seed:demo": "tsx --env-file=.env.development scripts/seed-demo.ts",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
