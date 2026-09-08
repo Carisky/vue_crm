@@ -28,3 +28,7 @@ logs
 !.env.example
 
 public/uploads
+
+# agents
+.agents
+.codex-plugins
