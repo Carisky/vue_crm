@@ -28,6 +28,8 @@ test("keeps only editable task fields in update-form initial values", () => {
       name: "Project",
       image_url: null,
       workspace_id: "workspace-1",
+      creator_id: "user-1",
+      visibility: "public",
       parent_id: null,
       progress: 0,
       completed_tasks: 0,

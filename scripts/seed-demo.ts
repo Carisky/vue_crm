@@ -96,6 +96,7 @@ async function main() {
   const mainProject = await prisma.project.create({
     data: {
       id: "demo-project-autumn",
+      creatorId: users[0].id,
       name: "Szczyt jesienny 2026",
       workspaceId: workspace.id,
     },
@@ -103,6 +104,7 @@ async function main() {
   const onboardingProject = await prisma.project.create({
     data: {
       id: "demo-project-client",
+      creatorId: users[0].id,
       name: "Wdrożenie klienta NordCargo",
       workspaceId: workspace.id,
       parentId: mainProject.id,
@@ -111,6 +113,7 @@ async function main() {
   await prisma.project.create({
     data: {
       id: "demo-project-quality",
+      creatorId: users[0].id,
       name: "Standard jakości dostaw",
       workspaceId: workspace.id,
     },

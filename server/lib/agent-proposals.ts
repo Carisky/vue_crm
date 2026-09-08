@@ -169,6 +169,7 @@ function resolveRef(
 async function applyOperations(
   db: Prisma.TransactionClient,
   data: CreateAgentProposal,
+  creatorId: string,
 ) {
   const refs = new Map<string, { id: string; kind: "project" | "task" }>();
   const applied: AppliedResource[] = [];
@@ -185,6 +186,7 @@ async function applyOperations(
       const project = await db.project.create({
         data: {
           workspaceId: data.workspace_id,
+          creatorId,
           parentId,
           name: operation.name,
         },
@@ -304,7 +306,7 @@ export async function approveAgentProposal(proposalId: string, userId: string) {
       if (claimed.count !== 1) {
         throw createError({ status: 409, statusText: "Proposal was already reviewed" });
       }
-      const applied = await applyOperations(db, parsed.data);
+      const applied = await applyOperations(db, parsed.data, userId);
       await db.agentProposal.update({
         where: { id: proposalId },
         data: { result: applied as Prisma.InputJsonValue },

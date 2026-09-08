@@ -68,6 +68,7 @@ export default defineEventHandler(async (event) => {
     data: {
       name: params.data.name,
       workspaceId: params.data.workspace_id,
+      creatorId: user.id,
       parentId: params.data.parent_project_id ?? null,
       imageUrl,
     },
