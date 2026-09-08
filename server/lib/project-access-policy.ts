@@ -41,3 +41,25 @@ export function calculateVisibleProjectIds(input: {
     input.projects.filter((project) => canAccess(project.id)).map(({ id }) => id),
   );
 }
+
+export function calculateEffectivelyRestrictedProjectIds(
+  projects: ProjectAccessNode[],
+) {
+  const byId = new Map(projects.map((project) => [project.id, project]));
+  const restricted = new Set<string>();
+  const visiting = new Set<string>();
+  const memo = new Map<string, boolean>();
+  const isRestricted = (id: string): boolean => {
+    const cached = memo.get(id);
+    if (cached !== undefined) return cached;
+    const project = byId.get(id);
+    if (!project || visiting.has(id)) return true;
+    visiting.add(id);
+    const value = project.visibility === "PRIVATE" || Boolean(project.parentId && isRestricted(project.parentId));
+    visiting.delete(id);
+    memo.set(id, value);
+    return value;
+  };
+  for (const project of projects) if (isRestricted(project.id)) restricted.add(project.id);
+  return restricted;
+}

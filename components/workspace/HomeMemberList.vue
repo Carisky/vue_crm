@@ -37,7 +37,10 @@ const { t } = useAppI18n()
                         <CardContent class="flex flex-col items-center p-3 gap-x-2">
                             <MemberAvatar :name="member.name ?? member.email" class="size-12" />
                             <div class="flex flex-col items-center overflow-hidden">
-                                <p class="text-lg font-medium line-clamp-1">{{ member.name ?? member.email }}</p>
+                                <div class="flex items-center gap-1.5">
+                                    <p class="text-lg font-medium line-clamp-1">{{ member.name ?? member.email }}</p>
+                                    <WorkspaceMemberRoleIcon :role="member.role" :is-owner="member.is_owner" />
+                                </div>
                                 <p class="text-sm text-muted-foreground line-clamp-1">{{ member.email }}</p>
                             </div>
                         </CardContent>

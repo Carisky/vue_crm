@@ -8,6 +8,7 @@ import {
 } from "~/server/lib/permissions";
 import { serializeTask } from "~/server/lib/serializers";
 import { buildLeafProgressMap } from "~/lib/hierarchy";
+import { getVisibleProjectIds } from "~/server/lib/project-access";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -28,12 +29,17 @@ export default defineEventHandler(async (event) => {
   }
 
   await requireWorkspaceMembership(event, workspace_id);
+  const visibleProjectIds = await getVisibleProjectIds(event, workspace_id);
 
   const where: Prisma.TaskWhereInput = {
     workspaceId: workspace_id,
+    projectId: { in: [...visibleProjectIds] },
   };
 
   if (project_id && typeof project_id === "string") {
+    if (!visibleProjectIds.has(project_id)) {
+      throw createError({ status: 404, statusText: "Project not found" });
+    }
     where.projectId = project_id;
   }
   if (assignee_id && typeof assignee_id === "string") {
@@ -88,7 +94,7 @@ export default defineEventHandler(async (event) => {
       },
     }),
     prisma.task.findMany({
-      where: { workspaceId: workspace_id },
+      where: { workspaceId: workspace_id, projectId: { in: [...visibleProjectIds] } },
       select: { id: true, parentId: true, status: true },
     }),
   ]);

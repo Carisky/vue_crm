@@ -7,11 +7,13 @@ import {
   requireWorkspaceMembership,
 } from "~/server/lib/permissions";
 import { serializeProject } from "~/server/lib/serializers";
+import { getVisibleProjectIds, requireProjectAccess } from "~/server/lib/project-access";
 import { buildProjectProgressMap } from "~/lib/hierarchy";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
   const { projectId } = getRouterParams(event);
+  await requireProjectAccess(event, projectId);
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -26,15 +28,16 @@ export default defineEventHandler(async (event) => {
     event,
     project.workspaceId,
   );
+  const visibleProjectIds = await getVisibleProjectIds(event, project.workspaceId);
 
   const now = new Date();
   const [workspaceProjects, workspaceTasks] = await Promise.all([
     prisma.project.findMany({
-      where: { workspaceId: project.workspaceId },
+      where: { workspaceId: project.workspaceId, id: { in: [...visibleProjectIds] } },
       select: { id: true, parentId: true },
     }),
     prisma.task.findMany({
-      where: { workspaceId: project.workspaceId },
+      where: { workspaceId: project.workspaceId, projectId: { in: [...visibleProjectIds] } },
       select: {
         id: true,
         parentId: true,

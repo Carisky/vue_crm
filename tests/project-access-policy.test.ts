@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { calculateVisibleProjectIds } from "../server/lib/project-access-policy.ts";
+import { calculateEffectivelyRestrictedProjectIds, calculateVisibleProjectIds } from "../server/lib/project-access-policy.ts";
 
 const projects = [
   {
@@ -92,4 +92,12 @@ test("missing parents and cycles fail closed", () => {
     })],
     [],
   );
+});
+
+test("private ancestry marks the complete branch as restricted", () => {
+  assert.deepEqual([...calculateEffectivelyRestrictedProjectIds(projects)], [
+    "private-child",
+    "public-grandchild",
+    "private-deep",
+  ]);
 });

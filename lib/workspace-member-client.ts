@@ -12,10 +12,10 @@ type Request = (
 
 export function createWorkspaceMemberClient(request: Request) {
   return {
-    remove(membershipId: string) {
+    remove(membershipId: string, successorUserId?: string) {
       return request("/api/workspaces/remove-member", {
         method: "DELETE",
-        body: { membershipId },
+        body: { membershipId, ...(successorUserId ? { successorUserId } : {}) },
       });
     },
     updateRole(membershipId: string, role: WorkspaceMemberDatabaseRole) {

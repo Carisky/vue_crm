@@ -85,6 +85,7 @@ export type WorkspaceMember = {
   membership_id: string;
   role: MemberRole;
   is_owner: boolean;
+  creator_project_count?: number;
 };
 
 export type WorkspaceMembersResponse = {

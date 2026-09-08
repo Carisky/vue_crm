@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import prisma from "~/server/lib/prisma";
 import { requireUser, requireWorkspaceMembership } from "~/server/lib/permissions";
+import { requireProjectAccess } from "~/server/lib/project-access";
 
 const UpdateSectionSchema = z.object({
   title: z.string().trim().min(1).max(120),
@@ -9,7 +10,8 @@ const UpdateSectionSchema = z.object({
 
 export default defineEventHandler(async (event) => {
   requireUser(event);
-  const { projectId, sectionId } = getRouterParams(event);
+ const { projectId, sectionId } = getRouterParams(event);
+  await requireProjectAccess(event, projectId);
 
   const params = await readValidatedBody(event, (body) =>
     UpdateSectionSchema.safeParse(body),

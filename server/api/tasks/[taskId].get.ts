@@ -5,6 +5,7 @@ import {
 } from "~/server/lib/permissions";
 import { serializeTask } from "~/server/lib/serializers";
 import { buildLeafProgressMap } from "~/lib/hierarchy";
+import { requireProjectAccess } from "~/server/lib/project-access";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -24,10 +25,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ status: 404, statusText: "Task not found" });
   }
 
-  await requireWorkspaceMembership(event, task.workspaceId);
+  await requireProjectAccess(event, task.projectId);
 
   const branchTasks = await prisma.task.findMany({
-    where: { workspaceId: task.workspaceId },
+    where: { workspaceId: task.workspaceId, projectId: task.projectId },
     select: { id: true, parentId: true, status: true },
   });
   const progress = buildLeafProgressMap(

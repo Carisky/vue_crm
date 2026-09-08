@@ -1,5 +1,6 @@
 import { requireAgentApiKey } from "~/server/lib/agent-api-key";
 import prisma from "~/server/lib/prisma";
+import { getVisibleProjectIdsForUser } from "~/server/lib/project-access";
 
 export default defineEventHandler(async (event) => {
   const key = await requireAgentApiKey(event);
@@ -11,15 +12,19 @@ export default defineEventHandler(async (event) => {
   if (!membership) {
     throw createError({ status: 404, statusText: "Workspace not found" });
   }
+  const visibleProjectIds = await getVisibleProjectIdsForUser(prisma, {
+    workspaceId,
+    userId: key.userId,
+  });
 
   const [projects, tasks, members, groups] = await Promise.all([
     prisma.project.findMany({
-      where: { workspaceId },
+      where: { workspaceId, id: { in: [...visibleProjectIds] } },
       orderBy: [{ parentId: "asc" }, { createdAt: "asc" }],
       select: { id: true, name: true, parentId: true, createdAt: true, updatedAt: true },
     }),
     prisma.task.findMany({
-      where: { workspaceId },
+      where: { workspaceId, projectId: { in: [...visibleProjectIds] } },
       orderBy: [{ projectId: "asc" }, { position: "asc" }],
       select: {
         id: true,

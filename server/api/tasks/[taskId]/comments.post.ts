@@ -4,6 +4,7 @@ import prisma from "~/server/lib/prisma";
 import { requireUser, requireWorkspaceMembership } from "~/server/lib/permissions";
 import { serializeTaskComment } from "~/server/lib/serializers";
 import { broadcastInboxEvent } from "~/server/lib/inbox-events";
+import { getProjectVisibleUserIds, requireProjectAccess } from "~/server/lib/project-access";
 
 const CreateTaskCommentSchema = z.object({
   body: z.string().trim().min(1).max(10_000),
@@ -37,12 +38,17 @@ export default defineEventHandler(async (event) => {
   }
 
   await requireWorkspaceMembership(event, task.workspaceId);
+  await requireProjectAccess(event, task.projectId);
 
   const mentionIds = Array.from(
     new Set((params.data.mention_ids ?? []).map((value) => value.trim())),
   ).filter(Boolean);
 
   if (mentionIds.length) {
+    const visibleUserIds = await getProjectVisibleUserIds(prisma, {
+      workspaceId: task.workspaceId,
+      projectId: task.projectId,
+    });
     const members = await prisma.member.findMany({
       where: {
         workspaceId: task.workspaceId,
@@ -50,7 +56,7 @@ export default defineEventHandler(async (event) => {
       },
       select: { userId: true },
     });
-    const allowedIds = new Set(members.map((item) => item.userId));
+    const allowedIds = new Set(members.map((item) => item.userId).filter((id) => visibleUserIds.has(id)));
     const invalidMention = mentionIds.find((id) => !allowedIds.has(id));
     if (invalidMention) {
       throw createError({ status: 400, statusText: "Invalid mention target" });

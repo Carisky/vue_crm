@@ -54,6 +54,8 @@ const children = computed(() =>
         <div class="min-w-0 flex-1">
           <div class="flex min-w-0 items-center gap-1 leading-tight">
             <span class="truncate text-sm">{{ project.name }}</span>
+            <Icon v-if="project.is_effectively_restricted" name="lucide:lock" class="size-3.5 shrink-0 text-muted-foreground"
+              :title="t('project.private')" :aria-label="t('project.private')" />
             <button
               type="button"
               :title="t('project.createSubproject')"

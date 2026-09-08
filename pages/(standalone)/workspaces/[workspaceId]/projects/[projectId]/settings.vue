@@ -18,6 +18,8 @@ const { data, isPending, isRefetching, refetch, suspense } = useQuery<{
     project: Project;
     is_owner: boolean;
     is_admin: boolean;
+    creator: { id: string; name: string | null; email: string };
+    can_manage_access: boolean;
 }>
     ({
         queryKey: ['project-settings', () => projectId.value],
@@ -47,7 +49,8 @@ const onUpdateSuccess = async () => {
 <template>
     <div class="size-full lg:max-w-xl">
         <ProjectUpdateProjectForm v-if="data" :data="data.project" :workspace-id="String(workspaceId)"
-            :is-owner="data.is_owner" :is-admin="data.is_admin" :on-success="onUpdateSuccess" />
+            :is-owner="data.is_owner" :is-admin="data.is_admin" :on-success="onUpdateSuccess"
+            :creator="data.creator" :can-manage-access="data.can_manage_access" />
         <Loader v-if="isPending && !isRefetching" class="min-h-auto h-96" />
     </div>
 </template>

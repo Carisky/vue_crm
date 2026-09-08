@@ -9,6 +9,7 @@ import { deleteTaskMediaObjects } from "~/server/lib/task-media-delete";
 import { getPrivateStorage } from "~/server/lib/storage";
 import { broadcastTaskEvent } from "~/server/lib/task-events";
 import { collectDescendantIds } from "~/lib/hierarchy";
+import { requireProjectAccess } from "~/server/lib/project-access";
 
 export default defineEventHandler(async (event) => {
   requireUser(event);
@@ -28,6 +29,7 @@ export default defineEventHandler(async (event) => {
   await requireWorkspaceMembership(event, task.workspaceId, [
     MemberRole.ADMIN,
   ]);
+  await requireProjectAccess(event, task.projectId);
 
   const workspaceTasks = await prisma.task.findMany({
     where: { workspaceId: task.workspaceId },
@@ -48,6 +50,7 @@ export default defineEventHandler(async (event) => {
       type: "TASK_DELETED",
       workspaceId: task.workspaceId,
       taskId,
+      projectId: task.projectId,
     });
   } catch {
     // ignore realtime errors

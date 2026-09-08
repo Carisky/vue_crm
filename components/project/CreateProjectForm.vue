@@ -26,7 +26,9 @@ const form = useForm({
     validationSchema: toTypedSchema(CreateProjectsSchema),
     initialValues: {
         workspace_id: String(route.params['workspaceId']),
-        parent_project_id: parentProjectId.value
+        parent_project_id: parentProjectId.value,
+        visibility: 'PUBLIC' as const,
+        access_user_ids: [],
     }
 })
 
@@ -52,6 +54,8 @@ const { isPending, mutate } = useMutation({
         manualFormData.append('name', formData.name!)
         manualFormData.append('workspace_id', formData.workspace_id!)
         if (formData.parent_project_id) manualFormData.append('parent_project_id', formData.parent_project_id)
+        manualFormData.append('visibility', formData.visibility ?? 'PUBLIC')
+        manualFormData.append('access_user_ids', JSON.stringify(formData.access_user_ids ?? []))
         if (fileInputRef.value?.files?.[0]) manualFormData.append('image', fileInputRef.value.files[0])
 
         const res =
@@ -108,6 +112,19 @@ const handleSubmit = form.handleSubmit((values) => mutate(values))
                                     <Input :placeholder="t('project.namePlaceholder')" v-bind="componentField" />
                                 </FormControl>
                                 <FormMessage />
+                            </FormItem>
+                        </FormField>
+                        <FormField v-slot="{ value }" name="visibility">
+                            <FormItem>
+                                <FormLabel>{{ t('project.visibility') }}</FormLabel>
+                                <div class="flex gap-2">
+                                    <Button type="button" size="sm" :variant="value === 'PUBLIC' ? 'primary' : 'secondary'" @click="form.setFieldValue('visibility', 'PUBLIC')">
+                                        <Icon name="lucide:globe-2" class="mr-1 size-4" />{{ t('project.public') }}
+                                    </Button>
+                                    <Button type="button" size="sm" :variant="value === 'PRIVATE' ? 'primary' : 'secondary'" @click="form.setFieldValue('visibility', 'PRIVATE')">
+                                        <Icon name="lucide:lock" class="mr-1 size-4" />{{ t('project.private') }}
+                                    </Button>
+                                </div>
                             </FormItem>
                         </FormField>
                         <FormField v-slot="{ componentField }" name="image">

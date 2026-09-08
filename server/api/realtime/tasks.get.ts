@@ -5,11 +5,12 @@ import {
   requireWorkspaceMembership,
 } from "~/server/lib/permissions";
 import { registerTaskEventStream } from "~/server/lib/task-events";
+import { getVisibleProjectIds } from "~/server/lib/project-access";
 
 const KEEPALIVE_INTERVAL_MS = 25_000;
 
 export default defineEventHandler(async (event) => {
-  requireUser(event);
+  const user = requireUser(event);
 
   const { workspace_id } = getQuery(event);
   if (!workspace_id || typeof workspace_id !== "string") {
@@ -17,9 +18,10 @@ export default defineEventHandler(async (event) => {
   }
 
   await requireWorkspaceMembership(event, workspace_id);
+  const visibleProjectIds = await getVisibleProjectIds(event, workspace_id);
 
   const stream = createEventStream(event);
-  const unregister = registerTaskEventStream(workspace_id, stream);
+  const unregister = registerTaskEventStream(workspace_id, stream, user.id, visibleProjectIds);
 
   const sendPromise = stream.send();
 

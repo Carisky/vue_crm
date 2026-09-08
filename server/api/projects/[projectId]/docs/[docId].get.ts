@@ -1,9 +1,11 @@
 import prisma from "~/server/lib/prisma";
 import { requireUser, requireWorkspaceMembership } from "~/server/lib/permissions";
+import { requireProjectAccess } from "~/server/lib/project-access";
 
 export default defineEventHandler(async (event) => {
   requireUser(event);
-  const { projectId, docId } = getRouterParams(event);
+ const { projectId, docId } = getRouterParams(event);
+  await requireProjectAccess(event, projectId);
 
   const doc = await prisma.projectDoc.findFirst({
     where: { id: docId, projectId },

@@ -19,6 +19,7 @@ import { RangeNotSatisfiableError } from "~/server/lib/http-range";
 import { requireUser } from "~/server/lib/permissions";
 import prisma from "~/server/lib/prisma";
 import { getPrivateStorage } from "~/server/lib/storage";
+import { requireProjectAccess } from "~/server/lib/project-access";
 
 function isMissingStorageObject(error: unknown): boolean {
   return (error as NodeJS.ErrnoException | undefined)?.code === "ENOENT";
@@ -34,6 +35,12 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const variantId = typeof query.variant_id === "string" ? query.variant_id : undefined;
   const forceDownload = query.download === "1" || query.download === "true";
+
+  const attachment = await prisma.taskMedia.findUnique({
+    where: { id: mediaId },
+    select: { task: { select: { projectId: true } } },
+  });
+  if (attachment?.task) await requireProjectAccess(event, attachment.task.projectId);
 
   let media;
   try {

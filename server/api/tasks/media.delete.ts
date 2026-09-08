@@ -3,11 +3,17 @@ import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
 import { getPrivateStorage } from "~/server/lib/storage";
 import { deleteTaskMediaById, MediaDeleteForbiddenError, MediaDeleteNotFoundError } from "~/server/lib/task-media-delete";
+import { requireProjectAccess } from "~/server/lib/project-access";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
   const body = await readBody<{ media_id?: unknown }>(event);
   if (typeof body?.media_id !== "string" || !body.media_id) throw createError({ statusCode: 400, statusMessage: "Media ID required" });
+  const attachment = await prisma.taskMedia.findUnique({
+    where: { id: body.media_id },
+    select: { task: { select: { projectId: true } } },
+  });
+  if (attachment?.task) await requireProjectAccess(event, attachment.task.projectId);
   try {
     return await deleteTaskMediaById({ mediaId: body.media_id, userId: user.id }, {
       media: {

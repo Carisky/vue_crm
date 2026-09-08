@@ -1,6 +1,7 @@
 import { ensureWorkspaceAccess } from "~/server/lib/workspace";
 import { requireUser } from "~/server/lib/permissions";
 import prisma from "~/server/lib/prisma";
+import { getVisibleProjectIdsForUser } from "~/server/lib/project-access";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -37,6 +38,7 @@ export default defineEventHandler(async (event) => {
         select: {
           id: true,
           name: true,
+          projectId: true,
         },
       },
       project: {
@@ -58,9 +60,20 @@ export default defineEventHandler(async (event) => {
     },
     take: 50,
   });
+  const visibleByWorkspace = new Map<string, Set<string>>();
+  await Promise.all([...new Set(notifications.map((item) => item.workspaceId))].map(async (id) => {
+    visibleByWorkspace.set(id, await getVisibleProjectIdsForUser(prisma, {
+      workspaceId: id,
+      userId: user.id,
+    }));
+  }));
+  const visibleNotifications = notifications.filter((notification) => {
+    const projectId = notification.projectId ?? notification.task?.projectId;
+    return !projectId || visibleByWorkspace.get(notification.workspaceId)?.has(projectId);
+  });
 
   return {
-    notifications: notifications.map((notification) => ({
+    notifications: visibleNotifications.map((notification) => ({
       id: notification.id,
       workspaceId: notification.workspaceId,
       taskId: notification.taskId,
@@ -74,6 +87,6 @@ export default defineEventHandler(async (event) => {
       isRead: notification.isRead,
       createdAt: notification.createdAt.toISOString(),
     })),
-    unreadCount: notifications.filter((item) => !item.isRead).length,
+    unreadCount: visibleNotifications.filter((item) => !item.isRead).length,
   };
 });

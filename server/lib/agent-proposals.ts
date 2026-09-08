@@ -15,6 +15,7 @@ import {
 } from "~/lib/schema/agentProposal";
 import prisma from "./prisma";
 import { serializeAgentApiKey } from "./agent-api-key";
+import { getVisibleProjectIdsForUser } from "./project-access";
 
 type Db = Prisma.TransactionClient | typeof prisma;
 type AppliedResource = {
@@ -296,6 +297,31 @@ export async function approveAgentProposal(proposalId: string, userId: string) {
     throw createError({ status: 400, statusText: "Stored proposal is invalid" });
   }
   await assertAgentProposalAccess(parsed.data, userId);
+  const visibleProjectIds = await getVisibleProjectIdsForUser(prisma, {
+    workspaceId: parsed.data.workspace_id,
+    userId,
+  });
+  for (const operation of parsed.data.operations) {
+    const existingProjectId = operation.type === "project.update"
+      ? operation.project_id
+      : operation.type === "project.create"
+        ? operation.parent_project_id
+        : operation.type === "task.create"
+          ? operation.project_id
+          : null;
+    if (existingProjectId && !visibleProjectIds.has(existingProjectId)) {
+      throw createError({ status: 404, statusText: "Project not found" });
+    }
+    if (operation.type === "task.update") {
+      const task = await prisma.task.findUnique({
+        where: { id: operation.task_id },
+        select: { projectId: true },
+      });
+      if (!task || !visibleProjectIds.has(task.projectId)) {
+        throw createError({ status: 404, statusText: "Task not found" });
+      }
+    }
+  }
 
   try {
     const result = await prisma.$transaction(async (db) => {

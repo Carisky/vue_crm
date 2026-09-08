@@ -13,6 +13,7 @@ import {
 import { serializeTask } from "./serializers";
 import { broadcastTaskEvent } from "./task-events";
 import { assertAndAttachPendingMedia } from "./task-media-service";
+import { getProjectVisibleUserIds, requireProjectAccess } from "./project-access";
 
 export async function updateTask(
   event: H3Event,
@@ -37,6 +38,7 @@ export async function updateTask(
   }
 
   await requireWorkspaceMembership(event, task.workspaceId);
+  await requireProjectAccess(event, task.projectId);
   const user = requireUser(event);
 
   if (params.data.assignee_id) {
@@ -91,6 +93,12 @@ export async function updateTask(
   }
 
   if (params.data.project_id) {
+    try {
+      await requireProjectAccess(event, params.data.project_id);
+    } catch (error) {
+      if (options?.skipErrors) return null;
+      throw error;
+    }
     const project = await prisma.project.findUnique({
       where: { id: params.data.project_id },
     });
@@ -183,6 +191,10 @@ export async function updateTask(
     (params.data.priority === TaskPriority.HIGH ||
       params.data.priority === TaskPriority.REAL_TIME) &&
     params.data.priority !== task.priority;
+  const visibleUserIds = await getProjectVisibleUserIds(prisma, {
+    workspaceId: finalUpdatedTask.workspaceId,
+    projectId: finalUpdatedTask.projectId,
+  });
 
   if (priorityChangedToUrgent) {
     try {
@@ -193,7 +205,7 @@ export async function updateTask(
         prisma.member.findMany({
           where: {
             workspaceId: updatedTask.workspaceId,
-            userId: { not: actor.id },
+            userId: { in: [...visibleUserIds].filter((id) => id !== actor.id) },
           },
           select: {
             userId: true,
@@ -259,7 +271,7 @@ export async function updateTask(
         prisma.member.findMany({
           where: {
             workspaceId: finalUpdatedTask.workspaceId,
-            userId: { not: user.id },
+            userId: { in: [...visibleUserIds].filter((id) => id !== user.id) },
           },
           select: {
             user: {

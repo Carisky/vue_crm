@@ -13,6 +13,7 @@ import {
 } from "~/server/lib/email";
 import { broadcastTaskEvent } from "~/server/lib/task-events";
 import { assertAndAttachPendingMedia } from "~/server/lib/task-media-service";
+import { getProjectVisibleUserIds, requireProjectAccess } from "~/server/lib/project-access";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -31,6 +32,10 @@ export default defineEventHandler(async (event) => {
   const data = params.data;
 
   await requireWorkspaceMembership(event, data.workspace_id);
+  const { project: accessibleProject } = await requireProjectAccess(event, data.project_id);
+  if (accessibleProject.workspaceId !== data.workspace_id) {
+    throw createError({ status: 400, statusText: "Project not found" });
+  }
 
   const assigneeId =
     typeof data.assignee_id === "string" && data.assignee_id.trim().length
@@ -162,10 +167,14 @@ export default defineEventHandler(async (event) => {
   );
 
   try {
+    const visibleUserIds = await getProjectVisibleUserIds(prisma, {
+      workspaceId: data.workspace_id,
+      projectId: task.projectId,
+    });
     const workspaceMembers = await prisma.member.findMany({
       where: {
         workspaceId: data.workspace_id,
-        userId: { not: user.id },
+        userId: { in: [...visibleUserIds].filter((id) => id !== user.id) },
       },
       select: {
         userId: true,

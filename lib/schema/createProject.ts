@@ -4,6 +4,8 @@ export const CreateProjectsSchema = z.object({
   name: z.string().trim().min(1, "Required"),
   workspace_id: z.string(),
   parent_project_id: z.string().trim().min(1).optional().nullable(),
+  visibility: z.enum(["PUBLIC", "PRIVATE"]).default("PUBLIC"),
+  access_user_ids: z.array(z.string().trim().min(1)).default([]),
   image: z
     .union([
       z

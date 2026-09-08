@@ -30,7 +30,9 @@ const { t } = useAppI18n()
                                     class="size-12"
                                     fallback-class="text-lg text-card-foreground"
                                 />
-                                <p class="text-lg font-medium truncate text-card-foreground">{{ project.name }}</p>
+                                <p class="min-w-0 flex-1 text-lg font-medium truncate text-card-foreground">{{ project.name }}</p>
+                                <Icon v-if="project.is_effectively_restricted" name="lucide:lock" class="size-4 shrink-0 text-muted-foreground"
+                                    :title="t('project.private')" :aria-label="t('project.private')" />
                             </CardContent>
                         </Card>
                     </NuxtLink>

@@ -20,10 +20,11 @@ export type TaskRealtimeEvent =
       type: "TASK_DELETED";
       workspaceId: string;
       taskId: string;
+      projectId: string;
     };
 
 const globalState = globalThis as typeof globalThis & {
-  __taskEventStreams?: Map<string, Map<string, TaskEventStream>>;
+  __taskEventStreams?: Map<string, Map<string, { stream: TaskEventStream; userId: string; projectIds: Set<string> }>>;
 };
 
 function shouldDebug() {
@@ -42,7 +43,7 @@ function getWorkspaceStreams(workspaceId: string) {
   const allStreams = globalState.__taskEventStreams;
   const workspaceStreams = allStreams.get(workspaceId);
   if (workspaceStreams) return workspaceStreams;
-  const created = new Map<string, TaskEventStream>();
+  const created = new Map<string, { stream: TaskEventStream; userId: string; projectIds: Set<string> }>();
   allStreams.set(workspaceId, created);
   return created;
 }
@@ -50,10 +51,12 @@ function getWorkspaceStreams(workspaceId: string) {
 export function registerTaskEventStream(
   workspaceId: string,
   stream: TaskEventStream,
+  userId: string,
+  projectIds: ReadonlySet<string>,
 ) {
   const streams = getWorkspaceStreams(workspaceId);
   const id = createClientId();
-  streams.set(id, stream);
+  streams.set(id, { stream, userId, projectIds: new Set(projectIds) });
   if (shouldDebug()) {
     console.log("[realtime] stream registered", {
       workspaceId,
@@ -79,6 +82,17 @@ export function registerTaskEventStream(
   return unregister;
 }
 
+export function refreshWorkspaceTaskStreamAccess(
+  workspaceId: string,
+  visibleByUserId: ReadonlyMap<string, ReadonlySet<string>>,
+) {
+  const streams = globalState.__taskEventStreams?.get(workspaceId);
+  if (!streams) return;
+  for (const connection of streams.values()) {
+    connection.projectIds = new Set(visibleByUserId.get(connection.userId) ?? []);
+  }
+}
+
 export function broadcastTaskEvent(workspaceId: string, payload: TaskRealtimeEvent) {
   const streams = globalState.__taskEventStreams?.get(workspaceId);
   if (shouldDebug()) {
@@ -91,7 +105,11 @@ export function broadcastTaskEvent(workspaceId: string, payload: TaskRealtimeEve
   if (!streams?.size) return;
 
   const data = JSON.stringify(payload);
-  for (const stream of streams.values()) {
+  const projectId = payload.type === "TASK_DELETED"
+    ? payload.projectId
+    : (payload.task as { project_id?: string }).project_id;
+  for (const { stream, projectIds } of streams.values()) {
+    if (!projectId || !projectIds.has(projectId)) continue;
     stream.push({ event: "task", data }).catch(() => {});
   }
 }

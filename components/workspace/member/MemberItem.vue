@@ -14,6 +14,7 @@ const {
     currentUserId,
     currentUserIsOwner,
     currentUserIsAdmin,
+    members,
 } = defineProps<{
     data: WorkspaceMember
     workspaceId: string
@@ -21,6 +22,7 @@ const {
     currentUserId: string
     currentUserIsOwner: boolean
     currentUserIsAdmin: boolean
+    members: WorkspaceMember[]
 }>()
 
 const queryClient = useQueryClient()
@@ -32,6 +34,9 @@ const memberClient = createWorkspaceMemberClient((url, options) =>
 const isSelf = computed(() => data.$id === currentUserId)
 const isMember = computed(() => data.role === MEMBER_ROLE.member)
 const displayName = computed(() => data.name ?? t('members.unknown'))
+const successorUserId = ref('')
+const transferModalOpen = ref(false)
+const successorCandidates = computed(() => members.filter((member) => member.$id !== data.$id))
 
 const canUpgradeOtherMembers = computed(
     () =>
@@ -70,7 +75,7 @@ const { openModal } = useConfirmModal()
 
 const { isPending: isDeleting, mutateAsync: removeMember } = useMutation({
     mutationFn: async () => {
-        const res = await memberClient.remove(data.membership_id)
+        const res = await memberClient.remove(data.membership_id, successorUserId.value || undefined)
         if (res.ok) {
             await queryClient.refetchQueries({ queryKey: ['workspace-members', workspaceId] })
 
@@ -102,6 +107,11 @@ const changeMemberRole = async () => {
 }
 
 const openRemoveMemberModal = () => {
+    if ((data.creator_project_count ?? 0) > 0) {
+        successorUserId.value ||= successorCandidates.value[0]?.$id ?? ''
+        transferModalOpen.value = true
+        return
+    }
     openModal(ConfirmModal, {
         onConfirm: async () => { await removeMember() },
         title: isSelf.value ? t('members.leave') : t('members.remove'),
@@ -110,6 +120,12 @@ const openRemoveMemberModal = () => {
             : t('members.removeConfirm'),
         variant: 'destructive'
     })
+}
+
+const confirmTransferAndRemove = async () => {
+    if (!successorUserId.value) return
+    await removeMember()
+    transferModalOpen.value = false
 }
 </script>
 
@@ -125,9 +141,7 @@ const openRemoveMemberModal = () => {
 
         <div class="flex shrink-0 items-center gap-1.5">
             <div class="flex items-center gap-1 opacity-55 capitalize">
-                <Badge v-if="data.role === MEMBER_ROLE.admin" class="text-[10px]">
-                    {{ data.role }}
-                </Badge>
+                <WorkspaceMemberRoleIcon :role="data.role" :is-owner="data.is_owner" />
                 <Badge v-if="isSelf" variant="destructive" class="text-[10px]">
                     {{ t('members.you') }}
                 </Badge>
@@ -158,4 +172,26 @@ const openRemoveMemberModal = () => {
             </DropdownMenu>
         </div>
     </div>
+    <ResponsiveModal :open="transferModalOpen" @open-update="transferModalOpen = $event">
+        <Card class="size-full border-none shadow-none">
+            <CardHeader>
+                <CardTitle>{{ t('members.transferProjects') }}</CardTitle>
+                <CardDescription>{{ t('members.transferProjectsDescription', { count: data.creator_project_count ?? 0 }) }}</CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-4">
+                <label v-for="member in successorCandidates" :key="member.$id"
+                    class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2">
+                    <input v-model="successorUserId" type="radio" :value="member.$id" />
+                    <span class="min-w-0 flex-1 truncate">{{ member.name ?? member.email }}</span>
+                    <WorkspaceMemberRoleIcon :role="member.role" :is-owner="member.is_owner" />
+                </label>
+                <div class="flex justify-end gap-2">
+                    <Button variant="secondary" @click="transferModalOpen = false">{{ t('common.cancel') }}</Button>
+                    <Button variant="destructive" :disabled="isDeleting || !successorUserId" @click="confirmTransferAndRemove">
+                        {{ t('common.confirm') }}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    </ResponsiveModal>
 </template>

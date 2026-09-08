@@ -1,6 +1,7 @@
 import prisma from "~/server/lib/prisma";
 import { requireUser, requireWorkspaceMembership } from "~/server/lib/permissions";
 import { serializeTaskComment } from "~/server/lib/serializers";
+import { requireProjectAccess } from "~/server/lib/project-access";
 
 export default defineEventHandler(async (event) => {
   requireUser(event);
@@ -8,7 +9,7 @@ export default defineEventHandler(async (event) => {
 
   const task = await prisma.task.findUnique({
     where: { id: taskId },
-    select: { id: true, workspaceId: true },
+    select: { id: true, workspaceId: true, projectId: true },
   });
 
   if (!task) {
@@ -16,6 +17,7 @@ export default defineEventHandler(async (event) => {
   }
 
   await requireWorkspaceMembership(event, task.workspaceId);
+  await requireProjectAccess(event, task.projectId);
 
   const comments = await prisma.taskComment.findMany({
     where: { taskId: task.id },

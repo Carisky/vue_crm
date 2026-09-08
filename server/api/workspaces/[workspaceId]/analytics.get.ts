@@ -10,6 +10,8 @@ import {
   serializeTask,
   serializeWorkspace,
 } from "~/server/lib/serializers";
+import { getVisibleProjectIds } from "~/server/lib/project-access";
+import { calculateEffectivelyRestrictedProjectIds } from "~/server/lib/project-access-policy";
 
 export default defineEventHandler(async (event) => {
   const { workspaceId } = getRouterParams(event);
@@ -19,14 +21,15 @@ export default defineEventHandler(async (event) => {
     event,
     workspaceId,
   );
+  const visibleProjectIds = await getVisibleProjectIds(event, workspaceId);
 
   const [projects, members, tasks] = await Promise.all([
     prisma.project.findMany({
-      where: { workspaceId },
+      where: { workspaceId, id: { in: [...visibleProjectIds] } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.member.findMany({
-      where: { workspaceId },
+      where: { workspaceId, projectId: { in: [...visibleProjectIds] } },
       include: { user: true },
     }),
     prisma.task.findMany({
@@ -47,10 +50,15 @@ export default defineEventHandler(async (event) => {
   const tasksPayload = tasks.map((task) => serializeTask(task));
 
   const analyticData = calculateTaskAnalytics(tasks, user.id);
+  const restrictedProjectIds = calculateEffectivelyRestrictedProjectIds(projects);
 
   return {
     workspace: serializeWorkspace(workspace),
-    projects: projects.map((project) => serializeProject(project)),
+    projects: projects.map((project) => ({
+      ...serializeProject(project),
+      is_effectively_restricted: restrictedProjectIds.has(project.id),
+      can_manage_access: project.creatorId === user.id,
+    })),
     members: membersPayload,
     tasks: tasksPayload,
     analytic_data: analyticData,

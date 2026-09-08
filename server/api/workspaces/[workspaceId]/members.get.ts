@@ -12,14 +12,25 @@ export default defineEventHandler(async (event) => {
     workspaceId,
   );
 
-  const memberships = await prisma.member.findMany({
-    where: { workspaceId },
-    include: { user: true },
-    orderBy: { createdAt: "asc" },
-  });
+  const [memberships, projectCounts] = await Promise.all([
+    prisma.member.findMany({
+      where: { workspaceId },
+      include: { user: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.project.groupBy({
+      by: ["creatorId"],
+      where: { workspaceId },
+      _count: { _all: true },
+    }),
+  ]);
+  const projectCountByCreator = new Map(
+    projectCounts.map((item) => [item.creatorId, item._count._all]),
+  );
 
   const members = memberships.map((membership) => ({
     ...serializeMember(membership, workspace.ownerId),
+    creator_project_count: projectCountByCreator.get(membership.userId) ?? 0,
   }));
 
   return {

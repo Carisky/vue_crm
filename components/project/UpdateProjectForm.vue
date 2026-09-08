@@ -1,25 +1,68 @@
 <script setup lang="ts">
 import { templateRef } from '@vueuse/core';
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { configure, useForm } from 'vee-validate'
 import { toTypedSchema } from "@vee-validate/zod";
 import { toast } from 'vue-sonner';
 
 import { ConfirmModal } from '#components';
 import { UpdateProjectSchema } from '~/lib/schema/updateProject';
-import type { Project } from '~/lib/types';
+import type { Project, WorkspaceMember } from '~/lib/types';
 
-const { data, workspaceId, isOwner, isAdmin, onSuccess, onCancel } = defineProps<{
+const { data, workspaceId, isOwner, isAdmin, creator, canManageAccess, onSuccess, onCancel } = defineProps<{
     data: Project;
     workspaceId: string;
     isOwner: boolean;
     isAdmin: boolean;
+    creator: { id: string; name: string | null; email: string };
+    canManageAccess: boolean;
     onSuccess?: () => Promise<void>;
     onCancel?: () => void;
 }>()
 
 const queryClient = useQueryClient()
 const { t } = useAppI18n()
+
+type AccessResponse = {
+    visibility: 'public' | 'private';
+    creator: { id: string; name: string | null; email: string };
+    user_ids: string[];
+    members: WorkspaceMember[];
+}
+const visibility = ref<'PUBLIC' | 'PRIVATE'>(data.visibility.toUpperCase() as 'PUBLIC' | 'PRIVATE')
+const selectedUserIds = ref<string[]>([])
+const { data: accessData } = useQuery<AccessResponse>({
+    queryKey: ['project-access', data.$id],
+    queryFn: () => $fetch(`/api/projects/${data.$id}/access`),
+    enabled: canManageAccess,
+})
+watch(accessData, (value) => {
+    if (!value) return
+    visibility.value = value.visibility.toUpperCase() as 'PUBLIC' | 'PRIVATE'
+    selectedUserIds.value = [...value.user_ids]
+}, { immediate: true })
+
+const toggleAccessUser = (userId: string, checked: boolean) => {
+    selectedUserIds.value = checked
+        ? [...new Set([...selectedUserIds.value, userId])]
+        : selectedUserIds.value.filter((id) => id !== userId)
+}
+
+const { isPending: isSavingAccess, mutate: saveAccess } = useMutation({
+    mutationFn: () => $fetch(`/api/projects/${data.$id}/access`, {
+        method: 'PATCH',
+        body: { visibility: visibility.value, user_ids: selectedUserIds.value },
+    }),
+    onSuccess: async () => {
+        await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['projects', workspaceId] }),
+            queryClient.invalidateQueries({ queryKey: ['project', data.$id] }),
+            queryClient.invalidateQueries({ queryKey: ['project-settings', data.$id] }),
+        ])
+        toast.success(t('project.accessSaved'))
+    },
+    onError: () => toast.error(t('project.accessSaveFailed')),
+})
 
 configure({
     validateOnBlur: false
@@ -191,6 +234,45 @@ const showDeleteModal = () => {
                         </div>
                     </fieldset>
                 </form>
+            </CardContent>
+        </Card>
+
+        <Card class="size-full border-none shadow-none gap-0 p-0">
+            <CardHeader class="px-7 pt-7">
+                <CardTitle class="text-base">{{ t('project.access') }}</CardTitle>
+            </CardHeader>
+            <CardContent class="space-y-5 py-7">
+                <div>
+                    <p class="text-sm font-medium">{{ t('project.owner') }}</p>
+                    <p class="text-sm text-muted-foreground">{{ creator.name ?? creator.email }} · {{ creator.email }}</p>
+                </div>
+                <template v-if="canManageAccess">
+                    <div class="space-y-2">
+                        <p class="text-sm font-medium">{{ t('project.visibility') }}</p>
+                        <div class="flex gap-2">
+                            <Button type="button" size="sm" :variant="visibility === 'PUBLIC' ? 'primary' : 'secondary'" @click="visibility = 'PUBLIC'">
+                                <Icon name="lucide:globe-2" class="mr-1 size-4" />{{ t('project.public') }}
+                            </Button>
+                            <Button type="button" size="sm" :variant="visibility === 'PRIVATE' ? 'primary' : 'secondary'" @click="visibility = 'PRIVATE'">
+                                <Icon name="lucide:lock" class="mr-1 size-4" />{{ t('project.private') }}
+                            </Button>
+                        </div>
+                    </div>
+                    <div v-if="visibility === 'PRIVATE' && accessData" class="space-y-2">
+                        <p class="text-sm font-medium">{{ t('project.accessUsers') }}</p>
+                        <label v-for="member in accessData.members.filter(member => member.$id !== creator.id)" :key="member.$id"
+                            class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                            <input type="checkbox" :checked="selectedUserIds.includes(member.$id)"
+                                @change="toggleAccessUser(member.$id, ($event.target as HTMLInputElement).checked)" />
+                            <span class="min-w-0 flex-1 truncate">{{ member.name ?? member.email }}</span>
+                            <WorkspaceMemberRoleIcon :role="member.role" :is-owner="member.is_owner" />
+                        </label>
+                    </div>
+                    <Button type="button" variant="primary" size="sm" class="ml-auto flex" :disabled="isSavingAccess" @click="saveAccess()">
+                        <Icon v-if="isSavingAccess" name="svg-spinners:8-dots-rotate" class="size-4" />
+                        <span v-else>{{ t('common.save') }}</span>
+                    </Button>
+                </template>
             </CardContent>
         </Card>
 

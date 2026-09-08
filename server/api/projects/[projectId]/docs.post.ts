@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import prisma from "~/server/lib/prisma";
 import { requireUser, requireWorkspaceMembership } from "~/server/lib/permissions";
+import { requireProjectAccess } from "~/server/lib/project-access";
 
 const CreateProjectDocSchema = z.object({
   title: z.string().trim().min(1).max(120),
@@ -11,7 +12,8 @@ const CreateProjectDocSchema = z.object({
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
-  const { projectId } = getRouterParams(event);
+ const { projectId } = getRouterParams(event);
+  await requireProjectAccess(event, projectId);
 
   const params = await readValidatedBody(event, (body) =>
     CreateProjectDocSchema.safeParse(body),

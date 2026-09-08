@@ -35,6 +35,7 @@ const { t } = useAppI18n()
                         :current-user-id="currentUserId"
                         :current-user-is-owner="currentUserIsOwner"
                         :current-user-is-admin="currentUserIsAdmin"
+                        :members="data"
                     />
                 </div>
             </template>

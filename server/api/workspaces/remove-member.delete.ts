@@ -11,8 +11,9 @@ import {
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
-  const { membershipId } = await readBody<{
+  const { membershipId, successorUserId } = await readBody<{
     membershipId?: string;
+    successorUserId?: string;
   }>(event);
 
   if (!membershipId) {
@@ -63,6 +64,46 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  const ownedProjectCount = await prisma.project.count({
+    where: {
+      workspaceId: membershipToDelete.workspaceId,
+      creatorId: membershipToDelete.userId,
+    },
+  });
+  let successorAncestorGrantIds: string[] = [];
+  if (ownedProjectCount) {
+    const successor = memberships.find(
+      (membership) =>
+        membership.userId === successorUserId &&
+        membership.userId !== membershipToDelete.userId,
+    );
+    if (!successor) {
+      throw createError({
+        status: 400,
+        statusText: "Select a project owner successor",
+      });
+    }
+    const workspaceProjects = await prisma.project.findMany({
+      where: { workspaceId: membershipToDelete.workspaceId },
+      select: { id: true, parentId: true, creatorId: true, visibility: true },
+    });
+    const byId = new Map(workspaceProjects.map((project) => [project.id, project]));
+    const grantIds = new Set<string>();
+    for (const project of workspaceProjects) {
+      if (project.creatorId !== membershipToDelete.userId) continue;
+      let ancestor = project.parentId ? byId.get(project.parentId) : undefined;
+      const visited = new Set<string>();
+      while (ancestor && !visited.has(ancestor.id)) {
+        visited.add(ancestor.id);
+        if (ancestor.visibility === "PRIVATE" && ancestor.creatorId !== successorUserId) {
+          grantIds.add(ancestor.id);
+        }
+        ancestor = ancestor.parentId ? byId.get(ancestor.parentId) : undefined;
+      }
+    }
+    successorAncestorGrantIds = [...grantIds];
+  }
+
   const conversationParticipants =
     await prisma.conversationParticipant.findMany({
       where: {
@@ -73,6 +114,24 @@ export default defineEventHandler(async (event) => {
     });
 
   await prisma.$transaction(async (tx) => {
+    if (ownedProjectCount && successorUserId) {
+      await tx.project.updateMany({
+        where: {
+          workspaceId: membershipToDelete.workspaceId,
+          creatorId: membershipToDelete.userId,
+        },
+        data: { creatorId: successorUserId },
+      });
+      if (successorAncestorGrantIds.length) {
+        await tx.projectAccess.createMany({
+          data: successorAncestorGrantIds.map((projectId) => ({
+            projectId,
+            userId: successorUserId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
     await tx.workspaceGroupMember.deleteMany({
       where: {
         userId: membershipToDelete.userId,

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import prisma from "~/server/lib/prisma";
 import { requireUser, requireWorkspaceMembership } from "~/server/lib/permissions";
+import { requireProjectAccess } from "~/server/lib/project-access";
 
 const ImportProjectDocSchema = z.object({
   source_project_id: z.string().min(1),
@@ -13,6 +14,7 @@ const ImportProjectDocSchema = z.object({
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
   const { projectId } = getRouterParams(event);
+  await requireProjectAccess(event, projectId);
 
   const params = await readValidatedBody(event, (body) =>
     ImportProjectDocSchema.safeParse(body),
@@ -55,6 +57,7 @@ export default defineEventHandler(async (event) => {
 
   // Import a single document
   if (params.data.source_doc_id) {
+    await requireProjectAccess(event, params.data.source_project_id);
     const sourceDoc = await prisma.projectDoc.findFirst({
       where: {
         id: params.data.source_doc_id,
@@ -109,6 +112,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Import a whole section with its documents
+  await requireProjectAccess(event, params.data.source_project_id);
   const sourceSection = await prisma.projectDocSection.findFirst({
     where: {
       id: params.data.source_section_id!,
