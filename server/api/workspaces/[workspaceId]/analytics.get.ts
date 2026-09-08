@@ -12,6 +12,7 @@ import {
 } from "~/server/lib/serializers";
 import { getVisibleProjectIds } from "~/server/lib/project-access";
 import { calculateEffectivelyRestrictedProjectIds } from "~/server/lib/project-access-policy";
+import { buildWorkspaceAnalyticsScopes } from "~/server/lib/workspace-analytics-scope";
 
 export default defineEventHandler(async (event) => {
   const { workspaceId } = getRouterParams(event);
@@ -22,18 +23,19 @@ export default defineEventHandler(async (event) => {
     workspaceId,
   );
   const visibleProjectIds = await getVisibleProjectIds(event, workspaceId);
+  const scopes = buildWorkspaceAnalyticsScopes(workspaceId, visibleProjectIds);
 
   const [projects, members, tasks] = await Promise.all([
     prisma.project.findMany({
-      where: { workspaceId, id: { in: [...visibleProjectIds] } },
+      where: scopes.projects,
       orderBy: { createdAt: "desc" },
     }),
     prisma.member.findMany({
-      where: { workspaceId, projectId: { in: [...visibleProjectIds] } },
+      where: scopes.members,
       include: { user: true },
     }),
     prisma.task.findMany({
-      where: { workspaceId },
+      where: scopes.tasks,
       orderBy: { createdAt: "desc" },
       include: {
         project: true,
