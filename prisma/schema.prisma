@@ -36,6 +36,8 @@ model User {
   conversationMessages       ConversationMessage[]     @relation("ConversationMessageSender")
   projectDocs                ProjectDoc[]
   projectDocSections         ProjectDocSection[]
+  createdProjects            Project[]                 @relation("ProjectCreator")
+  projectAccess              ProjectAccess[]
   taskMediaUploads           TaskMedia[]               @relation("TaskMediaUploader")
   workspaceGroupMemberships  WorkspaceGroupMember[]
   ownedWorkspaces            Workspace[]               @relation("WorkspaceOwner")
@@ -111,16 +113,16 @@ model Workspace {
 }
 
 model AgentApiKey {
-  id          String    @id @default(cuid())
-  userId      String
-  name        String
-  keyPrefix   String
-  tokenHash   String    @unique @db.VarChar(64)
-  lastUsedAt  DateTime?
-  expiresAt   DateTime?
-  revokedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  keyPrefix  String
+  tokenHash  String    @unique @db.VarChar(64)
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   proposals AgentProposal[]
@@ -223,6 +225,8 @@ model Project {
   name          String
   imageUrl      String?             @db.Text
   workspaceId   String
+  creatorId     String
+  visibility    ProjectVisibility   @default(PUBLIC)
   parentId      String?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
@@ -230,12 +234,27 @@ model Project {
   docs          ProjectDoc[]
   docSections   ProjectDocSection[]
   workspace     Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  creator       User                @relation("ProjectCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  accessGrants  ProjectAccess[]
   tasks         Task[]
   parent        Project?            @relation("ProjectHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children      Project[]           @relation("ProjectHierarchy")
 
   @@index([workspaceId])
+  @@index([creatorId])
   @@index([parentId])
+}
+
+model ProjectAccess {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
 }
 
 model Task {
@@ -655,6 +674,11 @@ enum MattermostMessageOrigin {
 enum MemberRole {
   ADMIN
   MEMBER
+}
+
+enum ProjectVisibility {
+  PUBLIC
+  PRIVATE
 }
 
 enum ConversationType {

@@ -53,6 +53,10 @@ export type Project = {
   name: string;
   image_url: string | null;
   workspace_id: string;
+  creator_id: string;
+  visibility: "public" | "private";
+  is_effectively_restricted?: boolean;
+  can_manage_access?: boolean;
   parent_id: string | null;
   progress: number;
   completed_tasks: number;

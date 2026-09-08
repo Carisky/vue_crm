@@ -48,6 +48,8 @@ export function serializeProject(
     name: project.name,
     image_url: project.imageUrl,
     workspace_id: project.workspaceId,
+    creator_id: project.creatorId,
+    visibility: project.visibility.toLowerCase() as "public" | "private",
     parent_id: project.parentId,
     progress: progress.percent,
     completed_tasks: progress.completed,
