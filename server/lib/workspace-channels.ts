@@ -1,6 +1,6 @@
 import { ConversationType, type Prisma } from "@prisma/client";
 
-import prisma from "./prisma";
+import prisma from "./prisma.ts";
 
 type ChannelDatabase = Prisma.TransactionClient | typeof prisma;
 

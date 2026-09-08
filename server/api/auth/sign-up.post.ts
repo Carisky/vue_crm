@@ -4,6 +4,8 @@ import { hashPassword } from "~/server/lib/password";
 import { createEmailVerification } from "~/server/lib/email-verification";
 import { renderEmailVerificationEmail } from "~/server/lib/email-templates";
 import { enqueueEmail } from "~/server/lib/email-queue";
+import { getForceAdminEmails } from "~/server/lib/force-admins";
+import { reconcileForceAdminMemberships } from "~/server/lib/force-admin-reconciliation";
 import { synchronizeMattermostCredentialsWithRuntime } from "~/server/lib/mattermost/account-sync";
 
 export default defineEventHandler(async (event) => {
@@ -32,6 +34,16 @@ export default defineEventHandler(async (event) => {
       passwordHash: await hashPassword(params.data.password),
     },
   });
+
+  const forceAdminEmails = getForceAdminEmails();
+  if (forceAdminEmails.includes(user.email)) {
+    await prisma.$transaction((transaction) =>
+      reconcileForceAdminMemberships(transaction, {
+        forceAdminEmails,
+        userIds: [user.id],
+      }),
+    );
+  }
 
   const { token } = await createEmailVerification(user.id);
   const config = useRuntimeConfig(event);

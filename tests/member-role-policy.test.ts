@@ -100,3 +100,18 @@ test("rejects no-op role changes", () => {
     false,
   );
 });
+
+test("does not allow even the owner to demote a forced administrator", () => {
+  assert.equal(
+    canChangeWorkspaceMemberRole({
+      actorUserId: "owner",
+      actorRole: "ADMIN",
+      targetUserId: "supervisor",
+      targetRole: "ADMIN",
+      nextRole: "MEMBER",
+      ownerId: "owner",
+      targetIsForcedAdmin: true,
+    }),
+    false,
+  );
+});

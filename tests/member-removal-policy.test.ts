@@ -59,3 +59,17 @@ test("allows a member to remove only their own membership", () => {
     false,
   );
 });
+
+test("does not allow even the owner to remove a forced administrator", () => {
+  assert.equal(
+    canRemoveWorkspaceMember({
+      actorUserId: "owner",
+      actorRole: "ADMIN",
+      targetUserId: "supervisor",
+      targetRole: "ADMIN",
+      ownerId: "owner",
+      targetIsForcedAdmin: true,
+    }),
+    false,
+  );
+});

@@ -7,6 +7,8 @@ import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
 import { generateWorkspaceInviteCode } from "~/server/lib/invite";
 import { normalizeImageInput } from "~/server/lib/images";
+import { getForceAdminEmails } from "~/server/lib/force-admins";
+import { reconcileForceAdminMemberships } from "~/server/lib/force-admin-reconciliation";
 import { serializeWorkspace } from "~/server/lib/serializers";
 import { ensureWorkspaceGeneralConversation } from "~/server/lib/workspace-channels";
 import {
@@ -48,6 +50,7 @@ export default defineEventHandler(async (event) => {
     normalizeImageInput(params.data.image),
     generateWorkspaceInviteCode(),
   ]);
+  const forceAdminEmails = getForceAdminEmails();
 
   const workspace = await prisma.$transaction(async (tx) => {
     const created = await tx.workspace.create({
@@ -63,6 +66,10 @@ export default defineEventHandler(async (event) => {
           },
         },
       },
+    });
+    await reconcileForceAdminMemberships(tx, {
+      forceAdminEmails,
+      workspaceIds: [created.id],
     });
     const general = await ensureWorkspaceGeneralConversation(created.id, tx);
     await enqueueWorkspaceUpsert(tx, {

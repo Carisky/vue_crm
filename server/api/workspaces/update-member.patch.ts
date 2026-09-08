@@ -1,5 +1,6 @@
 import { UpdateMemberRoleSchema } from "~/lib/schema/updateRole";
 import { canChangeWorkspaceMemberRole } from "~/server/lib/member-role-policy";
+import { isForceAdminEmail } from "~/server/lib/force-admins";
 import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
 import { enqueueMembershipUpsert } from "~/server/lib/mattermost/domain-events";
@@ -14,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
   const membership = await prisma.member.findUnique({
     where: { id: params.data.membershipId },
-    include: { workspace: true },
+    include: { workspace: true, user: true },
   });
 
   if (!membership) {
@@ -39,6 +40,7 @@ export default defineEventHandler(async (event) => {
       targetRole: membership.role,
       nextRole: params.data.role,
       ownerId: membership.workspace.ownerId,
+      targetIsForcedAdmin: isForceAdminEmail(membership.user.email),
     })
   ) {
     throw createError({ status: 403, statusText: "Forbidden" });

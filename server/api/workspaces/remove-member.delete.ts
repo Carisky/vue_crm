@@ -1,4 +1,5 @@
 import { canRemoveWorkspaceMember } from "~/server/lib/member-removal-policy";
+import { isForceAdminEmail } from "~/server/lib/force-admins";
 import prisma from "~/server/lib/prisma";
 import { requireUser } from "~/server/lib/permissions";
 import { revokeConversationAccess } from "~/server/lib/conversation-events";
@@ -49,6 +50,7 @@ export default defineEventHandler(async (event) => {
       targetUserId: membershipToDelete.userId,
       targetRole: membershipToDelete.role,
       ownerId: membershipToDelete.workspace.ownerId,
+      targetIsForcedAdmin: isForceAdminEmail(membershipToDelete.user.email),
     })
   ) {
     throw createError({ status: 403, statusText: "Forbidden" });
@@ -84,7 +86,8 @@ export default defineEventHandler(async (event) => {
       },
     });
     await tx.member.delete({ where: { id: membershipToDelete.id } });
-    const teamId = membershipToDelete.workspace.mattermostLink?.mattermostTeamId;
+    const teamId =
+      membershipToDelete.workspace.mattermostLink?.mattermostTeamId;
     const remoteUserId =
       membershipToDelete.user.mattermostLink?.mattermostUserId;
     if (teamId && remoteUserId) {

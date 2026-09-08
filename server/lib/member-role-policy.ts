@@ -7,6 +7,7 @@ type MemberRoleChangeRequest = {
   targetRole: WorkspaceMemberRole;
   nextRole: WorkspaceMemberRole;
   ownerId: string;
+  targetIsForcedAdmin?: boolean;
 };
 
 export function canChangeWorkspaceMemberRole({
@@ -16,15 +17,16 @@ export function canChangeWorkspaceMemberRole({
   targetRole,
   nextRole,
   ownerId,
+  targetIsForcedAdmin = false,
 }: MemberRoleChangeRequest) {
   if (targetRole === nextRole) return false;
+  if (targetIsForcedAdmin && nextRole !== "ADMIN") return false;
   if (targetUserId === ownerId) return false;
   if (actorUserId === ownerId) return true;
 
   if (actorRole !== "ADMIN") return false;
 
-  const isSelfDemotion =
-    actorUserId === targetUserId && nextRole === "MEMBER";
+  const isSelfDemotion = actorUserId === targetUserId && nextRole === "MEMBER";
   const isPromotingMember =
     actorUserId !== targetUserId &&
     targetRole === "MEMBER" &&
