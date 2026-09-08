@@ -42,6 +42,8 @@ Apply the shared policy to project lists/details, project and workspace analytic
 - Project settings: creator-only visibility/access panel with atomic save.
 - Project lists: lock indicator for private or effectively restricted projects.
 - Member removal: when the target owns projects, require a successor selector and explain that ownership will transfer.
+- Member lists and user selectors show compact role icons: person for a member, shield for a workspace administrator, and crown for the workspace owner. Icons have localized tooltips and accessible labels.
+- Project settings identify the project creator with name and email.
 
 ## Testing
 

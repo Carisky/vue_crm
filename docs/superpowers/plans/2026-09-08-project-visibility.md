@@ -321,6 +321,9 @@ git commit -m "feat: secure project events and ownership transfer"
 - Modify: `components/project/TreeItem.vue`
 - Modify: `components/project/ListSidebar.vue`
 - Modify: `components/workspace/member/MemberItem.vue`
+- Modify: `components/workspace/HomeMemberList.vue`
+- Create: `components/workspace/member/MemberRoleIcon.vue`
+- Create: `lib/workspace-role-icon.ts`
 - Modify: `lib/i18n.ts`
 - Modify: `lib/types.ts`
 - Test: `tests/project-ui-contract.test.ts`
@@ -329,6 +332,8 @@ git commit -m "feat: secure project events and ownership transfer"
 **Interfaces:**
 - Consumes the access endpoints and serialized fields from Tasks 1–3.
 - Produces creator-only ACL controls, lock indicators, and required successor selection.
+- Produces reusable person/shield/crown role icons with localized tooltips and accessible labels.
+- Produces `getWorkspaceRoleIcon(member): { icon: string; labelKey: string }` for consistent role rendering.
 
 - [ ] **Step 1: Write failing client contract tests**
 
@@ -342,6 +347,15 @@ test("member removal submits the selected successor", async () => {
   await memberClient.remove("membership-1", "user-2");
   assert.deepEqual(request.body, { membershipId: "membership-1", successorUserId: "user-2" });
 });
+
+test("workspace roles map to compact accessible icons", () => {
+  assert.deepEqual(getWorkspaceRoleIcon({ role: "member", is_owner: false }), {
+    icon: "lucide:user",
+    labelKey: "members.member",
+  });
+  assert.equal(getWorkspaceRoleIcon({ role: "admin", is_owner: false }).icon, "lucide:shield");
+  assert.equal(getWorkspaceRoleIcon({ role: "admin", is_owner: true }).icon, "lucide:crown");
+});
 ```
 
 - [ ] **Step 2: Run tests and verify failure**
@@ -351,7 +365,7 @@ Expected: FAIL because the client methods and payloads are absent.
 
 - [ ] **Step 3: Implement forms and indicators**
 
-Default creation to Public; show member multi-select for Private. In settings, render ACL controls only for `can_manage_access`. Render a lock for explicit or inherited restriction. Add translated labels and error text.
+Default creation to Public; show member multi-select for Private. In settings, render ACL controls only for `can_manage_access`, identify the project creator by name and email, and render a lock for explicit or inherited restriction. Add translated labels and error text. Reuse `MemberRoleIcon` in member lists plus ACL/successor selectors; it renders person, shield, or crown with localized tooltip and `aria-label`, never a persistent text badge.
 
 - [ ] **Step 4: Implement successor selection**
 
