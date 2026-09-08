@@ -115,7 +115,7 @@ const showResetInviteCodeModal = () => {
 // Delete workspace
 // Only owner can delete workspace
 const deleteWorkspace = async () => {
-    if (!isOwner) return
+    if (!isAdmin) return
 
     await $fetch(`/api/workspaces/${data.$id}/delete`, { method: 'DELETE' }).then(async () => {
         // refetch workspaces
@@ -240,7 +240,7 @@ const showDeleteModal = () => {
             </CardContent>
         </Card>
 
-        <Card v-if="isOwner" class="size-full border-none shadow-none gap-0 p-0">
+        <Card v-if="isAdmin" class="size-full border-none shadow-none gap-0 p-0">
             <CardContent class="py-7">
                 <div class="flex flex-col">
                     <h3 class="font-bold">{{ t('common.dangerZone') }}</h3>
