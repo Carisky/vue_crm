@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { formatDistanceToNow } from "date-fns";
 import { enUS, pl, ru } from "date-fns/locale";
-import { taskPriorityTranslationKeys } from "~/lib/i18n";
+import {
+  taskPriorityTranslationKeys,
+  taskStatusTranslationKeys,
+} from "~/lib/i18n";
 import type { FilteredTask } from "~/lib/types";
 
 defineOptions({ name: "WorkspaceHomeTaskTreeItem" });
@@ -100,9 +103,16 @@ const children = computed(() =>
             </span>
           </div>
         </div>
-        <Badge :variant="task.priority" class="text-[10px]">{{
-          t(taskPriorityTranslationKeys[task.priority])
-        }}</Badge>
+        <div
+          class="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center"
+        >
+          <Badge :variant="task.status" class="text-[10px]">
+            {{ t(taskStatusTranslationKeys[task.status]) }}
+          </Badge>
+          <Badge :variant="task.priority" class="text-[10px]">
+            {{ t(taskPriorityTranslationKeys[task.priority]) }}
+          </Badge>
+        </div>
       </NuxtLink>
     </div>
     <ul v-if="expanded && children.length" class="pb-1">
