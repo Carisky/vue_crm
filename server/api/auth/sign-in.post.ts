@@ -1,3 +1,4 @@
+import type { ApiUser } from "~/lib/types";
 import { SignInSchema } from "~/lib/schema/auth";
 import { createAuthSession } from "~/server/lib/auth";
 import prisma from "~/server/lib/prisma";
@@ -36,6 +37,7 @@ export default defineEventHandler(async (event) => {
 
   return {
     ok: true,
+    user: event.context.user as ApiUser,
     mattermost_sync: mattermostSync.ok ? "synced" : "pending",
   };
 });

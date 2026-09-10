@@ -5,8 +5,10 @@ import { toTypedSchema } from "@vee-validate/zod"
 import { toast } from 'vue-sonner'
 
 import { SignInSchema } from '~/lib/schema/auth'
+import useAuthStore from '~/stores/auth'
 
 const queryClient = useQueryClient()
+const authStore = useAuthStore()
 const route = useRoute()
 const { t } = useAppI18n()
 const isProtectedDownload = computed(() => {
@@ -43,9 +45,10 @@ const form = useForm({
 const { isPending, mutate } = useMutation({
     mutationFn: async (credentials: typeof form.values) => {
         const res = await $fetch('/api/auth/sign-in', { method: 'POST', body: credentials })
-        if (res.ok) {
+        if (res.ok && res.user) {
             if (res.mattermost_sync === 'pending') toast.warning(t('auth.mattermostSyncPending'))
-            await queryClient.refetchQueries({ queryKey: ['auth/me'] })
+            authStore.setUser(res.user)
+            queryClient.setQueryData(['auth/me'], res.user)
             await navigateTo(getRedirectPath())
         } else toast.error(t('auth.signInFailed'))
     },
