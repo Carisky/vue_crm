@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/vue-query";
 import authenticatedPageProtectMiddleware from "~/middleware/page-protect/authenticatedPage";
 import type { Workspace } from "~/lib/types";
 import CreateWorkspaceForm from "~/components/workspace/CreateWorkspaceForm.vue";
+import { chooseWorkspaceId } from "~/lib/last-workspace";
 
 definePageMeta({
   layout: "dashboard",
@@ -17,18 +18,19 @@ useHead({
 
 const requestFetch = useRequestFetch();
 const { t } = useAppI18n();
+const { workspaceId: lastWorkspaceId, setWorkspaceId } = useLastWorkspace();
 
-const { data, isFetching, isSuccess, suspense } = useQuery<Workspace[]>(
-  {
-    queryKey: ["workspaces/all"],
-    queryFn: async () => {
-      const data = await requestFetch<{ workspaces: Workspace[] }>("/api/workspaces/all");
-      return data?.workspaces ?? null;
-    },
-    staleTime: Infinity,
-    experimental_prefetchInRender: true,
+const { data, isFetching, isSuccess, suspense } = useQuery<Workspace[]>({
+  queryKey: ["workspaces/all"],
+  queryFn: async () => {
+    const data = await requestFetch<{ workspaces: Workspace[] }>(
+      "/api/workspaces/all",
+    );
+    return data?.workspaces ?? null;
   },
-);
+  staleTime: Infinity,
+  experimental_prefetchInRender: true,
+});
 
 const hasWorkspaces = computed(() => Boolean(data.value?.length));
 const showEmptyState = computed(
@@ -43,7 +45,13 @@ watch(
   [isFetching, isSuccess, data],
   async ([fetching, success, workspaces]) => {
     if (!fetching && success && workspaces?.length) {
-      await navigateTo(`/workspaces/${workspaces[0].$id}`);
+      const workspaceId = chooseWorkspaceId(
+        workspaces.map((workspace) => workspace.$id),
+        lastWorkspaceId.value,
+      );
+      if (!workspaceId) return;
+      setWorkspaceId(workspaceId);
+      await navigateTo(`/workspaces/${workspaceId}`);
     }
   },
   { immediate: true },
@@ -55,13 +63,15 @@ watch(
 
   <div
     v-else-if="showEmptyState"
-    class="flex flex-col gap-6 px-6 py-6 items-center justify-center"
+    class="flex flex-col items-center justify-center gap-6 px-6 py-6"
   >
     <Card class="w-full max-w-3xl border shadow">
       <CardHeader>
-        <CardTitle class="text-xl font-bold">{{ t('workspace.empty.title') }}</CardTitle>
+        <CardTitle class="text-xl font-bold">{{
+          t("workspace.empty.title")
+        }}</CardTitle>
         <CardDescription>
-          {{ t('workspace.empty.description') }}
+          {{ t("workspace.empty.description") }}
         </CardDescription>
       </CardHeader>
     </Card>
