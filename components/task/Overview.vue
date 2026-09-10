@@ -40,12 +40,6 @@ const { open: openUpdateTaskModal } = useUpdateTaskModal();
                 task.creator?.name ?? task.creator?.email ?? t("common.unknown")
               }}
             </p>
-            <p
-              v-if="task.creator?.name"
-              class="truncate text-xs text-muted-foreground"
-            >
-              {{ task.creator.email }}
-            </p>
           </div>
         </TaskOverviewProperty>
         <TaskOverviewProperty :label="t('common.assignee')">
