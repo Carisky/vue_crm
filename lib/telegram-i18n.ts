@@ -1,4 +1,4 @@
-import type { AppLocale } from "./locales";
+import { appLocales, defaultAppLocale, type AppLocale } from "./locales.ts";
 
 const en = {
   "bot.ready":
@@ -97,10 +97,9 @@ export function normalizeTelegramLocale(
   locale: string | null | undefined,
 ): AppLocale {
   const language = locale?.trim().toLowerCase().split(/[-_]/)[0];
-  if (language === "pl" || language === "ru") {
-    return language;
-  }
-  return "en";
+  return appLocales.includes(language as AppLocale)
+    ? (language as AppLocale)
+    : defaultAppLocale;
 }
 
 export function telegramT(

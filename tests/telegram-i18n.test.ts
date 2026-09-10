@@ -7,10 +7,10 @@ test("normalizes supported CRM and Telegram language codes", () => {
   assert.equal(normalizeTelegramLocale("en-US"), "en");
   assert.equal(normalizeTelegramLocale("pl_PL"), "pl");
   assert.equal(normalizeTelegramLocale("ru"), "ru");
-  assert.equal(normalizeTelegramLocale("uk-UA"), "en");
-  assert.equal(normalizeTelegramLocale("ua"), "en");
-  assert.equal(normalizeTelegramLocale("de"), "en");
-  assert.equal(normalizeTelegramLocale(null), "en");
+  assert.equal(normalizeTelegramLocale("uk-UA"), "pl");
+  assert.equal(normalizeTelegramLocale("ua"), "pl");
+  assert.equal(normalizeTelegramLocale("de"), "pl");
+  assert.equal(normalizeTelegramLocale(null), "pl");
 });
 
 test("translates Telegram system text and interpolates values", () => {

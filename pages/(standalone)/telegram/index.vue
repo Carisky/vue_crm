@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import type { AppLocale } from "~/lib/locales";
+import { defaultAppLocale, type AppLocale } from "~/lib/locales";
 import {
   normalizeTelegramLocale,
   telegramT,
@@ -8,7 +8,7 @@ import {
 } from "~/lib/telegram-i18n";
 
 definePageMeta({ layout: false });
-const locale = ref<AppLocale>("en");
+const locale = ref<AppLocale>(defaultAppLocale);
 const t = (
   key: TelegramTranslationKey,
   params: Record<string, string | number> = {},

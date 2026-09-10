@@ -3,7 +3,11 @@ import test from "node:test";
 
 import { localeLabels, translate } from "../lib/i18n.ts";
 import { UpdateLocaleSchema } from "../lib/schema/profile.ts";
-import { appLocales } from "../lib/locales.ts";
+import { appLocales, defaultAppLocale } from "../lib/locales.ts";
+
+test("uses Polish as the default interface language", () => {
+  assert.equal(defaultAppLocale, "pl");
+});
 
 test("accepts every supported persisted locale and rejects unknown values", () => {
   for (const locale of appLocales) {
@@ -21,5 +25,8 @@ test("exposes the requested language labels", () => {
 
 test("translates core navigation and interpolates values", () => {
   assert.equal(translate("ru", "nav.myTasks"), "Мои задания");
-  assert.equal(translate("pl", "docs.updated", { date: "25.08.2026" }), "Zaktualizowano 25.08.2026");
+  assert.equal(
+    translate("pl", "docs.updated", { date: "25.08.2026" }),
+    "Zaktualizowano 25.08.2026",
+  );
 });

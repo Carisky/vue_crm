@@ -19,7 +19,7 @@ model User {
   emailVerifiedAt            DateTime?
   monthlyWorkloadTargetHours Float?
   themePreference            String                    @default("light")
-  locale                     String                    @default("en")
+  locale                     String                    @default("pl")
   emailNotificationsEnabled  Boolean                   @default(true)
   onboardingStatus           String                    @default("NOT_STARTED")
   onboardingVersion          Int                       @default(0)

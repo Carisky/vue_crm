@@ -160,7 +160,7 @@ export function telegramConversationTitle(
     }>;
   },
   viewerUserId: string,
-  locale: string | null | undefined = "en",
+  locale: string | null | undefined = "pl",
 ) {
   let title: string;
   if (conversation.type === "WORKSPACE") {

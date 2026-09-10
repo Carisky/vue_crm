@@ -1,4 +1,4 @@
-import { appLocales, type AppLocale } from "~/lib/types";
+import { appLocales, defaultAppLocale, type AppLocale } from "~/lib/types";
 import { translate, type TranslationKey } from "~/lib/i18n";
 import useAuthStore from "~/stores/auth";
 
@@ -9,7 +9,9 @@ export const useAppI18n = () => {
 
   const locale = computed<AppLocale>(() => {
     const value = authStore.user?.locale;
-    return appLocales.includes(value as AppLocale) ? (value as AppLocale) : "en";
+    return appLocales.includes(value as AppLocale)
+      ? (value as AppLocale)
+      : defaultAppLocale;
   });
 
   const t = (key: TranslationKey, params: TranslationParams = {}) =>

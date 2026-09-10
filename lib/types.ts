@@ -1,7 +1,7 @@
 import type { AppLocale } from "./locales";
 import type { ThemePreference } from "./preferences";
 
-export { appLocales, type AppLocale } from "./locales";
+export { appLocales, defaultAppLocale, type AppLocale } from "./locales";
 export { themePreferences, type ThemePreference } from "./preferences";
 
 export type MemberRole = "admin" | "member";
