@@ -254,7 +254,8 @@ const en = {
   "members.removeConfirm": "This member will be removed from the workspace.",
   "members.roleUpdateFailed": "Failed to update member role",
   "members.transferProjects": "Transfer projects",
-  "members.transferProjectsDescription": "Choose a new owner for this member's {count} projects before removal.",
+  "members.transferProjectsDescription":
+    "Choose a new owner for this member's {count} projects before removal.",
   "groups.title": "Workspace groups",
   "groups.description":
     "Create teams from workspace members, assign tasks, and chat together.",
@@ -315,8 +316,7 @@ const en = {
   "messages.accessRevoked": "You no longer have access to this chat.",
   "telegram.link": "Link Telegram",
   "telegram.linkTitle": "Link Telegram",
-  "telegram.linkDescription":
-    "Receive all available working chats in Telegram",
+  "telegram.linkDescription": "Receive all available working chats in Telegram",
   "telegram.notConfigured":
     "Telegram is not configured on the server yet. Add the bot token, username and webhook secret.",
   "telegram.connected": "Telegram connected",
@@ -340,6 +340,9 @@ const en = {
   "notifications.empty": "No new notifications yet.",
   "notifications.newUpdate": "New update",
   "notifications.activity": "Workspace activity",
+  "notifications.all": "All",
+  "notifications.unread": "Unread",
+  "notifications.allRead": "You're all caught up.",
   "auth.welcome": "Welcome back!",
   "auth.email": "Email",
   "auth.password": "Password",
@@ -382,7 +385,8 @@ const en = {
   "auth.verificationExpired": "This verification link has expired.",
   "auth.verificationInvalid": "This verification link is invalid.",
   "auth.signInFailed": "Failed to sign in",
-  "auth.mattermostSyncPending": "Signed in to CRM. Mattermost synchronization will retry automatically.",
+  "auth.mattermostSyncPending":
+    "Signed in to CRM. Mattermost synchronization will retry automatically.",
   "auth.passwordChanged": "Password changed. Sign in with your new password.",
   "auth.resetFailed": "Failed to reset password",
   "auth.downloadTitle": "Sign in to download",
@@ -593,7 +597,8 @@ const pl: Messages = {
   "auth.verificationExpired": "Ten link weryfikacyjny wygasł.",
   "auth.verificationInvalid": "Ten link weryfikacyjny jest nieprawidłowy.",
   "auth.signInFailed": "Nie udało się zalogować",
-  "auth.mattermostSyncPending": "Zalogowano do CRM. Synchronizacja Mattermost zostanie ponowiona automatycznie.",
+  "auth.mattermostSyncPending":
+    "Zalogowano do CRM. Synchronizacja Mattermost zostanie ponowiona automatycznie.",
   "auth.passwordChanged": "Hasło zmienione. Zaloguj się nowym hasłem.",
   "auth.resetFailed": "Nie udało się zresetować hasła",
   "docs.saveFailed": "Nie udało się zapisać",
@@ -831,6 +836,9 @@ const pl: Messages = {
   "notifications.empty": "Brak nowych powiadomień.",
   "notifications.newUpdate": "Nowa aktualizacja",
   "notifications.activity": "Aktywność obszaru roboczego",
+  "notifications.all": "Wszystkie",
+  "notifications.unread": "Nieprzeczytane",
+  "notifications.allRead": "Wszystko przeczytane.",
   "auth.welcome": "Witaj ponownie!",
   "auth.email": "E-mail",
   "auth.password": "Hasło",
@@ -889,7 +897,8 @@ const pl: Messages = {
   "agent.keyNamePlaceholder": "Nazwa klucza, na przykład Codex",
   "agent.generateKey": "Wygeneruj klucz API",
   "agent.copyKeyNow": "Skopiuj ten klucz teraz",
-  "agent.keyShownOnce": "Ze względów bezpieczeństwa pełny klucz nie zostanie pokazany ponownie.",
+  "agent.keyShownOnce":
+    "Ze względów bezpieczeństwa pełny klucz nie zostanie pokazany ponownie.",
   "agent.copy": "Kopiuj",
   "agent.keyCreated": "Wygenerowano klucz API",
   "agent.keyCreateFailed": "Nie udało się wygenerować klucza API",
@@ -985,7 +994,8 @@ const pl: Messages = {
   "members.removeConfirm": "Ten członek zostanie usunięty z obszaru roboczego.",
   "members.roleUpdateFailed": "Nie udało się zmienić roli członka",
   "members.transferProjects": "Przenieś projekty",
-  "members.transferProjectsDescription": "Przed usunięciem wybierz nowego właściciela dla {count} projektów tego członka.",
+  "members.transferProjectsDescription":
+    "Przed usunięciem wybierz nowego właściciela dla {count} projektów tego członka.",
   "workspace.invited": "Zaproszono Cię do obszaru roboczego {name}",
   "auth.agree": "Rejestrując się, akceptujesz naszą",
   "auth.and": "oraz",
@@ -1051,8 +1061,7 @@ const ru: Messages = {
   "messages.accessRevoked": "У вас больше нет доступа к этому чату.",
   "telegram.link": "Подключить Telegram",
   "telegram.linkTitle": "Подключение Telegram",
-  "telegram.linkDescription":
-    "Получайте все доступные рабочие чаты в Telegram",
+  "telegram.linkDescription": "Получайте все доступные рабочие чаты в Telegram",
   "telegram.notConfigured":
     "Telegram ещё не настроен на сервере. Добавьте токен, имя бота и секрет webhook.",
   "telegram.connected": "Telegram подключён",
@@ -1089,7 +1098,8 @@ const ru: Messages = {
   "auth.verificationExpired": "Срок действия ссылки подтверждения истёк.",
   "auth.verificationInvalid": "Ссылка подтверждения недействительна.",
   "auth.signInFailed": "Не удалось войти",
-  "auth.mattermostSyncPending": "Вход в CRM выполнен. Синхронизация Mattermost повторится автоматически.",
+  "auth.mattermostSyncPending":
+    "Вход в CRM выполнен. Синхронизация Mattermost повторится автоматически.",
   "auth.passwordChanged": "Пароль изменён. Войдите с новым паролем.",
   "auth.resetFailed": "Не удалось сбросить пароль",
   "docs.saveFailed": "Не удалось сохранить",
@@ -1326,6 +1336,9 @@ const ru: Messages = {
   "notifications.empty": "Новых уведомлений пока нет.",
   "notifications.newUpdate": "Новое обновление",
   "notifications.activity": "Активность пространства",
+  "notifications.all": "Все",
+  "notifications.unread": "Непрочитанные",
+  "notifications.allRead": "Всё прочитано.",
   "auth.welcome": "С возвращением!",
   "auth.email": "Электронная почта",
   "auth.password": "Пароль",
@@ -1385,7 +1398,8 @@ const ru: Messages = {
   "agent.keyNamePlaceholder": "Название ключа, например Codex",
   "agent.generateKey": "Сгенерировать API-ключ",
   "agent.copyKeyNow": "Скопируйте ключ сейчас",
-  "agent.keyShownOnce": "В целях безопасности полный ключ больше не будет показан.",
+  "agent.keyShownOnce":
+    "В целях безопасности полный ключ больше не будет показан.",
   "agent.copy": "Копировать",
   "agent.keyCreated": "API-ключ создан",
   "agent.keyCreateFailed": "Не удалось создать API-ключ",
@@ -1482,7 +1496,8 @@ const ru: Messages = {
   "members.removeConfirm": "Участник будет удалён из пространства.",
   "members.roleUpdateFailed": "Не удалось изменить роль участника",
   "members.transferProjects": "Передать проекты",
-  "members.transferProjectsDescription": "Перед удалением выберите нового владельца для проектов участника: {count}.",
+  "members.transferProjectsDescription":
+    "Перед удалением выберите нового владельца для проектов участника: {count}.",
   "workspace.invited": "Вас пригласили в пространство {name}",
   "auth.agree": "Регистрируясь, вы соглашаетесь с нашей",
   "auth.and": "и",
