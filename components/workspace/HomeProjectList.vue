@@ -21,7 +21,8 @@ const rootProjects = computed(() => {
     class="flex min-h-0 flex-col overflow-hidden rounded-lg border bg-card text-card-foreground"
   >
     <div class="flex h-12 shrink-0 items-center justify-between border-b px-4">
-      <p class="font-semibold">
+      <p class="flex items-center gap-2 font-semibold">
+        <Icon name="lucide:folder-tree" class="size-4 text-primary" />
         {{ t("nav.projects") }}
         <span class="text-muted-foreground">{{ total }}</span>
       </p>
@@ -38,7 +39,7 @@ const rootProjects = computed(() => {
         />
       </Button>
     </div>
-    <ul class="min-h-0 flex-1 divide-y overflow-y-auto">
+    <ul class="min-h-0 flex-1 overflow-y-auto px-1.5 py-1">
       <WorkspaceHomeProjectTreeItem
         v-for="project in rootProjects"
         :key="project.$id"
