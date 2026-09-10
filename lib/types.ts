@@ -137,6 +137,7 @@ export type Task = TaskTimeFields & {
   name: string;
   workspace_id: string;
   project_id: string;
+  creator_id: string;
   parent_id: string | null;
   status: TaskStatus;
   priority: TaskPriority;
@@ -168,6 +169,7 @@ export type TaskMedia = {
 };
 
 export type FilteredTask = Task & {
+  creator: { $id: string; name: string | null; email: string };
   project: Project | null;
   assignee: { $id: string; name: string | null; email: string } | null;
   assignee_group: {

@@ -10,6 +10,7 @@ test("keeps only editable task fields in update-form initial values", () => {
     name: "Task",
     workspace_id: "workspace-1",
     project_id: "project-1",
+    creator_id: "user-1",
     parent_id: null,
     status: "TODO" as TaskStatus,
     priority: "MEDIUM" as TaskPriority,
@@ -35,6 +36,7 @@ test("keeps only editable task fields in update-form initial values", () => {
       completed_tasks: 0,
       total_tasks: 1,
     },
+    creator: { $id: "user-1", name: "Creator", email: "creator@example.com" },
     assignee: null,
     assignee_group: null,
   });

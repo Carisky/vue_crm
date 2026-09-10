@@ -28,6 +28,26 @@ const { open: openUpdateTaskModal } = useUpdateTaskModal();
       </div>
       <DottedSeparator class="my-4 h-auto" />
       <div class="flex flex-col gap-y-4">
+        <TaskOverviewProperty :label="t('common.creator')">
+          <WorkspaceMemberAvatar
+            :name="
+              task.creator?.name ?? task.creator?.email ?? t('common.unknown')
+            "
+          />
+          <div class="min-w-0">
+            <p class="truncate text-sm font-medium">
+              {{
+                task.creator?.name ?? task.creator?.email ?? t("common.unknown")
+              }}
+            </p>
+            <p
+              v-if="task.creator?.name"
+              class="truncate text-xs text-muted-foreground"
+            >
+              {{ task.creator.email }}
+            </p>
+          </div>
+        </TaskOverviewProperty>
         <TaskOverviewProperty :label="t('common.assignee')">
           <WorkspaceGroupAvatar
             v-if="task.assignee_group"

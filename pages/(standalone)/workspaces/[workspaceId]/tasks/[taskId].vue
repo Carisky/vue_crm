@@ -145,6 +145,19 @@ onUnmounted(() => {
               :total="subtask.total_subtasks"
               compact
             />
+            <div
+              class="mt-1 flex items-center gap-1 text-xs text-muted-foreground"
+            >
+              <Icon name="lucide:user-round-plus" class="size-3" />
+              <span class="truncate">
+                {{ t("common.creator") }}:
+                {{
+                  subtask.creator?.name ??
+                  subtask.creator?.email ??
+                  t("common.unknown")
+                }}
+              </span>
+            </div>
           </div>
           <Icon
             name="lucide:chevron-right"

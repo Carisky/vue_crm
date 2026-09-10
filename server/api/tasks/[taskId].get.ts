@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
     where: { id: taskId },
     include: {
       project: true,
+      creator: true,
       assignee: true,
       assigneeGroup: { include: { members: true } },
       media: { include: { variants: true } },
@@ -43,6 +44,7 @@ export default defineEventHandler(async (event) => {
     orderBy: { createdAt: "asc" },
     include: {
       project: true,
+      creator: true,
       assignee: true,
       assigneeGroup: { include: { members: true } },
       media: { include: { variants: true } },

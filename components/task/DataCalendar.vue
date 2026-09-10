@@ -17,6 +17,7 @@ interface Event {
     project: Project | null;
     assignee: FilteredTask["assignee"];
     assigneeGroup: FilteredTask["assignee_group"];
+    creator: FilteredTask["creator"];
   };
 }
 
@@ -32,7 +33,16 @@ const tasksWithDueDates = data.filter(
 );
 
 const events: Event[] = tasksWithDueDates.map(
-  ({ $id, name, status, due_date, project, assignee, assignee_group }) => ({
+  ({
+    $id,
+    name,
+    status,
+    due_date,
+    project,
+    assignee,
+    assignee_group,
+    creator,
+  }) => ({
     id: $id,
     title: name,
     start: due_date,
@@ -41,6 +51,7 @@ const events: Event[] = tasksWithDueDates.map(
       project,
       assignee,
       assigneeGroup: assignee_group,
+      creator,
     },
   }),
 );
@@ -83,6 +94,7 @@ onMounted(() => {
             project: extendedProps.project,
             assignee: extendedProps.assignee,
             assigneeGroup: extendedProps.assigneeGroup,
+            creator: extendedProps.creator,
           }),
         };
       },
@@ -109,8 +121,16 @@ const onCreateTask: CreateTaskInject | undefined = inject("create-task-inject");
 
 const unsubscribeCreateSuccess = onCreateTask?.subscribeToCreateTaskSuccess(
   (task: FilteredTask) => {
-    const { $id, name, status, due_date, project, assignee, assignee_group } =
-      task;
+    const {
+      $id,
+      name,
+      status,
+      due_date,
+      project,
+      assignee,
+      assignee_group,
+      creator,
+    } = task;
     if (!due_date) return;
 
     calendar?.addEvent({
@@ -122,6 +142,7 @@ const unsubscribeCreateSuccess = onCreateTask?.subscribeToCreateTaskSuccess(
         project,
         assignee,
         assigneeGroup: assignee_group,
+        creator,
       },
     });
   },

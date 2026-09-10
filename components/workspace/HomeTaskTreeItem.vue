@@ -89,6 +89,13 @@ const children = computed(() =>
           <div
             class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground"
           >
+            <Icon name="lucide:user-round-plus" class="size-3 shrink-0" />
+            <span class="max-w-28 truncate">
+              {{
+                task.creator?.name ?? task.creator?.email ?? t("common.unknown")
+              }}
+            </span>
+            <span>·</span>
             <span class="truncate">{{ task.project?.name ?? "" }}</span>
             <span>·</span>
             <Icon name="lucide:calendar" class="size-3 shrink-0" />

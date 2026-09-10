@@ -112,13 +112,25 @@ export async function assertAgentProposalAccess(
         data.workspace_id,
       );
     } else if (operation.type === "project.update") {
-      await assertProjectInWorkspace(db, operation.project_id, data.workspace_id);
+      await assertProjectInWorkspace(
+        db,
+        operation.project_id,
+        data.workspace_id,
+      );
     } else if (operation.type === "task.create") {
       if (operation.project_id) {
-        await assertProjectInWorkspace(db, operation.project_id, data.workspace_id);
+        await assertProjectInWorkspace(
+          db,
+          operation.project_id,
+          data.workspace_id,
+        );
       }
       if (operation.parent_task_id) {
-        await assertTaskInWorkspace(db, operation.parent_task_id, data.workspace_id);
+        await assertTaskInWorkspace(
+          db,
+          operation.parent_task_id,
+          data.workspace_id,
+        );
       }
       await assertAssignee(db, data.workspace_id, operation);
     } else if (operation.type === "task.update") {
@@ -192,13 +204,22 @@ async function applyOperations(
           name: operation.name,
         },
       });
-      if (operation.ref) refs.set(operation.ref, { id: project.id, kind: "project" });
-      applied.push({ operation: operation.type, id: project.id, ref: operation.ref ?? null });
+      if (operation.ref)
+        refs.set(operation.ref, { id: project.id, kind: "project" });
+      applied.push({
+        operation: operation.type,
+        id: project.id,
+        ref: operation.ref ?? null,
+      });
       continue;
     }
 
     if (operation.type === "project.update") {
-      await assertProjectInWorkspace(db, operation.project_id, data.workspace_id);
+      await assertProjectInWorkspace(
+        db,
+        operation.project_id,
+        data.workspace_id,
+      );
       const project = await db.project.update({
         where: { id: operation.project_id },
         data: { name: operation.name },
@@ -209,7 +230,8 @@ async function applyOperations(
 
     if (operation.type === "task.create") {
       const projectId =
-        operation.project_id ?? resolveRef(refs, operation.project_ref, "project");
+        operation.project_id ??
+        resolveRef(refs, operation.project_ref, "project");
       if (!projectId) badRequest("Task project is required");
       await assertProjectInWorkspace(db, projectId, data.workspace_id);
 
@@ -218,14 +240,21 @@ async function applyOperations(
         resolveRef(refs, operation.parent_task_ref, "task") ??
         null;
       if (parentId) {
-        const parent = await assertTaskInWorkspace(db, parentId, data.workspace_id);
+        const parent = await assertTaskInWorkspace(
+          db,
+          parentId,
+          data.workspace_id,
+        );
         if (parent.projectId !== projectId) {
           badRequest("A task and its parent must belong to the same project");
         }
       }
       await assertAssignee(db, data.workspace_id, operation);
       const highest = await db.task.findFirst({
-        where: { workspaceId: data.workspace_id, status: operation.status as TaskStatus },
+        where: {
+          workspaceId: data.workspace_id,
+          status: operation.status as TaskStatus,
+        },
         orderBy: { position: "desc" },
         select: { position: true },
       });
@@ -233,39 +262,56 @@ async function applyOperations(
         data: {
           workspaceId: data.workspace_id,
           projectId,
+          creatorId,
           parentId,
           name: operation.name,
           description: operation.description,
           status: operation.status as TaskStatus,
           priority: operation.priority as TaskPriority,
           dueDate: operation.due_date ? new Date(operation.due_date) : null,
-          startedAt: operation.started_at ? new Date(operation.started_at) : null,
+          startedAt: operation.started_at
+            ? new Date(operation.started_at)
+            : null,
           assigneeId: operation.assignee_id ?? null,
           assigneeGroupId: operation.assignee_group_id ?? null,
           position: (highest?.position ?? 1000) + 1,
         },
       });
       if (operation.ref) refs.set(operation.ref, { id: task.id, kind: "task" });
-      applied.push({ operation: operation.type, id: task.id, ref: operation.ref ?? null });
+      applied.push({
+        operation: operation.type,
+        id: task.id,
+        ref: operation.ref ?? null,
+      });
       continue;
     }
 
-    const task = await assertTaskInWorkspace(db, operation.task_id, data.workspace_id);
+    const task = await assertTaskInWorkspace(
+      db,
+      operation.task_id,
+      data.workspace_id,
+    );
     await assertAssignee(db, data.workspace_id, operation);
     const update: Prisma.TaskUncheckedUpdateInput = {};
     if (operation.name !== undefined) update.name = operation.name;
-    if (operation.description !== undefined) update.description = operation.description;
-    if (operation.status !== undefined) update.status = operation.status as TaskStatus;
-    if (operation.priority !== undefined) update.priority = operation.priority as TaskPriority;
+    if (operation.description !== undefined)
+      update.description = operation.description;
+    if (operation.status !== undefined)
+      update.status = operation.status as TaskStatus;
+    if (operation.priority !== undefined)
+      update.priority = operation.priority as TaskPriority;
     if (Object.hasOwn(operation, "due_date")) {
       update.dueDate = operation.due_date ? new Date(operation.due_date) : null;
     }
     if (Object.hasOwn(operation, "started_at")) {
-      update.startedAt = operation.started_at ? new Date(operation.started_at) : null;
+      update.startedAt = operation.started_at
+        ? new Date(operation.started_at)
+        : null;
     }
     if (Object.hasOwn(operation, "assignee_id")) {
       update.assigneeId = operation.assignee_id ?? null;
-      if (!Object.hasOwn(operation, "assignee_group_id")) update.assigneeGroupId = null;
+      if (!Object.hasOwn(operation, "assignee_group_id"))
+        update.assigneeGroupId = null;
     }
     if (Object.hasOwn(operation, "assignee_group_id")) {
       update.assigneeGroupId = operation.assignee_group_id ?? null;
@@ -282,9 +328,13 @@ export async function approveAgentProposal(proposalId: string, userId: string) {
   const proposal = await prisma.agentProposal.findFirst({
     where: { id: proposalId, userId },
   });
-  if (!proposal) throw createError({ status: 404, statusText: "Proposal not found" });
+  if (!proposal)
+    throw createError({ status: 404, statusText: "Proposal not found" });
   if (proposal.status !== AgentProposalStatus.PENDING) {
-    throw createError({ status: 409, statusText: "Proposal was already reviewed" });
+    throw createError({
+      status: 409,
+      statusText: "Proposal was already reviewed",
+    });
   }
 
   const parsed = CreateAgentProposalSchema.safeParse({
@@ -294,7 +344,10 @@ export async function approveAgentProposal(proposalId: string, userId: string) {
     operations: proposal.operations,
   });
   if (!parsed.success) {
-    throw createError({ status: 400, statusText: "Stored proposal is invalid" });
+    throw createError({
+      status: 400,
+      statusText: "Stored proposal is invalid",
+    });
   }
   await assertAgentProposalAccess(parsed.data, userId);
   const visibleProjectIds = await getVisibleProjectIdsForUser(prisma, {
@@ -302,13 +355,14 @@ export async function approveAgentProposal(proposalId: string, userId: string) {
     userId,
   });
   for (const operation of parsed.data.operations) {
-    const existingProjectId = operation.type === "project.update"
-      ? operation.project_id
-      : operation.type === "project.create"
-        ? operation.parent_project_id
-        : operation.type === "task.create"
-          ? operation.project_id
-          : null;
+    const existingProjectId =
+      operation.type === "project.update"
+        ? operation.project_id
+        : operation.type === "project.create"
+          ? operation.parent_project_id
+          : operation.type === "task.create"
+            ? operation.project_id
+            : null;
     if (existingProjectId && !visibleProjectIds.has(existingProjectId)) {
       throw createError({ status: 404, statusText: "Project not found" });
     }
@@ -327,10 +381,17 @@ export async function approveAgentProposal(proposalId: string, userId: string) {
     const result = await prisma.$transaction(async (db) => {
       const claimed = await db.agentProposal.updateMany({
         where: { id: proposalId, userId, status: AgentProposalStatus.PENDING },
-        data: { status: AgentProposalStatus.APPROVED, reviewedAt: new Date(), error: null },
+        data: {
+          status: AgentProposalStatus.APPROVED,
+          reviewedAt: new Date(),
+          error: null,
+        },
       });
       if (claimed.count !== 1) {
-        throw createError({ status: 409, statusText: "Proposal was already reviewed" });
+        throw createError({
+          status: 409,
+          statusText: "Proposal was already reviewed",
+        });
       }
       const applied = await applyOperations(db, parsed.data, userId);
       await db.agentProposal.update({
@@ -339,12 +400,21 @@ export async function approveAgentProposal(proposalId: string, userId: string) {
       });
       return applied;
     });
-    return { proposal_id: proposalId, status: "APPROVED" as const, applied: result };
+    return {
+      proposal_id: proposalId,
+      status: "APPROVED" as const,
+      applied: result,
+    };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Proposal could not be applied";
+    const message =
+      error instanceof Error ? error.message : "Proposal could not be applied";
     await prisma.agentProposal.updateMany({
       where: { id: proposalId, userId, status: AgentProposalStatus.PENDING },
-      data: { status: AgentProposalStatus.FAILED, reviewedAt: new Date(), error: message },
+      data: {
+        status: AgentProposalStatus.FAILED,
+        reviewedAt: new Date(),
+        error: message,
+      },
     });
     throw error;
   }
@@ -356,10 +426,14 @@ export async function rejectAgentProposal(proposalId: string, userId: string) {
     data: { status: AgentProposalStatus.REJECTED, reviewedAt: new Date() },
   });
   if (updated.count !== 1) {
-    const exists = await prisma.agentProposal.count({ where: { id: proposalId, userId } });
+    const exists = await prisma.agentProposal.count({
+      where: { id: proposalId, userId },
+    });
     throw createError({
       status: exists ? 409 : 404,
-      statusText: exists ? "Proposal was already reviewed" : "Proposal not found",
+      statusText: exists
+        ? "Proposal was already reviewed"
+        : "Proposal not found",
     });
   }
   return { proposal_id: proposalId, status: "REJECTED" as const };

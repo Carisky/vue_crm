@@ -88,13 +88,17 @@ export default defineEventHandler(async (event) => {
       orderBy: { createdAt: "desc" },
       include: {
         project: true,
+        creator: true,
         assignee: true,
         assigneeGroup: { include: { members: true } },
         media: { include: { variants: true } },
       },
     }),
     prisma.task.findMany({
-      where: { workspaceId: workspace_id, projectId: { in: [...visibleProjectIds] } },
+      where: {
+        workspaceId: workspace_id,
+        projectId: { in: [...visibleProjectIds] },
+      },
       select: { id: true, parentId: true, status: true },
     }),
   ]);

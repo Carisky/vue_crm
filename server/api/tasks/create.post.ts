@@ -13,7 +13,10 @@ import {
 } from "~/server/lib/email";
 import { broadcastTaskEvent } from "~/server/lib/task-events";
 import { assertAndAttachPendingMedia } from "~/server/lib/task-media-service";
-import { getProjectVisibleUserIds, requireProjectAccess } from "~/server/lib/project-access";
+import {
+  getProjectVisibleUserIds,
+  requireProjectAccess,
+} from "~/server/lib/project-access";
 
 export default defineEventHandler(async (event) => {
   const user = requireUser(event);
@@ -32,7 +35,10 @@ export default defineEventHandler(async (event) => {
   const data = params.data;
 
   await requireWorkspaceMembership(event, data.workspace_id);
-  const { project: accessibleProject } = await requireProjectAccess(event, data.project_id);
+  const { project: accessibleProject } = await requireProjectAccess(
+    event,
+    data.project_id,
+  );
   if (accessibleProject.workspaceId !== data.workspace_id) {
     throw createError({ status: 400, statusText: "Project not found" });
   }
@@ -124,6 +130,7 @@ export default defineEventHandler(async (event) => {
         name: data.name,
         workspaceId: data.workspace_id,
         projectId: data.project_id,
+        creatorId: user.id,
         parentId: data.parent_task_id ?? null,
         status: data.status as TaskStatus,
         priority: data.priority as TaskPriority,
@@ -136,6 +143,7 @@ export default defineEventHandler(async (event) => {
       },
       include: {
         project: true,
+        creator: true,
         assignee: true,
         assigneeGroup: { include: { members: true } },
       },
@@ -153,6 +161,7 @@ export default defineEventHandler(async (event) => {
       where: { id: createdTask.id },
       include: {
         project: true,
+        creator: true,
         assignee: true,
         assigneeGroup: { include: { members: true } },
         media: { include: { variants: true } },

@@ -2,22 +2,28 @@
 import { cn } from "~/lib/utils";
 import { TaskStatus, type Project } from "~/lib/types";
 
-const { title, status, project, assignee, assigneeGroup } = defineProps<{
-  title: string;
-  status: string;
-  project: Project | null;
-  assignee: {
-    $id: string;
-    name: string | null;
-    email: string;
-  } | null;
-  assigneeGroup: {
-    $id: string;
-    name: string;
-    color: string | null;
-    member_ids: string[];
-  } | null;
-}>();
+const { title, status, project, assignee, assigneeGroup, creator } =
+  defineProps<{
+    title: string;
+    status: string;
+    project: Project | null;
+    assignee: {
+      $id: string;
+      name: string | null;
+      email: string;
+    } | null;
+    assigneeGroup: {
+      $id: string;
+      name: string;
+      color: string | null;
+      member_ids: string[];
+    } | null;
+    creator: {
+      $id: string;
+      name: string | null;
+      email: string;
+    } | null;
+  }>();
 
 const colorMap: Record<TaskStatus, string> = {
   [TaskStatus.Backlog]: "border-l-pink-500",
@@ -51,6 +57,14 @@ const colorMap: Record<TaskStatus, string> = {
           :name="project?.name ?? ''"
           :image="project?.image_url ?? undefined"
         />
+      </div>
+      <div
+        class="flex min-w-0 items-center gap-1 text-[10px] text-muted-foreground"
+      >
+        <Icon name="lucide:user-round-plus" class="size-3 shrink-0" />
+        <span class="truncate">{{
+          creator?.name ?? creator?.email ?? ""
+        }}</span>
       </div>
     </div>
   </div>

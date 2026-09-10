@@ -13,7 +13,10 @@ import {
 import { serializeTask } from "./serializers";
 import { broadcastTaskEvent } from "./task-events";
 import { assertAndAttachPendingMedia } from "./task-media-service";
-import { getProjectVisibleUserIds, requireProjectAccess } from "./project-access";
+import {
+  getProjectVisibleUserIds,
+  requireProjectAccess,
+} from "./project-access";
 
 export async function updateTask(
   event: H3Event,
@@ -173,6 +176,7 @@ export async function updateTask(
       where: { id: taskId },
       include: {
         project: true,
+        creator: true,
         assignee: true,
         assigneeGroup: { include: { members: true } },
         media: { include: { variants: true } },

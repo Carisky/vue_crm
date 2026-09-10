@@ -94,6 +94,7 @@ export function serializeTaskMedia(
 export function serializeTask(
   task: Task & {
     project?: Project | null;
+    creator?: User | null;
     assignee?: User | null;
     assigneeGroup?:
       | (WorkspaceGroup & { members?: { userId: string }[] })
@@ -112,6 +113,7 @@ export function serializeTask(
     name: task.name,
     workspace_id: task.workspaceId,
     project_id: task.projectId,
+    creator_id: task.creatorId,
     parent_id: task.parentId,
     assignee_id: task.assigneeId,
     assignee_group_id: task.assigneeGroupId,
@@ -126,6 +128,13 @@ export function serializeTask(
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
     project: task.project ? serializeProject(task.project) : null,
+    creator: task.creator
+      ? {
+          $id: task.creator.id,
+          name: task.creator.name,
+          email: task.creator.email,
+        }
+      : null,
     assignee: task.assignee
       ? {
           $id: task.assignee.id,

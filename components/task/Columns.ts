@@ -166,6 +166,48 @@ export const createColumns = (
     },
   },
   {
+    id: "creator",
+    accessorFn: (task) => task.creator?.name ?? task.creator?.email ?? "",
+    size: 170,
+    minSize: 140,
+    meta: {
+      label: t("common.creator"),
+      headerClass: "w-[170px]",
+      cellClass: "whitespace-nowrap",
+    },
+    header: ({ column }) =>
+      h(
+        Button,
+        {
+          variant: "ghost",
+          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
+        },
+        () => [
+          t("common.creator"),
+          h(ArrowUpDownIcon, { class: "ml-2 h-4 w-4" }),
+        ],
+      ),
+    cell: ({ row }) => {
+      const creator = row.original.creator;
+      return h(
+        "div",
+        { class: "flex items-center gap-x-2 text-sm font-medium" },
+        [
+          h(MemberAvatar, {
+            name: creator?.name ?? creator?.email ?? undefined,
+            class: "size-6",
+            fallbackClass: "text-xs",
+          }),
+          h(
+            "p",
+            { class: "line-clamp-1", title: creator?.email ?? "" },
+            creator?.name ?? creator?.email ?? t("common.unknown"),
+          ),
+        ],
+      );
+    },
+  },
+  {
     accessorKey: "started_at",
     size: 120,
     minSize: 110,

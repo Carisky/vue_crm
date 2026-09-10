@@ -64,5 +64,13 @@ const { task } = defineProps<{ task: FilteredTask }>();
         task.project?.name ?? "No project"
       }}</span>
     </div>
+    <div
+      class="flex min-w-0 items-center gap-x-1.5 text-xs text-muted-foreground"
+    >
+      <Icon name="lucide:user-round-plus" class="size-3.5 shrink-0" />
+      <span class="truncate">
+        {{ task.creator?.name ?? task.creator?.email ?? "Unknown" }}
+      </span>
+    </div>
   </div>
 </template>

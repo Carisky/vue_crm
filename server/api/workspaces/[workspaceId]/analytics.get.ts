@@ -39,6 +39,7 @@ export default defineEventHandler(async (event) => {
       orderBy: { createdAt: "desc" },
       include: {
         project: true,
+        creator: true,
         assignee: true,
         assigneeGroup: { include: { members: true } },
       },
@@ -52,7 +53,8 @@ export default defineEventHandler(async (event) => {
   const tasksPayload = tasks.map((task) => serializeTask(task));
 
   const analyticData = calculateTaskAnalytics(tasks, user.id);
-  const restrictedProjectIds = calculateEffectivelyRestrictedProjectIds(projects);
+  const restrictedProjectIds =
+    calculateEffectivelyRestrictedProjectIds(projects);
 
   return {
     workspace: serializeWorkspace(workspace),
