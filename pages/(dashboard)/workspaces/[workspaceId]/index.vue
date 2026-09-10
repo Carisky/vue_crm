@@ -116,9 +116,9 @@ onUnmounted(() => {
         class="grid h-[calc(100dvh-8rem)] min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
         <ProjectAnalytics :data="analytics.analytic_data" />
         <div class="grid min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] lg:grid-rows-1">
-            <WorkspaceHomeTaskList :tasks="preview.tasks" :total="tasks.length" />
+            <WorkspaceHomeTaskList :tasks="tasks" :total="tasks.length" />
             <div class="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-3">
-                <WorkspaceHomeProjectList :projects="preview.projects" :total="projects.length" />
+                <WorkspaceHomeProjectList :projects="projects" :total="projects.length" />
                 <WorkspaceHomeMemberList :members="preview.members" :total="members.length" />
             </div>
         </div>
